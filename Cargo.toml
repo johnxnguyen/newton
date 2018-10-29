@@ -1,0 +1,6 @@
+[package]
+name = "newton"
+version = "0.1.0"
+authors = ["John Nguyen <johnxuannguyen@gmail.com>"]
+
+[dependencies]
