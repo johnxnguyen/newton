@@ -1,1 +1,1 @@
-mod vector;
+mod vector_tests;
