@@ -1,6 +1,19 @@
 use vector::Vector;
 
 #[test]
+fn it_add_assigns() {
+    // given
+    let mut sut = Vector { dx: 3.0, dy: 4.0 };
+    
+    // when
+    sut += Vector { dx: 9.5, dy: -3.5 };
+    
+    // then
+    assert_eq!(sut.dx, 12.5);
+    assert_eq!(sut.dy, 0.5);
+}
+
+#[test]
 fn it_scalar_multiplies() {
     // given
     let sut = Vector { dx: 3.0, dy: 4.0 };

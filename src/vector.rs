@@ -1,5 +1,5 @@
 use point::Point;
-use std::ops::{ Mul, Div };
+use std::ops::{ AddAssign, Mul, Div };
 
 /**
  *  Vector in 2D space.
@@ -7,6 +7,13 @@ use std::ops::{ Mul, Div };
 pub struct Vector {
     pub dx: f64,
     pub dy: f64,
+}
+
+impl AddAssign for Vector {
+    fn add_assign(&mut self, rhs: Vector) {
+        self.dx += rhs.dx;
+        self.dy += rhs.dy;
+    }
 }
 
 impl Mul<f64> for Vector {
