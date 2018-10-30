@@ -1,5 +1,5 @@
 #[cfg(test)]
 mod tests;
 
-mod point;
-mod vector;
+pub mod point;
+pub mod vector;
