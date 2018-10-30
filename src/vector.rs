@@ -1,4 +1,5 @@
 use point::Point;
+use std::ops::{ Mul, Div };
 
 /**
  *  Vector in 2D space.
@@ -6,6 +7,34 @@ use point::Point;
 pub struct Vector {
     pub dx: f64,
     pub dy: f64,
+}
+
+impl Mul<f64> for Vector {
+    type Output = Vector;
+
+    /**
+     *  Scalar multiplication.
+     */
+    fn mul(self, rhs: f64) -> Self::Output {
+        Vector {
+            dx: self.dx * rhs,
+            dy: self.dy * rhs,
+        }
+    }
+}
+
+impl Div<f64> for Vector {
+    type Output = Vector;
+
+    /**
+     *  Scalar division.
+     */
+    fn div(self, rhs: f64) -> Self::Output {
+        Vector {
+            dx: self.dx / rhs,
+            dy: self.dy / rhs,
+        }
+    }
 }
 
 impl Vector {

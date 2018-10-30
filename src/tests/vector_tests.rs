@@ -1,4 +1,30 @@
-use point::Vector;
+use vector::Vector;
+
+#[test]
+fn it_scalar_multiplies() {
+    // given
+    let sut = Vector { dx: 3.0, dy: 4.0 };
+
+    // when
+    let result = sut * 3.0;
+
+    // then
+    assert_eq!(result.dx, 9.0);
+    assert_eq!(result.dy, 12.0);
+}
+
+#[test]
+fn it_scalar_divides() {
+    // given
+    let sut = Vector { dx: 3.0, dy: 12.0 };
+
+    // when
+    let result = sut / 3.0;
+
+    // then
+    assert_eq!(result.dx, 1.0);
+    assert_eq!(result.dy, 4.0);
+}
 
 #[test]
 fn it_calculates_magnitude() {
