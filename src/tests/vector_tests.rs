@@ -1,4 +1,4 @@
-use util::Vector;
+use point::Vector;
 
 #[test]
 fn it_calculates_magnitude() {

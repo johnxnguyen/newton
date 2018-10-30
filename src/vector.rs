@@ -1,19 +1,4 @@
-
-/**
- *  Coordinates in 2D space.
- */
-pub struct Point {
-    pub x: i32,
-    pub y: i32,
-}
-
-impl Point {
-
-    pub fn distance_to(&self, other: &Point) -> f64 {
-        let difference = Vector::difference(self, other);
-        difference.magnitude()
-    }
-}
+use point::Point;
 
 /**
  *  Vector in 2D space.
@@ -27,7 +12,7 @@ impl Vector {
     /**
      *  The difference vector between two points.
      */
-    fn difference(lhs: &Point, rhs: &Point) -> Vector {
+    pub fn difference(lhs: &Point, rhs: &Point) -> Vector {
         Vector {
             dx: (lhs.x - rhs.x) as f64,
             dy: (lhs.y - rhs.y) as f64,
@@ -52,4 +37,3 @@ impl Vector {
         self.dy = self.dy / magnitude;
     }
 }
-
