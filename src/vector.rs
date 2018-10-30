@@ -65,11 +65,23 @@ impl Vector {
     }
 
     /**
-     *  Normalizing a vector into the unit vector.
+     *  Normalize self.
      */
     pub fn normalize(&mut self) {
         let magnitude = self.magnitude();
         self.dx = self.dx / magnitude;
         self.dy = self.dy / magnitude;
+    }
+
+    /**
+     *  Normalized copy of self.
+     */
+    pub fn normalized(&self) -> Vector {
+        let magnitude = self.magnitude();
+
+        Vector {
+            dx: self.dx / magnitude,
+            dy: self.dy / magnitude,
+        }
     }
 }
