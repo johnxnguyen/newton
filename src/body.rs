@@ -14,15 +14,4 @@ impl Body {
     fn apply_force(&mut self, force: Vector) {
         self.velocity += force / self.mass;
     }
-
-    /**
-     *  Cacluate the force exterted on self by the given body.
-     */
-    fn force_from(&self, other: &Body) -> Vector {
-        let difference = Vector::difference(&self.position, &other.position);
-        let distance = difference.magnitude();
-        let force = (self.mass * other.mass) / (distance * distance);
-        let direction = difference.normalized();
-        direction * force
-    }
 }
