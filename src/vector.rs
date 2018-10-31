@@ -44,6 +44,13 @@ impl<'a> Div<f64> for &'a Vector {
 
 impl Vector {
     /**
+     *  The zero vector.
+     */
+    pub fn zero() -> Vector {
+        Vector { dx: 0.0, dy: 0.0 }
+    }
+
+    /**
      *  The difference vector between two points.
      */
     pub fn difference(lhs: &Point, rhs: &Point) -> Vector {
