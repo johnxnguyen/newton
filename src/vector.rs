@@ -17,7 +17,7 @@ impl AddAssign for Vector {
     }
 }
 
-impl Mul<f64> for Vector {
+impl<'a> Mul<f64> for &'a Vector {
     type Output = Vector;
 
     /**
@@ -31,12 +31,9 @@ impl Mul<f64> for Vector {
     }
 }
 
-impl Div<f64> for Vector {
+impl<'a> Div<f64> for &'a Vector {
     type Output = Vector;
 
-    /**
-     *  Scalar division.
-     */
     fn div(self, rhs: f64) -> Self::Output {
         Vector {
             dx: self.dx / rhs,

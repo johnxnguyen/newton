@@ -16,6 +16,6 @@ impl Field {
         let distance = difference.magnitude();
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
         let direction = difference.normalized();
-        direction * force
+        &direction * force
     }
 }

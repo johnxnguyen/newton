@@ -19,7 +19,7 @@ fn it_scalar_multiplies() {
     let sut = Vector { dx: 3.0, dy: 4.0 };
 
     // when
-    let result = sut * 3.0;
+    let result = &sut * 3.0;
 
     // then
     assert_eq!(result.dx, 9.0);
@@ -32,7 +32,7 @@ fn it_scalar_divides() {
     let sut = Vector { dx: 3.0, dy: 12.0 };
 
     // when
-    let result = sut / 3.0;
+    let result = &sut / 3.0;
 
     // then
     assert_eq!(result.dx, 1.0);
