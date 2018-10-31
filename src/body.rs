@@ -29,7 +29,7 @@ impl Body {
      */
     pub fn apply_force(&mut self, force: &Vector) {
         self.velocity += force / self.mass;
-        self.position.x += force.dx.round() as i32;
-        self.position.y += force.dy.round() as i32;
+        self.position.x += self.velocity.dx.round() as i32;
+        self.position.y += self.velocity.dy.round() as i32;
     }
 }
