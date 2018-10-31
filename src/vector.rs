@@ -4,6 +4,7 @@ use std::ops::{ AddAssign, Mul, Div };
 /**
  *  Vector in 2D space.
  */
+#[derive(Debug)]
 pub struct Vector {
     pub dx: f64,
     pub dy: f64,
