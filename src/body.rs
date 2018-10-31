@@ -2,8 +2,6 @@ use point::Point;
 use vector::Vector;
 use std::cmp::Eq;
 
-// TODO: Needs testing
-
 #[derive(Debug)]
 pub struct Body {
     pub id: u32,
