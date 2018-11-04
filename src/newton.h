@@ -14,8 +14,8 @@
 struct field;
 
 /**
- *  Allcoates a new field instance with
- *  the given gravitational constant and solar mass.
+ *  Allocates a new field instance with the given gravitational
+ *  constant, solar mass, min and max effective distance.
  */
 struct field *newton_new_field(double g, double solar_mass, double min_dist, double max_dist);
 
