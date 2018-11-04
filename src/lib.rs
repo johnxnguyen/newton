@@ -13,8 +13,8 @@ use vector::Vector;
 use std::i32;
 
 #[no_mangle]
-pub extern fn newton_new_field(g: f64, solar_mass: f64) -> *mut Field {
-    let field = Field { g, solar_mass, bodies: vec![] };
+pub extern fn newton_new_field(g: f64, solar_mass: f64, min_dist: f64, max_dist: f64) -> *mut Field {
+    let field = Field { g, solar_mass, min_dist, max_dist, bodies: vec![] };
     let boxed = Box::new(field);
     println!("A field has been allocated");
     Box::into_raw(boxed)

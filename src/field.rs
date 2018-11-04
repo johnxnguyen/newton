@@ -5,6 +5,8 @@ use std::collections::HashMap;
 pub struct Field {
     pub g: f64,
     pub solar_mass: f64,    // TODO: make sure non zero and positive
+    pub min_dist: f64,
+    pub max_dist: f64,
     pub bodies: Vec<Body>,
 }
 
@@ -74,7 +76,7 @@ impl Field {
         // Bad things happen if both bodies occupy the same space.
         if b1.position == b2.position { return Vector::zero() }
         let difference = Vector::difference(&b2.position, &b1.position);
-        let distance = difference.magnitude().min(25.0).max(4.0);
+        let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
         let direction = difference.normalized();
         &direction * force
@@ -87,7 +89,7 @@ impl Field {
     fn solar_force(&self, body: &Body) -> Vector {
         if self.solar_mass == 0.0 || body.position.is_origin() { return Vector::zero() }
         let difference = Vector { dx: -body.position.x as f64, dy: -body.position.y as f64 };
-        let distance = difference.magnitude().min(25.0).max(4.0);
+        let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * self.solar_mass * body.mass) / (distance * distance);
         let direction = difference.normalized();
         &direction * force
