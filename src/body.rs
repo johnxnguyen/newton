@@ -5,7 +5,7 @@ use std::cmp::Eq;
 #[derive(Debug)]
 pub struct Body {
     pub id: u32,
-    pub mass: f64,
+    pub mass: f64,          // TODO: need to ensure it is positive & nonzero
     pub position: Point,
     pub velocity: Vector,
 }
@@ -18,6 +18,12 @@ impl PartialEq for Body {
      */
     fn eq(&self, other: &'_ Body) -> bool {
         self as *const _ == other as *const _
+    }
+}
+
+impl Drop for Body {
+    fn drop(&mut self) {
+        println!("Body #{} has been deallocated.", self.id);
     }
 }
 

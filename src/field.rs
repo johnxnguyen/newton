@@ -7,6 +7,12 @@ pub struct Field {
     pub bodies: Vec<Body>,
 }
 
+impl Drop for Field {
+    fn drop(&mut self) {
+        println!("A field has been deallocated.");
+    }
+}
+
 impl Field {
 
     // TODO: Needs testing

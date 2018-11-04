@@ -69,6 +69,7 @@ impl Vector {
         ((self.dx * self.dx + self.dy * self.dy) as f64).sqrt()
     }
 
+    // TODO: This is not defined for the zero vector.
     /**
      *  Normalize self.
      */
@@ -78,6 +79,7 @@ impl Vector {
         self.dy = self.dy / magnitude;
     }
 
+    // TODO: This is not defined for the zero vector.
     /**
      *  Normalized copy of self.
      */
