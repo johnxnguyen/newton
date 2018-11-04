@@ -18,3 +18,10 @@ impl Point {
         difference.magnitude()
     }
 }
+
+// TODO: needs testing
+impl PartialEq for Point {
+    fn eq(&self, other: &'_ Point) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}

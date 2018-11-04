@@ -67,8 +67,10 @@ impl Field {
      *  The force exerted mutually between the given bodies.
      */
     fn force_between(&self, b1: &Body, b2: &Body) -> Vector {
-        let difference = Vector::difference(&b1.position, &b2.position);
-        let distance = difference.magnitude();
+        // Bad things happen if both bodies occupy the same space.
+        if b1.position == b2.position { return Vector::zero() }
+        let difference = Vector::difference(&b2.position, &b1.position);
+        let distance = difference.magnitude().min(25.0).max(4.0);
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
         let direction = difference.normalized();
         &direction * force
