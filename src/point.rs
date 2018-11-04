@@ -17,6 +17,14 @@ impl Point {
         let difference = Vector::difference(self, other);
         difference.magnitude()
     }
+
+    // TODO: needs testing
+    /**
+     *  Returns true if self is the origin.
+     */
+    pub fn is_origin(&self) -> bool {
+        self.x == 0 && self.y == 0
+    }
 }
 
 // TODO: needs testing

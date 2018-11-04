@@ -15,9 +15,9 @@ struct field;
 
 /**
  *  Allcoates a new field instance with
- *  the given gravitational constant.
+ *  the given gravitational constant and solar mass.
  */
-struct field *newton_new_field(double g);
+struct field *newton_new_field(double g, double solar_mass);
 
 /**
  *  Destroys the field instance referred
