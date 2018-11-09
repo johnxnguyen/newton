@@ -5,6 +5,7 @@ use std::ops::{ AddAssign, Mul, Div };
  *  Vector in 2D space.
  */
 #[derive(Debug)]
+#[derive(PartialOrd, PartialEq)]
 pub struct Vector {
     pub dx: f64,
     pub dy: f64,
@@ -68,27 +69,17 @@ impl Vector {
     pub fn magnitude(&self) -> f64 {
         ((self.dx * self.dx + self.dy * self.dy) as f64).sqrt()
     }
-
-    // TODO: This is not defined for the zero vector.
-    /**
-     *  Normalize self.
-     */
-    pub fn normalize(&mut self) {
-        let magnitude = self.magnitude();
-        self.dx = self.dx / magnitude;
-        self.dy = self.dy / magnitude;
-    }
-
-    // TODO: This is not defined for the zero vector.
+    
     /**
      *  Normalized copy of self.
      */
-    pub fn normalized(&self) -> Vector {
+    pub fn normalized(&self) -> Option<Vector> {
+        if self == &Vector::zero() { return None }
         let magnitude = self.magnitude();
 
-        Vector {
+        Some(Vector {
             dx: self.dx / magnitude,
-            dy: self.dy / magnitude,
-        }
+            dy: self.dy / magnitude
+        })
     }
 }

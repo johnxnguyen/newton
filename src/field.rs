@@ -78,7 +78,12 @@ impl Field {
         let difference = Vector::difference(&b2.position, &b1.position);
         let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
-        let direction = difference.normalized();
+
+        let direction = match difference.normalized() {
+            None => Vector::zero(),
+            Some(normalized) => normalized
+        };
+
         &direction * force
     }
 
@@ -91,7 +96,12 @@ impl Field {
         let difference = Vector { dx: -body.position.x as f64, dy: -body.position.y as f64 };
         let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * self.solar_mass * body.mass) / (distance * distance);
-        let direction = difference.normalized();
+
+        let direction = match difference.normalized() {
+            None => Vector::zero(),
+            Some(normalized) => normalized
+        };
+
         &direction * force
     }
 }

@@ -54,12 +54,30 @@ fn it_calculates_magnitude() {
 #[test]
 fn it_normalizes() {
     // given
-    let mut sut = Vector { dx: 3.3, dy: 5.2 };
+    let sut = Vector { dx: 3.3, dy: 5.2 };
 
     // when
-    sut.normalize();
+    match sut.normalized() {
+        None => {
+            assert!(false)
+        },
+        Some(result) => {
+            // then
+            assert!(result.magnitude() > 0.999999);
+            assert!(result.magnitude() < 1.000001);
+        }
+    };
+}
 
+#[test]
+fn it_does_not_normalize_zero_vector() {
+    // given
+    let sut = Vector::zero();
+
+    // when
+    let result = sut.normalized();
+    
     // then
-    assert!(sut.magnitude() > 0.999999);
-    assert!(sut.magnitude() < 1.000001);
+    assert_eq!(result, None);
+    
 }
