@@ -5,10 +5,18 @@ use std::ops::{ Add, AddAssign, Mul, Div };
  *  Vector in 2D space.
  */
 #[derive(Debug)]
-#[derive(PartialOrd, PartialEq)]
 pub struct Vector {
     pub dx: f64,
     pub dy: f64,
+}
+
+impl PartialEq for Vector {
+    fn eq(&self, other: &'_ Vector) -> bool {
+        let e = 0.0000001;
+        let x = (self.dx - other.dx).abs();
+        let y = (self.dy - other.dy).abs();
+        x < e && y < e
+    }
 }
 
 impl Add for Vector {

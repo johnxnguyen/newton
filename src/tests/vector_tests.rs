@@ -9,8 +9,7 @@ fn it_add_assigns() {
     sut += Vector { dx: 9.5, dy: -3.5 };
     
     // then
-    assert_eq!(sut.dx, 12.5);
-    assert_eq!(sut.dy, 0.5);
+    assert_eq!(sut, Vector { dx: 12.5, dy: 0.5 });
 }
 
 #[test]
@@ -22,8 +21,7 @@ fn it_scalar_multiplies() {
     let result = &sut * 3.0;
 
     // then
-    assert_eq!(result.dx, 9.0);
-    assert_eq!(result.dy, 12.0);
+    assert_eq!(result, Vector { dx: 9.0, dy: 12.0 })
 }
 
 #[test]
@@ -35,8 +33,7 @@ fn it_scalar_divides() {
     let result = &sut / 3.0;
 
     // then
-    assert_eq!(result.dx, 1.0);
-    assert_eq!(result.dy, 4.0);
+    assert_eq!(result, Vector { dx: 1.0, dy: 4.0 });
 }
 
 #[test]
@@ -79,5 +76,4 @@ fn it_does_not_normalize_zero_vector() {
     
     // then
     assert_eq!(result, None);
-    
 }
