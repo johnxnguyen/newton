@@ -1,5 +1,5 @@
 use point::Point;
-use std::ops::{ AddAssign, Mul, Div };
+use std::ops::{ Add, AddAssign, Mul, Div };
 
 /**
  *  Vector in 2D space.
@@ -9,6 +9,17 @@ use std::ops::{ AddAssign, Mul, Div };
 pub struct Vector {
     pub dx: f64,
     pub dy: f64,
+}
+
+impl Add for Vector {
+    type Output = Vector;
+
+    fn add(self, rhs: Vector) -> Self::Output {
+        Vector {
+            dx: self.dx + rhs.dx,
+            dy: self.dy + rhs.dy,
+        }
+    }
 }
 
 impl AddAssign for Vector {
@@ -29,6 +40,18 @@ impl<'a> Mul<f64> for &'a Vector {
             dx: self.dx * rhs,
             dy: self.dy * rhs,
         }
+    }
+}
+
+// TODO: Needs testing
+impl<'a> Mul for &'a Vector {
+    type Output = f64;
+
+    /**
+     *  Inner product.
+     */
+    fn mul(self, rhs: &Vector) -> Self::Output {
+        self.dx * rhs.dx + self.dy * rhs.dy
     }
 }
 
