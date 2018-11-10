@@ -74,7 +74,6 @@ impl<'a> Div<f64> for &'a Vector {
     }
 }
 
-// TODO: Needs testing
 /**
  *  Inner product.
  */

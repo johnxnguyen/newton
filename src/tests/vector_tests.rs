@@ -37,6 +37,19 @@ fn it_scalar_divides() {
 }
 
 #[test]
+fn it_calculates_inner_product() {
+    // given
+    let a = Vector { dx: 3.4, dy: -4.9 };
+    let b = Vector { dx: 10.0, dy: 6.3 };
+
+    // when
+    let result = &a * &b;
+
+    // then
+    assert!((result - 3.13).abs() < 0.0000001);
+}
+
+#[test]
 fn it_calculates_magnitude() {
     // given
     let sut = Vector { dx: 3.0, dy: 4.0 };
@@ -60,8 +73,7 @@ fn it_normalizes() {
         },
         Some(result) => {
             // then
-            assert!(result.magnitude() > 0.999999);
-            assert!(result.magnitude() < 1.000001);
+            assert!((result.magnitude() - 1.0).abs() < 0.0000001);
         }
     };
 }
