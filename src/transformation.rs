@@ -1,6 +1,10 @@
 use vector::Vector;
 use std::ops::Mul;
 
+/**
+ *  A 2D transformation matrix represented as a pair of
+ *  vectors (the transformed basis vectors).
+ */
 pub struct Transformation {
     pub a: Vector,
     pub b: Vector,
