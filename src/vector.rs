@@ -1,5 +1,5 @@
-use point::Point;
 use std::ops::{ Add, AddAssign, Mul, Div };
+use point::Point;
 
 /**
  *  Vector in 2D space.
@@ -10,6 +10,9 @@ pub struct Vector {
     pub dy: f64,
 }
 
+/**
+ *  Vector equality.
+ */
 impl PartialEq for Vector {
     fn eq(&self, other: &'_ Vector) -> bool {
         let e = 0.0000001;
@@ -19,6 +22,9 @@ impl PartialEq for Vector {
     }
 }
 
+/**
+ *  Vector addition.
+ */
 impl Add for Vector {
     type Output = Vector;
 
@@ -30,6 +36,9 @@ impl Add for Vector {
     }
 }
 
+/**
+ *  Vector add assign.
+ */
 impl AddAssign for Vector {
     fn add_assign(&mut self, rhs: Vector) {
         self.dx += rhs.dx;
@@ -37,12 +46,12 @@ impl AddAssign for Vector {
     }
 }
 
+/**
+ *  Scalar multiplication.
+ */
 impl<'a> Mul<f64> for &'a Vector {
     type Output = Vector;
 
-    /**
-     *  Scalar multiplication.
-     */
     fn mul(self, rhs: f64) -> Self::Output {
         Vector {
             dx: self.dx * rhs,
@@ -51,18 +60,9 @@ impl<'a> Mul<f64> for &'a Vector {
     }
 }
 
-// TODO: Needs testing
-impl<'a> Mul for &'a Vector {
-    type Output = f64;
-
-    /**
-     *  Inner product.
-     */
-    fn mul(self, rhs: &Vector) -> Self::Output {
-        self.dx * rhs.dx + self.dy * rhs.dy
-    }
-}
-
+/**
+ *  Scalar division.
+ */
 impl<'a> Div<f64> for &'a Vector {
     type Output = Vector;
 
@@ -71,6 +71,18 @@ impl<'a> Div<f64> for &'a Vector {
             dx: self.dx / rhs,
             dy: self.dy / rhs,
         }
+    }
+}
+
+// TODO: Needs testing
+/**
+ *  Inner product.
+ */
+impl<'a> Mul for &'a Vector {
+    type Output = f64;
+
+    fn mul(self, rhs: &Vector) -> Self::Output {
+        self.dx * rhs.dx + self.dy * rhs.dy
     }
 }
 
