@@ -1,11 +1,10 @@
 #[cfg(test)]
 mod tests;
-
-pub mod point;
-pub mod vector;
-pub mod body;
-pub mod field;
-pub mod transformation;
+mod point;
+mod vector;
+mod body;
+mod field;
+mod transformation;
 
 use field::Field;
 use body::Body;
