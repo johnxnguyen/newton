@@ -5,6 +5,7 @@ pub mod point;
 pub mod vector;
 pub mod body;
 pub mod field;
+pub mod transformation;
 
 use field::Field;
 use body::Body;
