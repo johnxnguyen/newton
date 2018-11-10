@@ -9,27 +9,37 @@ pub struct Point {
     pub y: i32,
 }
 
+/**
+ *  Point equality.
+ */
+impl PartialEq for Point {
+    fn eq(&self, other: &'_ Point) -> bool {
+        self.x == other.x && self.y == other.y
+    }
+}
+
 impl Point {
+    /**
+     *  The zero point.
+     */
+    pub fn origin() -> Point {
+        Point { x: 0, y: 0 }
+    }
+}
+
+impl Point {
+    /**
+     *  Returns true if self is the origin.
+     */
+    pub fn is_origin(&self) -> bool {
+        self == &Point::origin()
+    }
+
     /**
      *  Calculate the distance between self and the given point.
      */
     pub fn distance_to(&self, other: &Point) -> f64 {
         let difference = Vector::difference(self, other);
         difference.magnitude()
-    }
-
-    // TODO: needs testing
-    /**
-     *  Returns true if self is the origin.
-     */
-    pub fn is_origin(&self) -> bool {
-        self.x == 0 && self.y == 0
-    }
-}
-
-// TODO: needs testing
-impl PartialEq for Point {
-    fn eq(&self, other: &'_ Point) -> bool {
-        self.x == other.x && self.y == other.y
     }
 }

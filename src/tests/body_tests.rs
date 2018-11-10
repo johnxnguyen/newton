@@ -40,8 +40,6 @@ fn it_applies_force() {
     sut.apply_force(&force);
         
     // then
-    assert_eq!(sut.velocity.dx, -0.7);
-    assert_eq!(sut.velocity.dy, 3.4);
-    assert_eq!(sut.position.x, 0);
-    assert_eq!(sut.position.y, 5);
+    assert_eq!(sut.velocity, Vector { dx: -0.7, dy: 3.4 });
+    assert_eq!(sut.position, Point { x: 0, y: 5 });
 }
