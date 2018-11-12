@@ -1,5 +1,5 @@
+use geometry::point::Point;
 use std::ops::{ Add, AddAssign, Mul, Div };
-use point::Point;
 
 /**
  *  Vector in 2D space.

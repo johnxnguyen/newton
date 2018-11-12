@@ -1,4 +1,4 @@
-use vector::Vector;
+use geometry::vector::Vector;
 
 #[test]
 fn it_add_assigns() {

@@ -1,4 +1,4 @@
-use point::Point;
+use geometry::point::Point;
 
 #[test]
 fn it_calculates_distance_from_origin() {

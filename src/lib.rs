@@ -1,18 +1,21 @@
 #[cfg(test)]
 mod tests;
-mod point;
-mod vector;
-mod body;
-mod field;
-mod transformation;
-mod util;
+mod geometry;
+pub mod physics;
 
 extern crate rand;
 
-use field::Field;
-use body::Body;
-use point::Point;
-use vector::Vector;
+use physics::{
+    field::Field,
+    body::Body,
+};
+
+use geometry::{
+    point::Point,
+    vector::Vector,
+};
+
+
 use std::i32;
 
 #[no_mangle]
@@ -44,7 +47,7 @@ pub unsafe extern fn newton_add_body(field: *mut Field, id: u32, mass: f64, x: i
 
 #[no_mangle]
 pub unsafe extern fn newton_distribute_bodies(field: *mut Field, num_bodies: u32, min_dist: u32, max_dist: u32, dy: f64) {
-    let distributor = util::Distributor {
+    let distributor = geometry::util::Distributor {
         num_bodies,
         min_dist,
         max_dist,

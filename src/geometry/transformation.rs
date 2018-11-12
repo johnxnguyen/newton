@@ -1,4 +1,4 @@
-use vector::Vector;
+use geometry::vector::Vector;
 use std::ops::Mul;
 
 /**

@@ -1,4 +1,4 @@
-use vector::Vector;
+use geometry::vector::Vector;
 
 /**
  *  Coordinates in 2D space.

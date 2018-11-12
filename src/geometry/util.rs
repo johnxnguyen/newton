@@ -1,7 +1,5 @@
-use body::Body;
-use vector::Vector;
-use point::Point;
-use transformation::Transformation;
+use physics::body::Body;
+use geometry::{ point::Point, vector::Vector, transformation::Transformation };
 use rand::prelude::*;
 use std::f64::consts::PI;
 

@@ -1,5 +1,5 @@
-use body::Body;
-use vector::Vector;
+use physics::body::Body;
+use geometry::vector::Vector;
 use std::collections::HashMap;
 
 pub struct Field {

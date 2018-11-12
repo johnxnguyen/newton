@@ -1,5 +1,8 @@
-use transformation::Transformation;
-use vector::Vector;
+use geometry::{
+    vector::Vector,
+    transformation::Transformation,
+};
+
 use std::f64::consts::FRAC_PI_2;
 
 #[test]

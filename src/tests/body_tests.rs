@@ -1,6 +1,9 @@
-use body::Body;
-use point::Point;
-use vector::Vector;
+use physics::body::Body;
+
+use geometry::{
+    point::Point,
+    vector::Vector,
+};
 
 #[test]
 fn it_has_referential_equivalence() {

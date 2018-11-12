@@ -1,6 +1,5 @@
-use point::Point;
-use vector::Vector;
 use std::cmp::Eq;
+use geometry::{ point::Point, vector::Vector };
 
 #[derive(Debug)]
 pub struct Body {
