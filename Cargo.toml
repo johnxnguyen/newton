@@ -9,3 +9,4 @@ name = "newton"
 crate-type = ["staticlib"]
 
 [dependencies]
+rand = "0.5"

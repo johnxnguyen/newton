@@ -5,6 +5,9 @@ mod vector;
 mod body;
 mod field;
 mod transformation;
+mod util;
+
+extern crate rand;
 
 use field::Field;
 use body::Body;
@@ -37,6 +40,20 @@ pub unsafe extern fn newton_add_body(field: *mut Field, id: u32, mass: f64, x: i
     println!("Body #{} is created.", id);
     let field = &mut *field;
     field.bodies.push(body);
+}
+
+#[no_mangle]
+pub unsafe extern fn newton_distribute_bodies(field: *mut Field, num_bodies: u32, min_dist: u32, max_dist: u32, dy: f64) {
+    let distributor = util::Distributor {
+        num_bodies,
+        min_dist,
+        max_dist,
+        dy,
+    };
+
+    let bodies = distributor.get();
+    let field = &mut *field;
+    field.bodies = bodies;
 }
 
 #[no_mangle]

@@ -32,6 +32,13 @@ void newton_destroy_field(struct field *field);
  */
 void newton_add_body(struct field *field, uint32_t id, double mass, int32_t x, int32_t y, double dx, double dy);
 
+/**
+ *  Generates a radial distribution of num_bodies between
+ *  min_dist and max_dist from a central point. These are
+ *  assigned to the field.
+ */
+void newton_distribute_bodies(struct field *field, uint32_t num_bodies, uint32_t min_dist, uint32_t max_dist, double dy);
+
  /**
   *  Advances the field state by a single step.
   */
