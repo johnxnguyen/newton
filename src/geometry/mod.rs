@@ -1,4 +1,2 @@
-pub mod point;
-pub mod vector;
+pub mod types;
 pub mod util;
-pub mod transformation;
