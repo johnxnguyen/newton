@@ -4,12 +4,12 @@ use std::collections::HashMap;
 
 // Body //////////////////////////////////////////////////////////////////////
 //
-// // TODO: description
+// A body represents a moveable object in space.
 
 #[derive(Debug)]
 pub struct Body {
     pub id: u32,
-    pub mass: f64,          // TODO: need to ensure it is positive & nonzero
+    pub mass: f64,
     pub position: Point,
     pub velocity: Vector,
 }
@@ -26,6 +26,13 @@ impl PartialEq for Body {
 }
 
 impl Body {
+    pub fn new(id: u32, mass: f64, position: Point, velocity: Vector) -> Body {
+        if mass <= 0.0 {
+            panic!("A body's mass must be greater than 0. Got {}", mass);
+        }
+        Body { id, mass, position, velocity }
+    }
+
     pub fn apply_force(&mut self, force: &Vector) {
         self.velocity += force / self.mass;
         self.position.x += self.velocity.dx.round() as i32;
@@ -140,6 +147,30 @@ impl Field {
 mod tests {
     use super::*;
     use geometry::types::{ Point, Vector };
+
+    #[test]
+    #[should_panic(expected = "A body's mass must be greater than 0.")]
+    fn body_with_zero_mass() {
+        // given
+        Body::new(
+            0,
+            0.0,
+            Point::origin(),
+            Vector::zero()
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "A body's mass must be greater than 0.")]
+    fn body_with_negative_mass() {
+        // given
+        Body::new(
+            0,
+            -10.0,
+            Point::origin(),
+            Vector::zero()
+        );
+    }
 
     #[test]
     fn body_has_referential_equivalence() {
