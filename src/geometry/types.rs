@@ -1,4 +1,4 @@
-use std::ops::{ Add, AddAssign, Mul, Div };
+use std::ops::{Add, AddAssign, Div, Mul};
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -109,12 +109,14 @@ impl Vector {
     }
 
     pub fn normalized(&self) -> Option<Vector> {
-        if self == &Vector::zero() { return None }
+        if self == &Vector::zero() {
+            return None;
+        }
         let magnitude = self.magnitude();
 
         Some(Vector {
             dx: self.dx / magnitude,
-            dy: self.dy / magnitude
+            dy: self.dy / magnitude,
         })
     }
 }
@@ -215,9 +217,7 @@ mod tests {
 
         // when
         match sut.normalized() {
-            None => {
-                panic!()
-            },
+            None => panic!(),
             Some(result) => {
                 // then
                 assert!((result.magnitude() - 1.0).abs() < 0.0000001);

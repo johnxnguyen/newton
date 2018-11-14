@@ -1,4 +1,4 @@
-use geometry::types::{ Point, Vector };
+use geometry::types::{Point, Vector};
 use std::cmp::Eq;
 use std::collections::HashMap;
 
@@ -14,9 +14,7 @@ pub struct Body {
     pub velocity: Vector,
 }
 
-impl Eq for Body {
-
-}
+impl Eq for Body {}
 
 impl PartialEq for Body {
     fn eq(&self, other: &'_ Body) -> bool {
@@ -30,7 +28,12 @@ impl Body {
         if mass <= 0.0 {
             panic!("A body's mass must be greater than 0. Got {}", mass);
         }
-        Body { id, mass, position, velocity }
+        Body {
+            id,
+            mass,
+            position,
+            velocity,
+        }
     }
 
     pub fn apply_force(&mut self, force: &Vector) {
@@ -46,7 +49,7 @@ impl Body {
 
 pub struct Field {
     pub g: f64,
-    pub solar_mass: f64,    // TODO: make sure non zero and positive
+    pub solar_mass: f64, // TODO: make sure non zero and positive
     pub min_dist: f64,
     pub max_dist: f64,
     pub bodies: Vec<Body>,
@@ -59,7 +62,6 @@ impl Field {
      *  and updating their positions.
      */
     pub fn update(&mut self) {
-
         let force_map = self.force_map();
 
         // now the idea is to iterate through each body and update
@@ -68,10 +70,9 @@ impl Field {
         for body in self.bodies.iter_mut() {
             match force_map.get(&body.id) {
                 Some(force) => body.apply_force(force),
-                None => ()
+                None => (),
             }
         }
-
     }
 
     // TODO: Needs testing
@@ -84,7 +85,6 @@ impl Field {
         let mut forces: HashMap<u32, Vector> = HashMap::new();
 
         for body in self.bodies.iter() {
-
             let mut cumulative_force = Vector::zero();
 
             // combine the forces of all other bodies exerted on body
@@ -109,14 +109,16 @@ impl Field {
      */
     fn force_between(&self, b1: &Body, b2: &Body) -> Vector {
         // Bad things happen if both bodies occupy the same space.
-        if b1.position == b2.position { return Vector::zero() }
+        if b1.position == b2.position {
+            return Vector::zero();
+        }
         let difference = Vector::difference(&b2.position, &b1.position);
         let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
 
         let direction = match difference.normalized() {
             None => Vector::zero(),
-            Some(normalized) => normalized
+            Some(normalized) => normalized,
         };
 
         &direction * force
@@ -127,14 +129,19 @@ impl Field {
      *  The force exerted by the sun on the given body.
      */
     fn solar_force(&self, body: &Body) -> Vector {
-        if self.solar_mass == 0.0 || body.position.is_origin() { return Vector::zero() }
-        let difference = Vector { dx: -body.position.x as f64, dy: -body.position.y as f64 };
+        if self.solar_mass == 0.0 || body.position.is_origin() {
+            return Vector::zero();
+        }
+        let difference = Vector {
+            dx: -body.position.x as f64,
+            dy: -body.position.y as f64,
+        };
         let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * self.solar_mass * body.mass) / (distance * distance);
 
         let direction = match difference.normalized() {
             None => Vector::zero(),
-            Some(normalized) => normalized
+            Some(normalized) => normalized,
         };
 
         &direction * force
@@ -146,30 +153,20 @@ impl Field {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use geometry::types::{ Point, Vector };
+    use geometry::types::{Point, Vector};
 
     #[test]
     #[should_panic(expected = "A body's mass must be greater than 0.")]
     fn body_with_zero_mass() {
         // given
-        Body::new(
-            0,
-            0.0,
-            Point::origin(),
-            Vector::zero()
-        );
+        Body::new(0, 0.0, Point::origin(), Vector::zero());
     }
 
     #[test]
     #[should_panic(expected = "A body's mass must be greater than 0.")]
     fn body_with_negative_mass() {
         // given
-        Body::new(
-            0,
-            -10.0,
-            Point::origin(),
-            Vector::zero()
-        );
+        Body::new(0, -10.0, Point::origin(), Vector::zero());
     }
 
     #[test]
