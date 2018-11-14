@@ -10,13 +10,6 @@ pub struct Point {
     pub y: i32,
 }
 
-
-//impl PartialEq for Point {
-//    fn eq(&self, other: &'_ Point) -> bool {
-//        self.x == other.x && self.y == other.y
-//    }
-//}
-
 impl Point {
     pub fn origin() -> Point {
         Point { x: 0, y: 0 }
