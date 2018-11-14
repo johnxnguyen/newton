@@ -31,7 +31,8 @@ impl Transformation {
 
 // Distributor ///////////////////////////////////////////////////////////////
 //
-// // TODO: description
+// A helper object to distribute bodies in space with velcoity. The
+// distribution is uses parameterized randomization.
 
 pub struct Distributor {
     pub num_bodies: u32,
