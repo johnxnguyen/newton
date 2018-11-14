@@ -9,27 +9,23 @@ use std::ops::Mul;
 // A 2D transformation matrix represented as a pair of transformed basis
 // vectors.
 
-// TODO: make this a data tuple
-pub struct Transformation {
-    pub a: Vector,
-    pub b: Vector,
-}
+pub struct Transformation(Vector, Vector);
 
 impl<'a> Mul<Vector> for &'a Transformation {
     type Output = Vector;
 
     fn mul(self, rhs: Vector) -> Self::Output {
-        &self.a * rhs.dx + &self.b * rhs.dy
+        &self.0 * rhs.dx + &self.1 * rhs.dy
     }
 }
 
 impl Transformation {
     pub fn rotation(radians: f64) -> Transformation {
         let (sin, cos) = radians.sin_cos();
-        Transformation {
-            a: Vector { dx: cos, dy: sin },
-            b: Vector { dx: -sin, dy: cos },
-        }
+        Transformation(
+            Vector { dx: cos, dy: sin },
+            Vector { dx: -sin, dy: cos },
+        )
     }
 }
 
@@ -84,10 +80,10 @@ mod tests {
     #[test]
     fn it_transforms_a_vector() {
         // given
-        let sut = Transformation {
-            a: Vector { dx: 2.0, dy: 0.0 },
-            b: Vector { dx: 0.0, dy: 2.0 },
-        };
+        let sut = Transformation(
+            Vector { dx: 2.0, dy: 0.0 },
+            Vector { dx: 0.0, dy: 2.0 },
+        );
 
         // when
         let result = &sut * Vector { dx: 4.0, dy: -2.5 };
