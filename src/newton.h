@@ -8,6 +8,15 @@
 #include <stdint.h>
 
 /**
+ *  A simple wrapper struct to encapsulate
+ *  point data.
+ */
+struct NewtonPoint {
+    int32_t x;
+    int32_t y;
+};
+
+/**
  *  A opaque struct representing the
  *  gravitational field.
  */
@@ -45,17 +54,9 @@ void newton_distribute_bodies(struct field *field, uint32_t num_bodies, uint32_t
  void newton_step(struct field *field);
 
  /**
-  *  Returns the x coordinate of the body with the
-  *  given id, if it exists, else the max value of
-  *  int32_t.
+  *  Returns the coordinate of the body with the
+  *  given id, if it exists, else the origin.
   */
-int32_t newton_body_x_pos(const struct field *field, uint32_t id);
-
-/**
-*  Returns the y coordinate of the body with the
-*  given id, if it exists, else the max value of
-*  int32_t.
-*/
-int32_t newton_body_y_pos(const struct field *field, uint32_t id);
+struct NewtonPoint newton_body_pos(const struct field *field, uint32_t id);
 
 #endif //NEWTON_NEWTON_H

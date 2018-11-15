@@ -4,6 +4,21 @@ use std::i32;
 
 //////////////////////////////////////////////////////////////////////////////
 
+#[repr(C)]
+pub struct NewtonPoint {
+    pub x: i32,
+    pub y: i32,
+}
+
+impl NewtonPoint {
+    fn from(point: &Point) -> NewtonPoint {
+        NewtonPoint {
+            x: point.x,
+            y: point.y,
+        }
+    }
+}
+
 #[no_mangle]
 pub extern "C" fn newton_new_field(
     g: f64,
@@ -75,19 +90,13 @@ pub unsafe extern "C" fn newton_step(field: *mut Field) {
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn newton_body_x_pos(field: *const Field, id: u32) -> i32 {
+pub unsafe extern "C" fn newton_body_pos(field: *const Field, id: u32) -> NewtonPoint {
     let field = &*field;
     match field.bodies.get(id as usize) {
-        Some(val) => (val as &Body).position.x,
-        None => i32::MAX,
-    }
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn newton_body_y_pos(field: *const Field, id: u32) -> i32 {
-    let field = &*field;
-    match field.bodies.get(id as usize) {
-        Some(val) => (val as &Body).position.y,
-        None => i32::MAX,
+        Some(val) => NewtonPoint::from(&((val as &Body).position)),
+        None => NewtonPoint {
+            x: 0,
+            y: 0,
+        },
     }
 }
