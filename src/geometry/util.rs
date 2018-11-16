@@ -3,6 +3,7 @@ use physics::types::Body;
 use rand::prelude::*;
 use std::f64::consts::PI;
 use std::ops::Mul;
+use std::collections::HashMap;
 
 // Transformation ////////////////////////////////////////////////////////////
 //
@@ -39,8 +40,8 @@ pub struct Distributor {
 }
 
 impl Distributor {
-    pub fn distribution(&self) -> Vec<Body> {
-        let mut result: Vec<Body> = vec![];
+    pub fn distribution(&self) -> HashMap<u32, Body> {
+        let mut result: HashMap<u32, Body> = HashMap::new();
         let mut angle_rand = thread_rng();
         let mut dist_rand = thread_rng();
 
@@ -53,23 +54,19 @@ impl Distributor {
                 dx: dist as f64,
                 dy: 0.0,
             };
+
             let velocity = &trans * Vector {
                 dx: 0.0,
                 dy: self.dy,
             };
 
-            // create body
-            let body = Body {
-                id: i,
-                mass: 0.1,
-                position: Point {
-                    x: position.dx as i32,
-                    y: position.dy as i32,
-                },
-                velocity: velocity,
+            let pos = Point {
+                x: position.dx as i32,
+                y: position.dy as i32,
             };
 
-            result.push(body);
+            let body = Body::new(i, 0.1, pos, velocity);
+            result.insert(i, body);
         }
 
         result

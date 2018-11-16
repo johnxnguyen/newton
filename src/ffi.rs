@@ -26,13 +26,7 @@ pub extern "C" fn newton_new_field(
     min_dist: f64,
     max_dist: f64,
 ) -> *mut Field {
-    let field = Field {
-        g,
-        solar_mass,
-        min_dist,
-        max_dist,
-        bodies: vec![],
-    };
+    let field = Field::new(g, solar_mass, min_dist, max_dist);
     let boxed = Box::new(field);
     Box::into_raw(boxed)
 }
@@ -52,15 +46,9 @@ pub unsafe extern "C" fn newton_add_body(
     dx: f64,
     dy: f64,
 ) {
-    let body = Body {
-        id,
-        mass,
-        position: Point { x, y },
-        velocity: Vector { dx, dy },
-    };
-
+    let body = Body::new(id, mass, Point { x, y }, Vector { dx, dy });
     let field = &mut *field;
-    field.bodies.push(body);
+    field.bodies.insert(id, body);
 }
 
 #[no_mangle]
@@ -92,7 +80,7 @@ pub unsafe extern "C" fn newton_step(field: *mut Field) {
 #[no_mangle]
 pub unsafe extern "C" fn newton_body_pos(field: *const Field, id: u32) -> NewtonPoint {
     let field = &*field;
-    match field.bodies.get(id as usize) {
+    match field.bodies.get(&id) {
         Some(val) => NewtonPoint::from(&((val as &Body).position)),
         None => NewtonPoint {
             x: 0,

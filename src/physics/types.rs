@@ -45,17 +45,34 @@ impl Body {
 
 // Field /////////////////////////////////////////////////////////////////////
 //
-//
+// A field represents an instance of space in which bodies are affected by
+// gravitational force.
 
 pub struct Field {
     pub g: f64,
-    pub solar_mass: f64, // TODO: make sure non zero and positive
     pub min_dist: f64,
     pub max_dist: f64,
-    pub bodies: Vec<Body>,
+    pub bodies: HashMap<u32, Body>,
+    sun: Option<Body>,
 }
 
 impl Field {
+    pub fn new(g: f64, solar_mass: f64, min_dist: f64, max_dist: f64) -> Field {
+        let sun = match solar_mass {
+            // TODO: tidy this up
+            x if x > 0.0 => Some(Body::new(0, solar_mass, Point::origin(), Vector::zero())),
+            _ => None,
+        };
+
+        Field {
+            g,
+            sun,
+            min_dist: min_dist.max(0.0),
+            max_dist: max_dist.max(0.0),
+            bodies: HashMap::new(),
+        }
+    }
+
     // TODO: Needs testing
     /**
      *  Update the state of the field by applying force on each of the bodies
@@ -64,11 +81,9 @@ impl Field {
     pub fn update(&mut self) {
         let force_map = self.force_map();
 
-        // now the idea is to iterate through each body and update
-        // its velocity, then its position.
-
-        for body in self.bodies.iter_mut() {
-            match force_map.get(&body.id) {
+        // update each body
+        for (id, body) in self.bodies.iter_mut() {
+            match force_map.get(&id) {
                 Some(force) => body.apply_force(force),
                 None => (),
             }
@@ -84,20 +99,21 @@ impl Field {
         // store the forces for each body
         let mut forces: HashMap<u32, Vector> = HashMap::new();
 
-        for body in self.bodies.iter() {
+        // for each body
+        for (id, body) in self.bodies.iter() {
             let mut cumulative_force = Vector::zero();
 
             // combine the forces of all other bodies exerted on body
-            for other in self.bodies.iter() {
-                if body != other {
-                    cumulative_force += self.force_between(body, other);
-                }
+            for other in self.bodies.values() {
+                cumulative_force += self.force_between(body, other);
             }
 
-            // add solar force
-            cumulative_force += self.solar_force(body);
+            // also for the sun, if it exists
+            if let Some(ref sun) = self.sun {
+                cumulative_force += self.force_between(body, &sun);
+            }
 
-            forces.insert(body.id, cumulative_force);
+            forces.insert(*id, cumulative_force);
         }
 
         forces
@@ -112,32 +128,10 @@ impl Field {
         if b1.position == b2.position {
             return Vector::zero();
         }
+
         let difference = Vector::difference(&b2.position, &b1.position);
         let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
-
-        let direction = match difference.normalized() {
-            None => Vector::zero(),
-            Some(normalized) => normalized,
-        };
-
-        &direction * force
-    }
-
-    // TODO: try to refactor this into the method above. THe issue was to do with creating a solar body.
-    /**
-     *  The force exerted by the sun on the given body.
-     */
-    fn solar_force(&self, body: &Body) -> Vector {
-        if self.solar_mass == 0.0 || body.position.is_origin() {
-            return Vector::zero();
-        }
-        let difference = Vector {
-            dx: -body.position.x as f64,
-            dy: -body.position.y as f64,
-        };
-        let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
-        let force = (self.g * self.solar_mass * body.mass) / (distance * distance);
 
         let direction = match difference.normalized() {
             None => Vector::zero(),
