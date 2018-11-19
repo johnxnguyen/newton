@@ -12,8 +12,8 @@
  *  point data.
  */
 struct NewtonPoint {
-    int32_t x;
-    int32_t y;
+    float x;
+    float y;
 };
 
 /**
@@ -26,7 +26,7 @@ struct field;
  *  Allocates a new field instance with the given gravitational
  *  constant, solar mass, min and max effective distance.
  */
-struct field *newton_new_field(double g, double solar_mass, double min_dist, double max_dist);
+struct field *newton_new_field(float g, float solar_mass, float min_dist, float max_dist);
 
 /**
  *  Destroys the field instance referred
@@ -39,14 +39,14 @@ void newton_destroy_field(struct field *field);
  *  given properties (id, mass, position, velocity)
  *  and adds it to the field.
  */
-void newton_add_body(struct field *field, uint32_t id, double mass, int32_t x, int32_t y, double dx, double dy);
+void newton_add_body(struct field *field, uint32_t id, float mass, float x, float y, float dx, float dy);
 
 /**
  *  Generates a radial distribution of num_bodies between
  *  min_dist and max_dist from a central point. These are
  *  assigned to the field.
  */
-void newton_distribute_bodies(struct field *field, uint32_t num_bodies, uint32_t min_dist, uint32_t max_dist, double dy);
+void newton_distribute_bodies(struct field *field, uint32_t num_bodies, float min_dist, float max_dist, float dy);
 
  /**
   *  Advances the field state by a single step.

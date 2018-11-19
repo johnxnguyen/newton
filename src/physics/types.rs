@@ -9,7 +9,7 @@ use std::collections::HashMap;
 #[derive(Debug)]
 pub struct Body {
     pub id: u32,
-    pub mass: f64,
+    pub mass: f32,
     pub position: Point,
     pub velocity: Vector,
 }
@@ -24,7 +24,7 @@ impl PartialEq for Body {
 }
 
 impl Body {
-    pub fn new(id: u32, mass: f64, position: Point, velocity: Vector) -> Body {
+    pub fn new(id: u32, mass: f32, position: Point, velocity: Vector) -> Body {
         if mass <= 0.0 {
             panic!("A body's mass must be greater than 0. Got {}", mass);
         }
@@ -38,8 +38,8 @@ impl Body {
 
     pub fn apply_force(&mut self, force: &Vector) {
         self.velocity += force / self.mass;
-        self.position.x += self.velocity.dx.round() as i32;
-        self.position.y += self.velocity.dy.round() as i32;
+        self.position.x += self.velocity.dx;
+        self.position.y += self.velocity.dy;
     }
 }
 
@@ -49,15 +49,15 @@ impl Body {
 // gravitational force.
 
 pub struct Field {
-    pub g: f64,
-    pub min_dist: f64,
-    pub max_dist: f64,
+    pub g: f32,
+    pub min_dist: f32,
+    pub max_dist: f32,
     pub bodies: HashMap<u32, Body>,
     sun: Option<Body>,
 }
 
 impl Field {
-    pub fn new(g: f64, solar_mass: f64, min_dist: f64, max_dist: f64) -> Field {
+    pub fn new(g: f32, solar_mass: f32, min_dist: f32, max_dist: f32) -> Field {
         let sun = match solar_mass {
             // TODO: tidy this up
             x if x > 0.0 => Some(Body::new(0, solar_mass, Point::origin(), Vector::zero())),
@@ -130,7 +130,7 @@ impl Field {
         }
 
         let difference = Vector::difference(&b2.position, &b1.position);
-        let distance = difference.magnitude().min(self.max_dist).max(self.min_dist);
+        let distance = difference.magnitude().max(self.min_dist);
         let force = (self.g * b1.mass * b2.mass) / (distance * distance);
 
         let direction = match difference.normalized() {
@@ -169,14 +169,14 @@ mod tests {
         let b1 = Body {
             id: 0,
             mass: 1.0,
-            position: Point { x: 1, y: 2 },
+            position: Point { x: 1.0, y: 2.0 },
             velocity: Vector::zero(),
         };
 
         let b2 = Body {
             id: 0,
             mass: 1.0,
-            position: Point { x: 1, y: 2 },
+            position: Point { x: 1.0, y: 2.0 },
             velocity: Vector::zero(),
         };
 
@@ -191,17 +191,17 @@ mod tests {
         let mut sut = Body {
             id: 0,
             mass: 2.0,
-            position: Point { x: 1, y: 2 },
+            position: Point { x: 1.0, y: 2.0 },
             velocity: Vector { dx: -2.0, dy: 5.0 },
         };
 
-        let force = Vector { dx: 2.6, dy: -3.2 };
+        let force = Vector { dx: 3.0, dy: -3.0 };
 
         // when
         sut.apply_force(&force);
 
         // then
-        assert_eq!(sut.velocity, Vector { dx: -0.7, dy: 3.4 });
-        assert_eq!(sut.position, Point { x: 0, y: 5 });
+        assert_eq!(sut.velocity, Vector { dx: -0.5, dy: 3.5 });
+        assert_eq!(sut.position, Point { x: 0.5, y: 5.5 });
     }
 }
