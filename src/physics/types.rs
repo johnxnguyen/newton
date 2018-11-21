@@ -142,6 +142,26 @@ impl Field {
     }
 }
 
+
+// Invironment ///////////////////////////////////////////////////////////////
+
+pub struct Invironment {
+
+    pub bodies: HashMap<u32, Body>,
+    pub fields: HashMap<u32, Field>,
+}
+
+impl Invironment {
+    pub fn update(&mut self) {
+
+        // update each body
+        for (id, field) in self.fields.iter_mut() {
+            
+        }
+    }
+
+
+}
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
