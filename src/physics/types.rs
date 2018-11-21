@@ -147,13 +147,13 @@ impl Field {
 // Invironment ///////////////////////////////////////////////////////////////
 
 
-pub struct Invironment {
+pub struct Environment {
     pub bodies: HashMap<u32, Body>,
     pub fields: Vec<Field>,
 }
 
 
-impl Invironment {
+impl Environment {
     pub fn update(&mut self) {
 
         // update each field
@@ -163,9 +163,8 @@ impl Invironment {
 
         }
     }
-
-
 }
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
