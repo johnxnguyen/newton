@@ -142,6 +142,22 @@ impl Field {
     }
 }
 
+// Environment ///////////////////////////////////////////////////////////////
+
+pub struct Environment {
+    pub bodies: HashMap<u32, Body>,
+    pub fields: Vec<Field>,
+}
+
+impl Environment {
+    pub fn update(&mut self) {
+        // update each field
+        for field in self.fields.iter_mut() {
+            field.update();
+        }
+    }
+}
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
