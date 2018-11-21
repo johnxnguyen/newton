@@ -151,37 +151,9 @@ pub struct Environment {
 
 impl Environment {
     pub fn update(&mut self) {
-
-        // store the forces for each body
-        let mut forces: HashMap<u32, Vector> = HashMap::new();
-
-        // for each body
-        for (id, body) in self.bodies.iter() {
-            let mut cumulative_force = Vector::zero();
-
-            // combine the forces of all other bodies exerted on body
-            for other in self.bodies.values() {
-                cumulative_force += self.force_between(body, other);
-            }
-
-            // also for the sun, if it exists
-            if let Some(ref sun) = self.sun {
-                cumulative_force += self.force_between(body, &sun);
-            }
-
-            forces.insert(*id, cumulative_force);
-        }
-
         // update each field
         for field in self.fields.iter_mut() {
-            let force_map = self.field.force_map();
-
-            for (id, body) in self.bodies.iter_mut() {
-                match force_map.get(&id) {
-                    Some(force) => body.apply_force(force),
-                    None => (),
-                }
-            }
+            field.update();
         }
     }
 }
