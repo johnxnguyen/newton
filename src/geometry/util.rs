@@ -1,7 +1,7 @@
 use geometry::types::{Point, Vector};
 use physics::types::Body;
 use rand::prelude::*;
-use std::f64::consts::PI;
+use std::f32::consts::PI;
 use std::ops::Mul;
 use std::collections::HashMap;
 
@@ -21,7 +21,7 @@ impl<'a> Mul<Vector> for &'a Transformation {
 }
 
 impl Transformation {
-    pub fn rotation(radians: f64) -> Transformation {
+    pub fn rotation(radians: f32) -> Transformation {
         let (sin, cos) = radians.sin_cos();
         Transformation(Vector { dx: cos, dy: sin }, Vector { dx: -sin, dy: cos })
     }
@@ -34,9 +34,9 @@ impl Transformation {
 
 pub struct Distributor {
     pub num_bodies: u32,
-    pub min_dist: u32,
-    pub max_dist: u32,
-    pub dy: f64,
+    pub min_dist: f32,
+    pub max_dist: f32,
+    pub dy: f32,
 }
 
 impl Distributor {
@@ -51,7 +51,7 @@ impl Distributor {
 
             let trans = Transformation::rotation(angle);
             let position = &trans * Vector {
-                dx: dist as f64,
+                dx: dist,
                 dy: 0.0,
             };
 
@@ -61,8 +61,8 @@ impl Distributor {
             };
 
             let pos = Point {
-                x: position.dx as i32,
-                y: position.dy as i32,
+                x: position.dx,
+                y: position.dy,
             };
 
             let body = Body::new(i, 0.1, pos, velocity);
@@ -79,7 +79,7 @@ impl Distributor {
 mod tests {
     use super::*;
     use geometry::types::Vector;
-    use std::f64::consts::FRAC_PI_2;
+    use std::f32::consts::FRAC_PI_2;
 
     #[test]
     fn it_transforms_a_vector() {

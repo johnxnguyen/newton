@@ -6,20 +6,20 @@ use std::ops::{Add, AddAssign, Div, Mul};
 
 #[derive(PartialEq, Debug)]
 pub struct Point {
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl Point {
     pub fn origin() -> Point {
-        Point { x: 0, y: 0 }
+        Point { x: 0.0, y: 0.0 }
     }
 
     pub fn is_origin(&self) -> bool {
         self == &Point::origin()
     }
 
-    pub fn distance_to(&self, other: &Point) -> f64 {
+    pub fn distance_to(&self, other: &Point) -> f32 {
         let difference = Vector::difference(self, other);
         difference.magnitude()
     }
@@ -31,8 +31,8 @@ impl Point {
 
 #[derive(Debug)]
 pub struct Vector {
-    pub dx: f64,
-    pub dy: f64,
+    pub dx: f32,
+    pub dy: f32,
 }
 
 impl PartialEq for Vector {
@@ -62,10 +62,10 @@ impl AddAssign for Vector {
     }
 }
 
-impl<'a> Mul<f64> for &'a Vector {
+impl<'a> Mul<f32> for &'a Vector {
     type Output = Vector;
 
-    fn mul(self, scalar: f64) -> Self::Output {
+    fn mul(self, scalar: f32) -> Self::Output {
         Vector {
             dx: self.dx * scalar,
             dy: self.dy * scalar,
@@ -73,10 +73,10 @@ impl<'a> Mul<f64> for &'a Vector {
     }
 }
 
-impl<'a> Div<f64> for &'a Vector {
+impl<'a> Div<f32> for &'a Vector {
     type Output = Vector;
 
-    fn div(self, scalar: f64) -> Self::Output {
+    fn div(self, scalar: f32) -> Self::Output {
         Vector {
             dx: self.dx / scalar,
             dy: self.dy / scalar,
@@ -85,7 +85,7 @@ impl<'a> Div<f64> for &'a Vector {
 }
 
 impl<'a> Mul for &'a Vector {
-    type Output = f64;
+    type Output = f32;
 
     fn mul(self, rhs: &Vector) -> Self::Output {
         self.dx * rhs.dx + self.dy * rhs.dy
@@ -99,13 +99,13 @@ impl Vector {
 
     pub fn difference(lhs: &Point, rhs: &Point) -> Vector {
         Vector {
-            dx: (lhs.x - rhs.x) as f64,
-            dy: (lhs.y - rhs.y) as f64,
+            dx: (lhs.x - rhs.x),
+            dy: (lhs.y - rhs.y),
         }
     }
 
-    pub fn magnitude(&self) -> f64 {
-        ((self.dx * self.dx + self.dy * self.dy) as f64).sqrt()
+    pub fn magnitude(&self) -> f32 {
+        (self.dx * self.dx + self.dy * self.dy).sqrt()
     }
 
     pub fn normalized(&self) -> Option<Vector> {
@@ -130,8 +130,8 @@ mod tests {
     #[test]
     fn point_distance_from_origin() {
         // given
-        let p1 = Point { x: 0, y: 0 };
-        let p2 = Point { x: 5, y: 0 };
+        let p1 = Point { x: 0.0, y: 0.0 };
+        let p2 = Point { x: 5.0, y: 0.0 };
 
         // when
         let result = p1.distance_to(&p2);
@@ -143,8 +143,8 @@ mod tests {
     #[test]
     fn point_distance_to_origin() {
         // given
-        let p1 = Point { x: 0, y: 0 };
-        let p2 = Point { x: 0, y: -5 };
+        let p1 = Point { x: 0.0, y: 0.0 };
+        let p2 = Point { x: 0.0, y: -5.0 };
 
         // when
         let result = p2.distance_to(&p1);
@@ -201,7 +201,7 @@ mod tests {
         let result = &a * &b;
 
         // then
-        assert!((result - 3.13).abs() < 0.0000001);
+        assert!((result - 3.13).abs() < 0.00001);
     }
 
     #[test]

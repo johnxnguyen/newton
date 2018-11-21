@@ -1,13 +1,12 @@
 use geometry::types::{Point, Vector};
 use physics::types::{Body, Field};
-use std::i32;
 
 //////////////////////////////////////////////////////////////////////////////
 
 #[repr(C)]
 pub struct NewtonPoint {
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
 }
 
 impl NewtonPoint {
@@ -21,10 +20,10 @@ impl NewtonPoint {
 
 #[no_mangle]
 pub extern "C" fn newton_new_field(
-    g: f64,
-    solar_mass: f64,
-    min_dist: f64,
-    max_dist: f64,
+    g: f32,
+    solar_mass: f32,
+    min_dist: f32,
+    max_dist: f32,
 ) -> *mut Field {
     let field = Field::new(g, solar_mass, min_dist, max_dist);
     let boxed = Box::new(field);
@@ -40,11 +39,11 @@ pub unsafe extern "C" fn newton_destroy_field(field: *mut Field) {
 pub unsafe extern "C" fn newton_add_body(
     field: *mut Field,
     id: u32,
-    mass: f64,
-    x: i32,
-    y: i32,
-    dx: f64,
-    dy: f64,
+    mass: f32,
+    x: f32,
+    y: f32,
+    dx: f32,
+    dy: f32,
 ) {
     let body = Body::new(id, mass, Point { x, y }, Vector { dx, dy });
     let field = &mut *field;
@@ -55,9 +54,9 @@ pub unsafe extern "C" fn newton_add_body(
 pub unsafe extern "C" fn newton_distribute_bodies(
     field: *mut Field,
     num_bodies: u32,
-    min_dist: u32,
-    max_dist: u32,
-    dy: f64,
+    min_dist: f32,
+    max_dist: f32,
+    dy: f32,
 ) {
     let distributor = ::geometry::util::Distributor {
         num_bodies,
@@ -83,8 +82,8 @@ pub unsafe extern "C" fn newton_body_pos(field: *const Field, id: u32) -> Newton
     match field.bodies.get(&id) {
         Some(val) => NewtonPoint::from(&((val as &Body).position)),
         None => NewtonPoint {
-            x: 0,
-            y: 0,
+            x: 0.0,
+            y: 0.0,
         },
     }
 }
