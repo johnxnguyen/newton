@@ -7,56 +7,34 @@
 
 #include <stdint.h>
 
-/**
- *  A simple wrapper struct to encapsulate
- *  point data.
- */
+// A simple wrapper struct to encapsulate point data.
 struct NewtonPoint {
     float x;
     float y;
 };
 
-/**
- *  A opaque struct representing the
- *  gravitational field.
- */
-struct field;
+// An opaque struct representing the environment.
+//
+struct environment;
 
-/**
- *  Allocates a new field instance with the given gravitational
- *  constant, solar mass, min and max effective distance.
- */
-struct field *newton_new_field(float g, float solar_mass, float min_dist, float max_dist);
+// Allocates a new Environment instance.
+//
+struct environment *newton_new_environment();
 
-/**
- *  Destroys the field instance referred
- *  to by the given pointer.
- */
-void newton_destroy_field(struct field *field);
+// Destroys the Environment instance referred to by the given pointer.
+//
+void newton_destroy_environment(struct environment *environment);
 
-/**
- *  Creates a new body instance with the
- *  given properties (id, mass, position, velocity)
- *  and adds it to the field.
- */
-void newton_add_body(struct field *field, uint32_t id, float mass, float x, float y, float dx, float dy);
+// Generates a radial distribution of bodies around a central point.
+//
+void newton_distribute_bodies(struct environment *environment, uint32_t num_bodies, float min_dist, float max_dist, float dy);
 
-/**
- *  Generates a radial distribution of num_bodies between
- *  min_dist and max_dist from a central point. These are
- *  assigned to the field.
- */
-void newton_distribute_bodies(struct field *field, uint32_t num_bodies, float min_dist, float max_dist, float dy);
+// Advances teh field state by a single step.
+//
+void newton_step(struct environment *environment);
 
- /**
-  *  Advances the field state by a single step.
-  */
- void newton_step(struct field *field);
-
- /**
-  *  Returns the coordinate of the body with the
-  *  given id, if it exists, else the origin.
-  */
-struct NewtonPoint newton_body_pos(const struct field *field, uint32_t id);
+// Returns the coordinates of the body with the given ID, if it exists,
+// else the origin is returned.
+struct NewtonPoint newton_body_pos(const struct environment *environment, uint32_t id);
 
 #endif //NEWTON_NEWTON_H
