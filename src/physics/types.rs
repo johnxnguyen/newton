@@ -127,15 +127,18 @@ impl Field for BruteForceField {
 // Environment ///////////////////////////////////////////////////////////////
 
 pub struct Environment {
-    pub bodies: HashMap<u32, Body>,
+    pub bodies: Vec<Body>,
     pub fields: Vec<Box<Field>>,
 }
 
 impl Environment {
     pub fn update(&mut self) {
-        // update each field
-        for field in self.fields.iter_mut() {
-            field.update();
+        for field in self.fields.iter() {
+            let forces = field.forces(&self.bodies[..]);
+
+            for (body, force) in self.bodies.iter_mut().zip(forces.iter()) {
+                body.apply_force(force);
+            }
         }
     }
 }
