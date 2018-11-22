@@ -128,7 +128,7 @@ impl Field for BruteForceField {
 
 pub struct Environment {
     pub bodies: HashMap<u32, Body>,
-    pub fields: Vec<Field>,
+    pub fields: Vec<Box<Field>>,
 }
 
 impl Environment {
