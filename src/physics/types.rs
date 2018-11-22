@@ -48,7 +48,13 @@ impl Body {
 // A field represents an instance of space in which bodies are affected by
 // gravitational force.
 
-pub struct Field {
+pub trait Field {
+    fn forces(&self, bodies: &[Body]) -> Vec<Vector>;
+}
+
+// BruteForceField ///////////////////////////////////////////////////////////
+
+pub struct BruteForceField {
     pub g: f32,
     pub min_dist: f32,
     pub max_dist: f32,
@@ -56,67 +62,21 @@ pub struct Field {
     sun: Option<Body>,
 }
 
-impl Field {
-    pub fn new(g: f32, solar_mass: f32, min_dist: f32, max_dist: f32) -> Field {
+impl BruteForceField {
+    pub fn new(g: f32, solar_mass: f32, min_dist: f32, max_dist: f32) -> BruteForceField {
         let sun = match solar_mass {
             // TODO: tidy this up
             x if x > 0.0 => Some(Body::new(0, solar_mass, Point::origin(), Vector::zero())),
             _ => None,
         };
 
-        Field {
+        BruteForceField {
             g,
             sun,
             min_dist: min_dist.max(0.0),
             max_dist: max_dist.max(0.0),
             bodies: HashMap::new(),
         }
-    }
-
-    // TODO: Needs testing
-    /**
-     *  Update the state of the field by applying force on each of the bodies
-     *  and updating their positions.
-     */
-    pub fn update(&mut self) {
-        let force_map = self.force_map();
-
-        // update each body
-        for (id, body) in self.bodies.iter_mut() {
-            match force_map.get(&id) {
-                Some(force) => body.apply_force(force),
-                None => (),
-            }
-        }
-    }
-
-    // TODO: Needs testing
-    /**
-     *  A mapping of Body ids to their corresponding received forces
-     *  for the current state. This uses a brute force approach with O(n^2).
-     */
-    fn force_map(&self) -> HashMap<u32, Vector> {
-        // store the forces for each body
-        let mut forces: HashMap<u32, Vector> = HashMap::new();
-
-        // for each body
-        for (id, body) in self.bodies.iter() {
-            let mut cumulative_force = Vector::zero();
-
-            // combine the forces of all other bodies exerted on body
-            for other in self.bodies.values() {
-                cumulative_force += self.force_between(body, other);
-            }
-
-            // also for the sun, if it exists
-            if let Some(ref sun) = self.sun {
-                cumulative_force += self.force_between(body, &sun);
-            }
-
-            forces.insert(*id, cumulative_force);
-        }
-
-        forces
     }
 
     // TODO: Needs testing
@@ -139,6 +99,28 @@ impl Field {
         };
 
         &direction * force
+    }
+}
+
+impl Field for BruteForceField {
+    fn forces(&self, bodies: &[Body]) -> Vec<Vector> {
+        let mut result: Vec<Vector> = vec![];
+
+        for body in bodies {
+            let mut cumulative_force = Vector::zero();
+
+            for other in bodies {
+                cumulative_force += self.force_between(body, other);
+            }
+
+            if let Some(ref sun) = self.sun {
+                cumulative_force += self.force_between(body, &sun);
+            }
+
+            result.push(cumulative_force);
+        }
+
+        result
     }
 }
 
