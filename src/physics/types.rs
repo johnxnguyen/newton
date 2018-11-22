@@ -125,6 +125,8 @@ impl Field for BruteForceField {
 }
 
 // Environment ///////////////////////////////////////////////////////////////
+//
+// An environment represents a space in which bodies interact with fields.
 
 pub struct Environment {
     pub bodies: Vec<Body>,
