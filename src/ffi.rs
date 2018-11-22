@@ -1,5 +1,5 @@
-use geometry::types::{Point, Vector};
-use physics::types::{Body, Field};
+use geometry::types::{Point};
+use physics::types::{Body, Environment};
 
 //////////////////////////////////////////////////////////////////////////////
 
@@ -19,40 +19,20 @@ impl NewtonPoint {
 }
 
 #[no_mangle]
-pub extern "C" fn newton_new_field(
-    g: f32,
-    solar_mass: f32,
-    min_dist: f32,
-    max_dist: f32,
-) -> *mut Field {
-    let field = Field::new(g, solar_mass, min_dist, max_dist);
-    let boxed = Box::new(field);
+pub extern "C" fn newton_new_environment() -> *mut Environment {
+    let environment = Environment::new();
+    let boxed = Box::new(environment);
     Box::into_raw(boxed)
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn newton_destroy_field(field: *mut Field) {
-    let _ = Box::from_raw(field);
-}
-
-#[no_mangle]
-pub unsafe extern "C" fn newton_add_body(
-    field: *mut Field,
-    id: u32,
-    mass: f32,
-    x: f32,
-    y: f32,
-    dx: f32,
-    dy: f32,
-) {
-    let body = Body::new(id, mass, Point { x, y }, Vector { dx, dy });
-    let field = &mut *field;
-    field.bodies.insert(id, body);
+pub unsafe extern "C" fn newton_destroy_environment(environment: *mut Environment) {
+    let _ = Box::from_raw(environment);
 }
 
 #[no_mangle]
 pub unsafe extern "C" fn newton_distribute_bodies(
-    field: *mut Field,
+    environment: *mut Environment,
     num_bodies: u32,
     min_dist: f32,
     max_dist: f32,
@@ -66,20 +46,20 @@ pub unsafe extern "C" fn newton_distribute_bodies(
     };
 
     let bodies = distributor.distribution();
-    let field = &mut *field;
-    field.bodies = bodies;
+    let environment = &mut *environment;
+    environment.bodies = bodies;
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn newton_step(field: *mut Field) {
-    let field = &mut *field;
-    field.update()
+pub unsafe extern "C" fn newton_step(environment: *mut Environment) {
+    let environment = &mut *environment;
+    environment.update()
 }
 
 #[no_mangle]
-pub unsafe extern "C" fn newton_body_pos(field: *const Field, id: u32) -> NewtonPoint {
-    let field = &*field;
-    match field.bodies.get(&id) {
+pub unsafe extern "C" fn newton_body_pos(environment: *const Environment, id: u32) -> NewtonPoint {
+    let environment = &*environment;
+    match environment.bodies.get(id as usize) {
         Some(val) => NewtonPoint::from(&((val as &Body).position)),
         None => NewtonPoint {
             x: 0.0,
