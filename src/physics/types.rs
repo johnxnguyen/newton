@@ -132,6 +132,13 @@ pub struct Environment {
 }
 
 impl Environment {
+    pub fn new() -> Environment {
+        Environment {
+            bodies: vec![],
+            fields: vec![],
+        }
+    }
+
     pub fn update(&mut self) {
         for field in self.fields.iter() {
             let forces = field.forces(&self.bodies[..]);
