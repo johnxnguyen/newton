@@ -1,10 +1,10 @@
 use geometry::types::{Point, Vector};
+use super::force::Gravity;
 use std::cmp::Eq;
-use std::collections::HashMap;
 
 // Body //////////////////////////////////////////////////////////////////////
 //
-// A body represents a moveable object in space.
+// A body represents a movable object in space.
 
 #[derive(Debug)]
 pub struct Body {
@@ -55,15 +55,12 @@ pub trait Field {
 // BruteForceField ///////////////////////////////////////////////////////////
 
 pub struct BruteForceField {
-    pub g: f32,
-    pub min_dist: f32,
-    pub max_dist: f32,
-    pub bodies: HashMap<u32, Body>,
+    force: Gravity,
     sun: Option<Body>,
 }
 
 impl BruteForceField {
-    pub fn new(g: f32, solar_mass: f32, min_dist: f32, max_dist: f32) -> BruteForceField {
+    pub fn new(g: f32, solar_mass: f32, min_dist: f32) -> BruteForceField {
         let sun = match solar_mass {
             // TODO: tidy this up
             x if x > 0.0 => Some(Body::new(0, solar_mass, Point::origin(), Vector::zero())),
@@ -71,34 +68,9 @@ impl BruteForceField {
         };
 
         BruteForceField {
-            g,
+            force: Gravity::new(g, min_dist),
             sun,
-            min_dist: min_dist.max(0.0),
-            max_dist: max_dist.max(0.0),
-            bodies: HashMap::new(),
         }
-    }
-
-    // TODO: Needs testing
-    /**
-     *  The force exerted mutually between the given bodies.
-     */
-    fn force_between(&self, b1: &Body, b2: &Body) -> Vector {
-        // Bad things happen if both bodies occupy the same space.
-        if b1.position == b2.position {
-            return Vector::zero();
-        }
-
-        let difference = Vector::difference(&b2.position, &b1.position);
-        let distance = difference.magnitude().max(self.min_dist);
-        let force = (self.g * b1.mass * b2.mass) / (distance * distance);
-
-        let direction = match difference.normalized() {
-            None => Vector::zero(),
-            Some(normalized) => normalized,
-        };
-
-        &direction * force
     }
 }
 
@@ -110,11 +82,11 @@ impl Field for BruteForceField {
             let mut cumulative_force = Vector::zero();
 
             for other in bodies {
-                cumulative_force += self.force_between(body, other);
+                cumulative_force += self.force.between(body, other);
             }
 
             if let Some(ref sun) = self.sun {
-                cumulative_force += self.force_between(body, &sun);
+                cumulative_force += self.force.between(body, &sun);
             }
 
             result.push(cumulative_force);
@@ -135,9 +107,10 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Environment {
+        let field = BruteForceField::new(1.0, 10000.0, 4.0);
         Environment {
             bodies: vec![],
-            fields: vec![],
+            fields: vec![Box::from(field)],
         }
     }
 
