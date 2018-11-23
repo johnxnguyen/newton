@@ -1,5 +1,5 @@
 use geometry::types::{Point, Vector};
-use super::force::Gravity;
+use super::force::{Gravity, Attractor};
 use std::cmp::Eq;
 
 // Body //////////////////////////////////////////////////////////////////////
@@ -56,20 +56,15 @@ pub trait Field {
 
 pub struct BruteForceField {
     force: Gravity,
-    sun: Option<Body>,
+    sun: Option<Attractor>,
 }
 
 impl BruteForceField {
-    pub fn new(g: f32, solar_mass: f32, min_dist: f32) -> BruteForceField {
-        let sun = match solar_mass {
-            // TODO: tidy this up
-            x if x > 0.0 => Some(Body::new(0, solar_mass, Point::origin(), Vector::zero())),
-            _ => None,
-        };
+    pub fn new() -> BruteForceField {
 
         BruteForceField {
-            force: Gravity::new(g, min_dist),
-            sun,
+            force: Gravity::new(1.0, 4.0),
+            sun: Some(Attractor::new(10000.0, Point::origin(), 1.0, 4.0)),
         }
     }
 }
@@ -86,7 +81,7 @@ impl Field for BruteForceField {
             }
 
             if let Some(ref sun) = self.sun {
-                cumulative_force += self.force.between(body, &sun);
+                cumulative_force += sun.force(body);
             }
 
             result.push(cumulative_force);
@@ -107,7 +102,7 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Environment {
-        let field = BruteForceField::new(1.0, 10000.0, 4.0);
+        let field = BruteForceField::new();
         Environment {
             bodies: vec![],
             fields: vec![Box::from(field)],

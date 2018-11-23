@@ -51,6 +51,7 @@ pub struct Attractor {
 impl Attractor {
     pub fn new(mass: f32, point: Point, g: f32, min_dist: f32) -> Attractor {
         Attractor {
+            // TODO: remove id from body?
             body: Body::new(0, mass, point, Vector::zero()),
             gravity: Gravity::new(g, min_dist),
         }
