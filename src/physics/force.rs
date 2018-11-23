@@ -1,5 +1,5 @@
 use super::types::Body;
-use geometry::types::Vector;
+use geometry::types::{Point, Vector};
 
 // Gravity ///////////////////////////////////////////////////////////////////
 //
@@ -35,5 +35,28 @@ impl Gravity {
         };
 
         &direction * force
+    }
+}
+
+// Attractor /////////////////////////////////////////////////////////////////
+//
+// Gravitational attraction to a point.
+
+// TODO: Needs testing
+pub struct Attractor {
+    body: Body,
+    gravity: Gravity,
+}
+
+impl Attractor {
+    pub fn new(mass: f32, point: Point, g: f32, min_dist: f32) -> Attractor {
+        Attractor {
+            body: Body::new(0, mass, point, Vector::zero()),
+            gravity: Gravity::new(g, min_dist),
+        }
+    }
+
+    pub fn force(&self, body: &Body) -> Vector {
+        self.gravity.between(body, &self.body)
     }
 }
