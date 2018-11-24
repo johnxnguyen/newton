@@ -2,6 +2,35 @@ use geometry::types::{Point, Vector};
 use super::force::{Gravity, Attractor};
 use std::cmp::Eq;
 
+// Environment ///////////////////////////////////////////////////////////////
+//
+// An environment represents a space in which bodies interact with fields.
+
+pub struct Environment {
+    pub bodies: Vec<Body>,
+    pub fields: Vec<Box<Field>>,
+}
+
+impl Environment {
+    pub fn new() -> Environment {
+        let field = BruteForceField::new();
+        Environment {
+            bodies: vec![],
+            fields: vec![Box::from(field)],
+        }
+    }
+
+    pub fn update(&mut self) {
+        for field in self.fields.iter() {
+            let forces = field.forces(&self.bodies[..]);
+
+            for (body, force) in self.bodies.iter_mut().zip(forces.iter()) {
+                body.apply_force(force);
+            }
+        }
+    }
+}
+
 // Body //////////////////////////////////////////////////////////////////////
 //
 // A body represents a movable object in space.
@@ -53,20 +82,13 @@ pub trait Field {
 }
 
 // BruteForceField ///////////////////////////////////////////////////////////
+//
+// Brute force gravitation calculation between n bodies. For every body,
+// calculate the gravitational force with every other body directly.
 
 pub struct BruteForceField {
     force: Gravity,
     sun: Option<Attractor>,
-}
-
-impl BruteForceField {
-    pub fn new() -> BruteForceField {
-
-        BruteForceField {
-            force: Gravity::new(1.0, 4.0),
-            sun: Some(Attractor::new(10000.0, Point::origin(), 1.0, 4.0)),
-        }
-    }
 }
 
 impl Field for BruteForceField {
@@ -91,31 +113,11 @@ impl Field for BruteForceField {
     }
 }
 
-// Environment ///////////////////////////////////////////////////////////////
-//
-// An environment represents a space in which bodies interact with fields.
-
-pub struct Environment {
-    pub bodies: Vec<Body>,
-    pub fields: Vec<Box<Field>>,
-}
-
-impl Environment {
-    pub fn new() -> Environment {
-        let field = BruteForceField::new();
-        Environment {
-            bodies: vec![],
-            fields: vec![Box::from(field)],
-        }
-    }
-
-    pub fn update(&mut self) {
-        for field in self.fields.iter() {
-            let forces = field.forces(&self.bodies[..]);
-
-            for (body, force) in self.bodies.iter_mut().zip(forces.iter()) {
-                body.apply_force(force);
-            }
+impl BruteForceField {
+    pub fn new() -> BruteForceField {
+        BruteForceField {
+            force: Gravity::new(1.0, 4.0),
+            sun: Some(Attractor::new(10000.0, Point::origin(), 1.0, 4.0)),
         }
     }
 }
