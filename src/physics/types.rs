@@ -37,7 +37,6 @@ impl Environment {
 
 #[derive(Debug)]
 pub struct Body {
-    pub id: u32,
     pub mass: f32,
     pub position: Point,
     pub velocity: Vector,
@@ -53,12 +52,11 @@ impl PartialEq for Body {
 }
 
 impl Body {
-    pub fn new(id: u32, mass: f32, position: Point, velocity: Vector) -> Body {
+    pub fn new(mass: f32, position: Point, velocity: Vector) -> Body {
         if mass <= 0.0 {
             panic!("A body's mass must be greater than 0. Got {}", mass);
         }
         Body {
-            id,
             mass,
             position,
             velocity,
@@ -133,28 +131,26 @@ mod tests {
     #[should_panic(expected = "A body's mass must be greater than 0.")]
     fn body_with_zero_mass() {
         // given
-        Body::new(0, 0.0, Point::origin(), Vector::zero());
+        Body::new(0.0, Point::origin(), Vector::zero());
     }
 
     #[test]
     #[should_panic(expected = "A body's mass must be greater than 0.")]
     fn body_with_negative_mass() {
         // given
-        Body::new(0, -10.0, Point::origin(), Vector::zero());
+        Body::new(-10.0, Point::origin(), Vector::zero());
     }
 
     #[test]
     fn body_has_referential_equivalence() {
         // given
         let b1 = Body {
-            id: 0,
             mass: 1.0,
             position: Point { x: 1.0, y: 2.0 },
             velocity: Vector::zero(),
         };
 
         let b2 = Body {
-            id: 0,
             mass: 1.0,
             position: Point { x: 1.0, y: 2.0 },
             velocity: Vector::zero(),
@@ -169,7 +165,6 @@ mod tests {
     fn body_applies_force() {
         // given
         let mut sut = Body {
-            id: 0,
             mass: 2.0,
             position: Point { x: 1.0, y: 2.0 },
             velocity: Vector { dx: -2.0, dy: 5.0 },

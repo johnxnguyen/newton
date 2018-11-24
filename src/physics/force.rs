@@ -49,8 +49,7 @@ pub struct Attractor {
 impl Attractor {
     pub fn new(mass: f32, point: Point, g: f32, min_dist: f32) -> Attractor {
         Attractor {
-            // TODO: remove id from body?
-            body: Body::new(0, mass, point, Vector::zero()),
+            body: Body::new(mass, point, Vector::zero()),
             gravity: Gravity::new(g, min_dist),
         }
     }
@@ -73,14 +72,12 @@ mod tests {
         let sut = Gravity::new(1.5, 4.0);
 
         let b1 = Body::new(
-            0,
             1.0,
             Point { x: 1.0, y: 2.0},
             Vector::zero()
         );
 
         let b2 = Body::new(
-            1,
             2.0,
             Point { x: -3.5, y: 0.0},
             Vector::zero()
@@ -99,14 +96,12 @@ mod tests {
         let sut = Gravity::new(1.5, 4.0);
 
         let b1 = Body::new(
-            0,
             1.0,
             Point { x: 1.0, y: 2.0},
             Vector::zero()
         );
 
         let b2 = Body::new(
-            1,
             2.0,
             Point { x: 2.0, y: 2.5},
             Vector::zero()
@@ -128,14 +123,12 @@ mod tests {
         let sut = Gravity::new(1.5, 4.0);
 
         let b1 = Body::new(
-            0,
             1.0,
             Point { x: 1.0, y: 2.0},
             Vector::zero()
         );
 
         let b2 = Body::new(
-            1,
             2.0,
             Point { x: 1.0, y: 2.0},
             Vector::zero()
@@ -159,7 +152,6 @@ mod tests {
         );
 
         let body = Body::new(
-            0,
             3.8,
             Point { x: 1.0, y: 2.0},
             Vector::zero()
