@@ -5,7 +5,6 @@ use geometry::types::{Point, Vector};
 //
 // Newton's Law of Universal Gravitation.
 
-// TODO: Needs testing
 pub struct Gravity {
     g: f32,
     min_dist: f32,
@@ -42,7 +41,6 @@ impl Gravity {
 //
 // Gravitational attraction to a point.
 
-// TODO: Needs testing
 pub struct Attractor {
     body: Body,
     gravity: Gravity,
@@ -66,7 +64,7 @@ impl Attractor {
 
 #[cfg(test)]
 mod tests {
-    use super::{Gravity, Body};
+    use super::{Gravity, Attractor, Body};
     use geometry::types::{Point, Vector};
 
     #[test]
@@ -148,5 +146,29 @@ mod tests {
 
         // then
         assert_eq!(result, Vector::zero());
+    }
+
+    #[test]
+    fn attractor_calculates_force() {
+        // given
+        let sut = Attractor::new(
+            100.0,
+            Point::origin(),
+            2.3,
+            1.0
+        );
+
+        let body = Body::new(
+            0,
+            3.8,
+            Point { x: 1.0, y: 2.0},
+            Vector::zero()
+        );
+
+        // when
+        let result = sut.force(&body);
+
+        // then
+        assert_eq!(result, Vector { dx: -78.17293649, dy: -156.345873});
     }
 }
