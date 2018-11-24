@@ -12,6 +12,10 @@ pub struct Gravity {
 
 impl Gravity {
     pub fn new(g: f32, min_dist: f32) -> Gravity {
+        if min_dist <= 0.0 {
+            panic!("The minimum gravitational distance \
+            must be greater than 0. Got {}", min_dist);
+        }
         Gravity {
             g,
             min_dist,
@@ -65,6 +69,13 @@ impl Attractor {
 mod tests {
     use super::{Gravity, Attractor, Body};
     use geometry::types::{Point, Vector};
+
+    #[test]
+    #[should_panic(expected = "The minimum gravitational distance must be greater than 0.")]
+    fn gravity_with_negative_minimum_distance() {
+        // given
+        Gravity::new(1.0, -2.0);
+    }
 
     #[test]
     fn gravity_calculates_force() {
