@@ -119,8 +119,10 @@ impl Vector {
             dy: self.dy / magnitude,
         })
     }
+}
 
 // Rectangle /////////////////////////////////////////////////////////////////
+
 pub struct Size{
     pub width: f32,
     pub heigh: f32,
@@ -134,9 +136,6 @@ pub struct Rectangle {
 }
 
 impl Rectangle{
-    pub fn new(point: Point, size: Size) -> Rectangle{
-        Rectangle{origin: point, size: size}
-    }
 
     pub fn half_size(&mut self) {
         self.size.width = self.size.width/2.0;
@@ -144,27 +143,27 @@ impl Rectangle{
     }
 
     pub fn quadrants(&self) -> Vec<Rectangle> {
-        let mut v:Vec<Rectangle> = Vec::new();
+        let mut v: Vec<Rectangle> = Vec::new();
 
-        // the upper left rectangle
-        let mut rect1 = Rectangle::new(self.origin, self.size);
+        let mut rect1 = self.clone();
         rect1.half_size();
         v.push(rect1);
 
         // the upper right rectangle
-        let mut rect2 = Rectangle::new(self.origin, self.size);
+
+        let mut rect2 = self.clone();
         rect2.half_size();
-        rect2.origin.x = rect2.origin.x + self.size.width as f32;
+        rect2.origin.x = rect2.origin.x + self.size.width;
         v.push(rect2);
 
         // the lower left rectangle
-        let mut rect3 = Rectangle::new(self.origin, self.size);
+
+        let mut rect3 = self.clone();
         rect3.half_size();
         rect3.origin.y = rect3.origin.y + self.size.heigh;
         v.push(rect3);
 
-        // the lower right rectangle
-        let mut rect4 = Rectangle::new(self.origin, self.size);
+        let mut rect4 = self.clone();
         rect4.half_size();
         rect4.origin.x = rect4.origin.x + self.size.width;
         rect4.origin.y = rect4.origin.y + self.size.heigh;
@@ -173,6 +172,22 @@ impl Rectangle{
         v
     }
 }
+
+impl Clone for Rectangle{
+    fn clone(&self) -> Self{
+        Rectangle{
+            origin: Point{
+                x: self.origin.x,
+                y: self.origin.y,
+            },
+            size: Size{
+                width: self.size.width,
+                heigh: self.size.heigh,
+            }
+        }
+    }
+}
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
