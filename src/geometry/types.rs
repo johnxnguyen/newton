@@ -125,7 +125,7 @@ impl Vector {
 
 pub struct Size {
     pub width: f32,
-    pub heigh: f32,
+    pub height: f32,
 }
 
 pub struct Rect {
@@ -139,11 +139,11 @@ impl Rect {
 
     pub fn half_size(&mut self) {
         self.size.width = self.size.width/2.0;
-        self.size.heigh = self.size.heigh/2.0;
+        self.size.height = self.size.height/2.0;
     }
 
-    pub fn quadrants(&self) -> Vec<Rect> {
-        let mut v: Vec<Rect> = Vec::new();
+    pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
+        let mut v:  = Vec::new();
 
         let mut rect1 = self.clone();
         rect1.half_size();
@@ -160,13 +160,13 @@ impl Rect {
 
         let mut rect3 = self.clone();
         rect3.half_size();
-        rect3.origin.y = rect3.origin.y + self.size.heigh;
+        rect3.origin.y = rect3.origin.y + self.size.height;
         v.push(rect3);
 
         let mut rect4 = self.clone();
         rect4.half_size();
         rect4.origin.x = rect4.origin.x + self.size.width;
-        rect4.origin.y = rect4.origin.y + self.size.heigh;
+        rect4.origin.y = rect4.origin.y + self.size.height;
         v.push(rect4);
 
         v
@@ -182,7 +182,7 @@ impl Clone for Rect {
             },
             size: Size {
                 width: self.size.width,
-                heigh: self.size.heigh,
+                height: self.size.height,
             }
         }
     }
