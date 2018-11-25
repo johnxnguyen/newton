@@ -123,7 +123,7 @@ impl Vector {
 
 // Rectangle /////////////////////////////////////////////////////////////////
 
-pub struct Size{
+pub struct Size {
     pub width: f32,
     pub heigh: f32,
 }
@@ -135,7 +135,7 @@ pub struct Rect {
     pub size: Size,
 }
 
-impl Rect{
+impl Rect {
 
     pub fn half_size(&mut self) {
         self.size.width = self.size.width/2.0;
@@ -173,14 +173,14 @@ impl Rect{
     }
 }
 
-impl Clone for Rect{
-    fn clone(&self) -> Self{
+impl Clone for Rect {
+    fn clone(&self) -> Self {
         Rect{
-            origin: Point{
+            origin: Point {
                 x: self.origin.x,
                 y: self.origin.y,
             },
-            size: Size{
+            size: Size {
                 width: self.size.width,
                 heigh: self.size.heigh,
             }
