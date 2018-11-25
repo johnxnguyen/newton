@@ -119,8 +119,60 @@ impl Vector {
             dy: self.dy / magnitude,
         })
     }
+
+// Rectangle /////////////////////////////////////////////////////////////////
+pub struct Size{
+    pub width: f32,
+    pub heigh: f32,
 }
 
+pub struct Rectangle {
+    // the leftmost coordination system of the rectangle
+    pub origin: Point,
+    // the width and high of the rectangle
+    pub size: Size,
+}
+
+impl Rectangle{
+    pub fn new(point: Point, size: Size) -> Rectangle{
+        Rectangle{origin: point, size: size}
+    }
+
+    pub fn half_size(&mut self) {
+        self.size.width = self.size.width/2.0;
+        self.size.heigh = self.size.heigh/2.0;
+    }
+
+    pub fn quadrants(&self) -> Vec<Rectangle> {
+        let mut v:Vec<Rectangle> = Vec::new();
+
+        // the upper left rectangle
+        let mut rect1 = Rectangle::new(self.origin, self.size);
+        rect1.half_size();
+        v.push(rect1);
+
+        // the upper right rectangle
+        let mut rect2 = Rectangle::new(self.origin, self.size);
+        rect2.half_size();
+        rect2.origin.x = rect2.origin.x + self.size.width as f32;
+        v.push(rect2);
+
+        // the lower left rectangle
+        let mut rect3 = Rectangle::new(self.origin, self.size);
+        rect3.half_size();
+        rect3.origin.y = rect3.origin.y + self.size.heigh;
+        v.push(rect3);
+
+        // the lower right rectangle
+        let mut rect4 = Rectangle::new(self.origin, self.size);
+        rect4.half_size();
+        rect4.origin.x = rect4.origin.x + self.size.width;
+        rect4.origin.y = rect4.origin.y + self.size.heigh;
+        v.push(rect4);
+
+        v
+    }
+}
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
