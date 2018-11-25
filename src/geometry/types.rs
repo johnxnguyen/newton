@@ -128,22 +128,22 @@ pub struct Size{
     pub heigh: f32,
 }
 
-pub struct Rectangle {
+pub struct Rect {
     // the leftmost coordination system of the rectangle
     pub origin: Point,
     // the width and high of the rectangle
     pub size: Size,
 }
 
-impl Rectangle{
+impl Rect{
 
     pub fn half_size(&mut self) {
         self.size.width = self.size.width/2.0;
         self.size.heigh = self.size.heigh/2.0;
     }
 
-    pub fn quadrants(&self) -> Vec<Rectangle> {
-        let mut v: Vec<Rectangle> = Vec::new();
+    pub fn quadrants(&self) -> Vec<Rect> {
+        let mut v: Vec<Rect> = Vec::new();
 
         let mut rect1 = self.clone();
         rect1.half_size();
@@ -173,9 +173,9 @@ impl Rectangle{
     }
 }
 
-impl Clone for Rectangle{
+impl Clone for Rect{
     fn clone(&self) -> Self{
-        Rectangle{
+        Rect{
             origin: Point{
                 x: self.origin.x,
                 y: self.origin.y,
