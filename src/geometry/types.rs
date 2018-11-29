@@ -1,4 +1,5 @@
 use std::ops::{Add, AddAssign, Div, Mul};
+use std::cmp::PartialEq;
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -122,12 +123,13 @@ impl Vector {
 }
 
 // Rectangle /////////////////////////////////////////////////////////////////
-
+#[derive(PartialEq, Debug)]
 pub struct Size {
     pub width: f32,
     pub height: f32,
 }
 
+#[derive(PartialEq, Debug)]
 pub struct Rect {
     // the leftmost coordination system of the rectangle
     pub origin: Point,
@@ -142,36 +144,51 @@ impl Rect {
         self.size.height = self.size.height/2.0;
     }
 
+    fn quarter_sized(&self) -> Rect{
+        Rect{
+            origin: Point{
+                x: self.origin.x,
+                y: self.origin.y,
+            },
+            size: Size{
+                width: self.size.width/ 2.0,
+                height: self.size.height/2.0,
+            }
+        }
+    }
+
     pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
-        let mut v:  = Vec::new();
 
-        let mut rect1 = self.clone();
-        rect1.half_size();
-        v.push(rect1);
+        //the upper left rectangle
+        let mut rect1 = self.quarter_sized();
 
-        // the upper right rectangle
+        //the upper right rectangle
+        let mut rect2 = self.quarter_sized();
 
-        let mut rect2 = self.clone();
-        rect2.half_size();
-        rect2.origin.x = rect2.origin.x + self.size.width;
-        v.push(rect2);
+        rect2.origin.x = rect2.origin.x + rect2.size.width;
 
-        // the lower left rectangle
+        //the lower right rectangle
+        let mut rect3 = self.quarter_sized();
+        rect3.origin.x = rect3.origin.x + rect3.size.width;
+        rect3.origin.y = rect3.origin.y + rect3.size.height;
 
-        let mut rect3 = self.clone();
-        rect3.half_size();
-        rect3.origin.y = rect3.origin.y + self.size.height;
-        v.push(rect3);
+        //the lower left rectangle
+        let mut rect4 = self.quarter_sized();
+        rect4.origin.y = rect4.origin.y + rect4.size.height;
 
-        let mut rect4 = self.clone();
-        rect4.half_size();
-        rect4.origin.x = rect4.origin.x + self.size.width;
-        rect4.origin.y = rect4.origin.y + self.size.height;
-        v.push(rect4);
+        let rects: (Rect, Rect, Rect, Rect) = (rect1, rect2, rect3, rect4);
 
-        v
+        rects
     }
 }
+
+//impl PartialEq for Rect{
+//    fn eq(&self, other: &Rect) -> bool {
+//        (self.origin == other.origin) && (self.size == other.size)
+//    }
+//}
+
+
 
 impl Clone for Rect {
     fn clone(&self) -> Self {
@@ -296,5 +313,27 @@ mod tests {
     fn vector_does_not_normalize_if_zero() {
         // given, when, then
         assert_eq!(Vector::zero().normalized(), None)
+    }
+
+    #[test]
+    fn rect_quadrant() {
+        // given
+        let mut rect = Rect { origin: Point { x: 0.0, y: 0.0 }, size: Size { width: 6.0, height: 8.0 } };
+
+        // when
+        let result = rect.quadrants();
+
+        let (rect1, rect2, rect3, rect4) = result;
+
+        let rect1_test = Rect{origin: Point{x: 0.0, y:0.0}, size: Size {width:3.0, height: 4.0}};
+        let rect2_test = Rect{origin: Point{x: 3.0, y:0.0}, size: Size {width:3.0, height: 4.0}};
+        let rect3_test = Rect{origin: Point{x: 3.0, y:4.0}, size: Size {width:3.0, height: 4.0}};
+        let rect4_test = Rect{origin: Point{x: 0.0, y:4.0}, size: Size {width:3.0, height: 4.0}};
+
+        // then
+        assert_eq!(rect1, rect1_test);
+        assert_eq!(rect2, rect2_test);
+        assert_eq!(rect3, rect3_test);
+        assert_eq!(rect4, rect4_test);
     }
 }
