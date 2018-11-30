@@ -138,13 +138,7 @@ pub struct Rect {
 }
 
 impl Rect {
-
-    pub fn half_size(&mut self) {
-        self.size.width = self.size.width/2.0;
-        self.size.height = self.size.height/2.0;
-    }
-
-    fn quarter_sized(&self) -> Rect{
+    fn quarter_sized(&self) -> Rect {
         Rect{
             origin: Point{
                 x: self.origin.x,
@@ -160,48 +154,25 @@ impl Rect {
     pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
 
         //the upper left rectangle
-        let mut rect1 = self.quarter_sized();
+        let mut upper_left = self.quarter_sized();
 
         //the upper right rectangle
-        let mut rect2 = self.quarter_sized();
+        let mut upper_right = self.quarter_sized();
 
-        rect2.origin.x = rect2.origin.x + rect2.size.width;
+        upper_right.origin.x = upper_right.origin.x + upper_right.size.width;
 
         //the lower right rectangle
-        let mut rect3 = self.quarter_sized();
-        rect3.origin.x = rect3.origin.x + rect3.size.width;
-        rect3.origin.y = rect3.origin.y + rect3.size.height;
+        let mut lower_right = self.quarter_sized();
+        lower_right.origin.x = lower_right.origin.x + lower_right.size.width;
+        lower_right.origin.y = lower_right.origin.y + lower_right.size.height;
 
         //the lower left rectangle
-        let mut rect4 = self.quarter_sized();
-        rect4.origin.y = rect4.origin.y + rect4.size.height;
+        let mut lower_left = self.quarter_sized();
+        lower_left.origin.y = lower_left.origin.y + lower_left.size.height;
 
-        let rects: (Rect, Rect, Rect, Rect) = (rect1, rect2, rect3, rect4);
+        let rects= (upper_left, upper_right, lower_right, lower_left);
 
         rects
-    }
-}
-
-//impl PartialEq for Rect{
-//    fn eq(&self, other: &Rect) -> bool {
-//        (self.origin == other.origin) && (self.size == other.size)
-//    }
-//}
-
-
-
-impl Clone for Rect {
-    fn clone(&self) -> Self {
-        Rect{
-            origin: Point {
-                x: self.origin.x,
-                y: self.origin.y,
-            },
-            size: Size {
-                width: self.size.width,
-                height: self.size.height,
-            }
-        }
     }
 }
 
@@ -318,22 +289,28 @@ mod tests {
     #[test]
     fn rect_quadrant() {
         // given
-        let mut rect = Rect { origin: Point { x: 0.0, y: 0.0 }, size: Size { width: 6.0, height: 8.0 } };
+        let mut rect = Rect { origin: Point { x: 0.0, y: 0.0 },
+                              size: Size { width: 6.0, height: 8.0 } };
 
         // when
         let result = rect.quadrants();
 
-        let (rect1, rect2, rect3, rect4) = result;
+        let (upper_left, upper_right,
+             lower_right, lower_left) = result;
 
-        let rect1_test = Rect{origin: Point{x: 0.0, y:0.0}, size: Size {width:3.0, height: 4.0}};
-        let rect2_test = Rect{origin: Point{x: 3.0, y:0.0}, size: Size {width:3.0, height: 4.0}};
-        let rect3_test = Rect{origin: Point{x: 3.0, y:4.0}, size: Size {width:3.0, height: 4.0}};
-        let rect4_test = Rect{origin: Point{x: 0.0, y:4.0}, size: Size {width:3.0, height: 4.0}};
+        let upper_left_test = Rect{origin: Point{x: 0.0, y:0.0},
+                              size: Size {width:3.0, height: 4.0}};
+        let upper_right_test = Rect{origin: Point{x: 3.0, y:0.0},
+                              size: Size {width:3.0, height: 4.0}};
+        let lower_right_test = Rect{origin: Point{x: 3.0, y:4.0},
+                              size: Size {width:3.0, height: 4.0}};
+        let lower_left_test = Rect{origin: Point{x: 0.0, y:4.0},
+                              size: Size {width:3.0, height: 4.0}};
 
         // then
-        assert_eq!(rect1, rect1_test);
-        assert_eq!(rect2, rect2_test);
-        assert_eq!(rect3, rect3_test);
-        assert_eq!(rect4, rect4_test);
+        assert_eq!(upper_left, upper_left_test);
+        assert_eq!(upper_right, upper_right_test);
+        assert_eq!(lower_right, lower_right_test);
+        assert_eq!(lower_left, lower_left_test);
     }
 }
