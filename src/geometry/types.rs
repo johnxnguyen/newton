@@ -293,10 +293,9 @@ mod tests {
                               size: Size { width: 6.0, height: 8.0 } };
 
         // when
-        let result = rect.quadrants();
 
         let (upper_left, upper_right,
-             lower_right, lower_left) = result;
+             lower_right, lower_left) = rect.quadrants();
 
         let upper_left_test = Rect{origin: Point{x: 0.0, y:0.0},
                               size: Size {width:3.0, height: 4.0}};
