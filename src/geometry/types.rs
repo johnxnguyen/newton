@@ -1,4 +1,5 @@
 use std::ops::{Add, AddAssign, Div, Mul};
+use std::cmp::PartialEq;
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -121,6 +122,60 @@ impl Vector {
     }
 }
 
+// Rectangle /////////////////////////////////////////////////////////////////
+#[derive(PartialEq, Debug)]
+pub struct Size {
+    pub width: f32,
+    pub height: f32,
+}
+
+#[derive(PartialEq, Debug)]
+pub struct Rect {
+    // the leftmost coordination system of the rectangle
+    pub origin: Point,
+    // the width and high of the rectangle
+    pub size: Size,
+}
+
+impl Rect {
+    fn quarter_sized(&self) -> Rect {
+        Rect{
+            origin: Point{
+                x: self.origin.x,
+                y: self.origin.y,
+            },
+            size: Size{
+                width: self.size.width/ 2.0,
+                height: self.size.height/2.0,
+            }
+        }
+    }
+
+    pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
+
+        //the upper left rectangle
+        let mut upper_left = self.quarter_sized();
+
+        //the upper right rectangle
+        let mut upper_right = self.quarter_sized();
+
+        upper_right.origin.x = upper_right.origin.x + upper_right.size.width;
+
+        //the lower right rectangle
+        let mut lower_right = self.quarter_sized();
+        lower_right.origin.x = lower_right.origin.x + lower_right.size.width;
+        lower_right.origin.y = lower_right.origin.y + lower_right.size.height;
+
+        //the lower left rectangle
+        let mut lower_left = self.quarter_sized();
+        lower_left.origin.y = lower_left.origin.y + lower_left.size.height;
+
+        let rects= (upper_left, upper_right, lower_right, lower_left);
+
+        rects
+    }
+}
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
@@ -229,5 +284,32 @@ mod tests {
     fn vector_does_not_normalize_if_zero() {
         // given, when, then
         assert_eq!(Vector::zero().normalized(), None)
+    }
+
+    #[test]
+    fn rect_quadrant() {
+        // given
+        let mut rect = Rect { origin: Point { x: 0.0, y: 0.0 },
+                              size: Size { width: 6.0, height: 8.0 } };
+
+        // when
+
+        let (upper_left, upper_right,
+             lower_right, lower_left) = rect.quadrants();
+
+        let upper_left_test = Rect{origin: Point{x: 0.0, y:0.0},
+                              size: Size {width:3.0, height: 4.0}};
+        let upper_right_test = Rect{origin: Point{x: 3.0, y:0.0},
+                              size: Size {width:3.0, height: 4.0}};
+        let lower_right_test = Rect{origin: Point{x: 3.0, y:4.0},
+                              size: Size {width:3.0, height: 4.0}};
+        let lower_left_test = Rect{origin: Point{x: 0.0, y:4.0},
+                              size: Size {width:3.0, height: 4.0}};
+
+        // then
+        assert_eq!(upper_left, upper_left_test);
+        assert_eq!(upper_right, upper_right_test);
+        assert_eq!(lower_right, lower_right_test);
+        assert_eq!(lower_left, lower_left_test);
     }
 }
