@@ -5,15 +5,20 @@ use std::cmp::PartialEq;
 //
 // Coordinates in 2D space.
 
-#[derive(PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
 }
 
 impl Point {
+
+    pub fn new(x: f32, y: f32) -> Point {
+        Point { x, y }
+    }
+
     pub fn origin() -> Point {
-        Point { x: 0.0, y: 0.0 }
+        Point::new(0.0, 0.0)
     }
 
     pub fn is_origin(&self) -> bool {
@@ -122,57 +127,63 @@ impl Vector {
     }
 }
 
-// Rectangle /////////////////////////////////////////////////////////////////
-#[derive(PartialEq, Debug)]
+// Size //////////////////////////////////////////////////////////////////////
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct Size {
     pub width: f32,
     pub height: f32,
 }
 
-#[derive(PartialEq, Debug)]
+impl Size {
+    pub fn new(width: f32, height: f32) -> Size {
+        if width <= 0.0 || height <= 0.0 {
+            panic!("A size's width and/or height must be positive.");
+        }
+        Size {
+            width,
+            height,
+        }
+    }
+}
+
+// Rect //////////////////////////////////////////////////////////////////////
+//
+// A rectangle whose origin denotes the position of the bottom left corner.
+
+#[derive(Clone, PartialEq, Debug)]
 pub struct Rect {
-    // the leftmost coordination system of the rectangle
     pub origin: Point,
-    // the width and high of the rectangle
     pub size: Size,
 }
 
 impl Rect {
-    fn quarter_sized(&self) -> Rect {
-        Rect{
-            origin: Point{
-                x: self.origin.x,
-                y: self.origin.y,
-            },
-            size: Size{
-                width: self.size.width/ 2.0,
-                height: self.size.height/2.0,
-            }
+    pub fn new(x: f32, y: f32, width: f32, height: f32) -> Rect {
+        Rect {
+            origin: Point::new(x, y),
+            size: Size::new(width, height),
         }
     }
 
+    fn quarter_sized(&self) -> Rect {
+        let (w, h) = (self.size.width / 2.0, self.size.height / 2.0);
+        Rect::new(self.origin.x, self.origin.y, w, h)
+    }
+
     pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
+        let lower_left = self.quarter_sized();
+        let size = lower_left.size.clone();
 
-        //the upper left rectangle
-        let mut upper_left = self.quarter_sized();
+        let mut lower_right = lower_left.clone();
+        lower_right.origin.x += size.width;
 
-        //the upper right rectangle
-        let mut upper_right = self.quarter_sized();
+        let mut upper_right = lower_right.clone();
+        upper_right.origin.y += size.height;
 
-        upper_right.origin.x = upper_right.origin.x + upper_right.size.width;
+        let mut upper_left = upper_right.clone();
+        upper_left.origin.x -= size.width;
 
-        //the lower right rectangle
-        let mut lower_right = self.quarter_sized();
-        lower_right.origin.x = lower_right.origin.x + lower_right.size.width;
-        lower_right.origin.y = lower_right.origin.y + lower_right.size.height;
-
-        //the lower left rectangle
-        let mut lower_left = self.quarter_sized();
-        lower_left.origin.y = lower_left.origin.y + lower_left.size.height;
-
-        let rects= (upper_left, upper_right, lower_right, lower_left);
-
-        rects
+        (upper_left, upper_right, lower_left, lower_right)
     }
 }
 
@@ -286,30 +297,43 @@ mod tests {
         assert_eq!(Vector::zero().normalized(), None)
     }
 
+    // Size //////////////////////////////////////////////////////////////////
+
     #[test]
-    fn rect_quadrant() {
+    #[should_panic(expected = "A size's width and/or height must be positive.")]
+    fn size_non_positive_width() {
+        // given, when , then
+        Size::new(-1.0, 1.0);
+    }
+
+    #[test]
+    #[should_panic(expected = "A size's width and/or height must be positive.")]
+    fn size_non_positive_height() {
+        // given, when , then
+        Size::new(10.0, 0.0);
+    }
+
+    // Rect //////////////////////////////////////////////////////////////////
+
+    #[test]
+    #[should_panic(expected = "A size's width and/or height must be positive.")]
+    fn rect_non_positive_size() {
+        // given, when , then
+        Rect::new(-1.0, 1.0, -1.0, 0.0);
+    }
+
+    #[test]
+    fn rect_quadrants() {
         // given
-        let mut rect = Rect { origin: Point { x: 0.0, y: 0.0 },
-                              size: Size { width: 6.0, height: 8.0 } };
+        let sut = Rect::new(0.0, 0.0, 6.0, 8.0);
 
         // when
-
-        let (upper_left, upper_right,
-             lower_right, lower_left) = rect.quadrants();
-
-        let upper_left_test = Rect{origin: Point{x: 0.0, y:0.0},
-                              size: Size {width:3.0, height: 4.0}};
-        let upper_right_test = Rect{origin: Point{x: 3.0, y:0.0},
-                              size: Size {width:3.0, height: 4.0}};
-        let lower_right_test = Rect{origin: Point{x: 3.0, y:4.0},
-                              size: Size {width:3.0, height: 4.0}};
-        let lower_left_test = Rect{origin: Point{x: 0.0, y:4.0},
-                              size: Size {width:3.0, height: 4.0}};
+        let (ul, ur, ll, lr) = sut.quadrants();
 
         // then
-        assert_eq!(upper_left, upper_left_test);
-        assert_eq!(upper_right, upper_right_test);
-        assert_eq!(lower_right, lower_right_test);
-        assert_eq!(lower_left, lower_left_test);
+        assert_eq!(ul, Rect::new(0.0, 4.0, 3.0, 4.0));
+        assert_eq!(ur, Rect::new(3.0, 4.0, 3.0, 4.0));
+        assert_eq!(ll, Rect::new(0.0, 0.0, 3.0, 4.0));
+        assert_eq!(lr, Rect::new(3.0, 0.0, 3.0, 4.0));
     }
 }
