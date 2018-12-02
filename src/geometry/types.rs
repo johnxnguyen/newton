@@ -1,5 +1,6 @@
 use std::ops::{Add, AddAssign, Div, Mul};
 use std::cmp::PartialEq;
+use self::Quadrant::{NW, NE, SW, SE};
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -12,7 +13,6 @@ pub struct Point {
 }
 
 impl Point {
-
     pub fn new(x: f32, y: f32) -> Point {
         Point { x, y }
     }
@@ -146,6 +146,13 @@ impl Size {
         }
     }
 }
+
+// Quadrant //////////////////////////////////////////////////////////////////
+//
+// The four quadrants of a rectangle.
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum Quadrant { NW, NE, SW, SE }
 
 // Rect //////////////////////////////////////////////////////////////////////
 //
