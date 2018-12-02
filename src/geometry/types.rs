@@ -172,25 +172,29 @@ impl Rect {
         }
     }
 
+    }
+
+    pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
+        let southwest = self.quarter_sized();
+        let size = southwest.size.clone();
+
+        let mut southeast = southwest.clone();
+        southeast.origin.x += size.width;
+
+        let mut northeast = southeast.clone();
+        northeast.origin.y += size.height;
+
+        let mut northwest = northeast.clone();
+        northwest.origin.x -= size.width;
+
+        (northwest, northeast, southwest, southeast)
+    }
+
     fn quarter_sized(&self) -> Rect {
         let (w, h) = (self.size.width / 2.0, self.size.height / 2.0);
         Rect::new(self.origin.x, self.origin.y, w, h)
     }
 
-    pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
-        let lower_left = self.quarter_sized();
-        let size = lower_left.size.clone();
-
-        let mut lower_right = lower_left.clone();
-        lower_right.origin.x += size.width;
-
-        let mut upper_right = lower_right.clone();
-        upper_right.origin.y += size.height;
-
-        let mut upper_left = upper_right.clone();
-        upper_left.origin.x -= size.width;
-
-        (upper_left, upper_right, lower_left, lower_right)
     }
 }
 
@@ -335,12 +339,15 @@ mod tests {
         let sut = Rect::new(0.0, 0.0, 6.0, 8.0);
 
         // when
-        let (ul, ur, ll, lr) = sut.quadrants();
+        let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(ul, Rect::new(0.0, 4.0, 3.0, 4.0));
-        assert_eq!(ur, Rect::new(3.0, 4.0, 3.0, 4.0));
-        assert_eq!(ll, Rect::new(0.0, 0.0, 3.0, 4.0));
-        assert_eq!(lr, Rect::new(3.0, 0.0, 3.0, 4.0));
+        assert_eq!(nw, Rect::new(0.0, 4.0, 3.0, 4.0));
+        assert_eq!(ne, Rect::new(3.0, 4.0, 3.0, 4.0));
+        assert_eq!(sw, Rect::new(0.0, 0.0, 3.0, 4.0));
+        assert_eq!(se, Rect::new(3.0, 0.0, 3.0, 4.0));
+    }
+
+        // then
     }
 }
