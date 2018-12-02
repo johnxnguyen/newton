@@ -35,7 +35,7 @@ impl Point {
 //
 // Change of coordinates in 2D space.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Vector {
     pub dx: f32,
     pub dy: f32,
