@@ -138,7 +138,7 @@ pub struct Size {
 impl Size {
     pub fn new(width: f32, height: f32) -> Size {
         if width <= 0.0 || height <= 0.0 {
-            panic!("A size's width and/or height must be positive.");
+            panic!("A size's width and/or height must be positive. Got ({:?}, {:?})", width, height);
         }
         Size {
             width,
