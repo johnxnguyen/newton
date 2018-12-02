@@ -368,7 +368,4 @@ mod tests {
         assert_eq!(sw, Rect::new(0.0, 0.0, 3.0, 4.0));
         assert_eq!(se, Rect::new(3.0, 0.0, 3.0, 4.0));
     }
-
-        // then
-    }
 }
