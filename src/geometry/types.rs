@@ -172,6 +172,21 @@ impl Rect {
         }
     }
 
+    // TODO: needs testing
+    // TODO: implement PartialOrd for point
+    pub fn contains(&self, point: &Point) -> bool {
+        point.x >= self.origin.x && point.y >= self.origin.y &&
+            point.x <= self.upper_bound().x && point.y <= self.upper_bound().y
+    }
+
+    // TODO: needs testing
+    pub fn which_quadrant(&self, point: &Point) -> Option<(Quadrant, Rect)> {
+        let (nw, ne, sw, se) = self.quadrants();
+        if nw.contains(point) { return Some((NW, nw)); }
+        if ne.contains(point) { return Some((NE, ne)); }
+        if sw.contains(point) { return Some((SW, sw)); }
+        if se.contains(point) { return Some((SE, se)); }
+        None
     }
 
     pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
@@ -195,6 +210,12 @@ impl Rect {
         Rect::new(self.origin.x, self.origin.y, w, h)
     }
 
+    // TODO: needs testing
+    fn upper_bound(&self) -> Point {
+        Point {
+            x: self.origin.x + self.size.width,
+            y: self.origin.y + self.size.height,
+        }
     }
 }
 
