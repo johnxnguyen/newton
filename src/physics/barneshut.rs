@@ -2,148 +2,236 @@ use geometry::types::Point;
 use geometry::types::Rect;
 use geometry::types::Quadrant::{NW, NE, SW, SE};
 use super::types::Body;
+use std::collections::HashMap;
+use geometry::types::Vector;
 
-// RealBody //////////////////////////////////////////////////////////////////
+// TODO: NewType this
+type Index = i32;
 
-#[derive(Clone, Debug)]
-pub struct RealBody {
-    id: usize,
-    mass: f32,
-    position: Point,
+enum Changes {
+    None,
+    Insert(Node),
+    Internalize(Index, Pending),
 }
 
-impl RealBody {
-    // TODO: validate
-    fn new(id: usize, mass: f32, x: f32, y: f32) -> RealBody {
-        RealBody {
-            id,
-            mass,
-            position: Point { x, y },
-        }
-    }
-}
-
-// BHNode ////////////////////////////////////////////////////////////////////
+/// Represents a pending state. Body needs to be added at Index
+struct Pending(Index, Body);
 
 #[derive(Debug)]
-pub struct BHNode {
-    space: Rect,
-    body: Option<RealBody>,
-    nw: Option<Box<BHNode>>,
-    ne: Option<Box<BHNode>>,
-    sw: Option<Box<BHNode>>,
-    se: Option<Box<BHNode>>,
+pub struct BHTree {
+    nodes: HashMap<Index, Node>,
 }
 
-impl BHNode {
-    fn new(space: Rect) -> Self {
-        BHNode {
-            space,
-            body: None,
-            nw: None,
-            ne: None,
-            sw: None,
-            se: None,
+impl BHTree {
+    /// Initialized the tree with a root node.
+    fn new(space: Rect) -> BHTree {
+        let mut nodes: HashMap<i32, Node> = HashMap::new();
+        let root = Node::new(0, space, None);
+        nodes.insert(root.id, root);
+        BHTree { nodes }
+    }
+
+    /// Returns true if the tree is empty.
+    fn is_empty(&self) -> bool {
+        self.nodes.is_empty()
+    }
+
+    /// Borrows the root node.
+    fn root(&self) -> &Node {
+        match self.node(&0) {
+            Some(root) => root,
+            None => unreachable!("There should always be a root node."),
         }
     }
 
-//    fn body(&self) -> RealBody {
-//        // we need to find the center of mass for this node.
-//        RealBody {
-//            id: 0,
-//            mass: 0.0,
-//            position: Point::origin(),
-//        }
-//    }
+    /// Borrows the node for the given index, if it exists.
+    fn node(&self, idx: &Index) -> Option<&Node> {
+        self.nodes.get(idx)
+    }
 
-    // TODO: needs testing
-    pub fn insert(&mut self, body: RealBody) {
-        // body must be contained in the space
-        if !self.space.contains(&body.position) {
-            return
+    /// Returns true if the given node is a leaf.
+    fn is_leaf(&self, node: &Node) -> bool {
+        self.node(&node.nw()).is_none() &&
+        self.node(&node.ne()).is_none() &&
+        self.node(&node.sw()).is_none() &&
+        self.node(&node.se()).is_none()
+    }
+
+    /// Inserts the given body into the tree.
+    fn add(&mut self, body: Body) {
+        self.insert(Pending(0, body));
+    }
+
+    /// Inserts the given body into the tree at the given node.
+    fn insert(&mut self, pending: Pending) {
+        let mut changes = Changes::None;
+        {
+            // inspect the tree to find the necessary changes
+            changes = self.changes(self.node(&pending.0).unwrap(), pending.1);
         }
-
-        if self.is_leaf() {
-            // leaf already contains body
-            if let Some(old_body) = self.body.take() {
-                // make this node internal
-                self.pass_down(old_body);
-                self.pass_down(body);
+        {
+            match self.process(changes) {
+                Some(pending) => self.insert(pending),
+                _ => (),
             }
-                else {
-                    self.body = Some(body);
-                }
-        } else {
-            self.pass_down(body);
         }
     }
-    
-    fn pass_down(&mut self, body: RealBody) {
-        match self.space.which_quadrant(&body.position) {
-            Some((quadrant, subspace)) => {
-                // in case the child doesn't exist, we'll create one
-                let node =  BHNode::new(subspace);
-                let child = Box::new(node);
 
-                match quadrant {
-                    NW => self.nw.get_or_insert(child).insert(body),
-                    NE => self.ne.get_or_insert(child).insert(body),
-                    SW => self.sw.get_or_insert(child).insert(body),
-                    SE => self.se.get_or_insert(child).insert(body),
-                }
+    /// Processes the change by either inserting, moving, or doing nothing.
+    fn process(&mut self, change: Changes) -> Option<Pending> {
+        match change {
+            Changes::Insert(node) => {
+                self.nodes.insert(node.id, node);
+                None
             },
-            None => unreachable!("Not in any quadrant!"),
+            Changes::Internalize(id, pending) => {
+                self.internalize(id);
+                Some(pending)
+            },
+            Changes::None => {
+                None
+            },
         }
-    
     }
-    
-    // TODO: needs testing
-    fn is_leaf(&self) -> bool {
-        self.nw.is_none() && self.ne.is_none() && self.sw.is_none() && self.se.is_none()
+
+
+    /// Internalizes the node at the given index by taking the node's body
+    /// and inserting it in the appropriate child.
+    fn internalize(&mut self, id: Index) {
+        let mut node = self.nodes.remove(&id).expect("Where's the node?!");
+        debug_assert!(self.is_leaf(&node), "Can't internalize an internal node");
+
+        let child = node.child_from_self().expect("Where's the child?!");
+        self.nodes.insert(node.id, node);
+        self.nodes.insert(child.id, child);
     }
-    
-    fn print(&self, indent: usize, name: String) {
-        print!("{:width$}{}: ", "", name, width = indent);
-        print!("space: ({}, {}, {}, {}) ", self.space.origin.x, self.space.origin.y, self.space.size.width, self.space.size.height);
 
-        if let Some(body) = &self.body {
-            println!("body: #{}", body.id);
+    /// Dives into the tree rooted at the given node searching for the
+    /// position to insert the given body. If an empty leaf is found,
+    /// a new node is created, wrapped in an Insert variant and returned
+    /// for subsequent insertion. If an occupied leaf is found, then the
+    /// Internalize variant is return, which signifies the occupied leaf
+    /// needs to be internalize. Additionally, the current index and body
+    /// is included in the return so that the search can continue after
+    /// the leaf has been internalized.
+    fn changes(&self, node: &Node, body: Body) -> Changes {
+        debug_assert!(node.space.contains(&body.position));
+
+        if self.is_leaf(node) {
+            if node.is_empty() {
+                Changes::Insert(node.with(body))
+            } else {
+                let pending = Pending(node.id, body);
+                Changes::Internalize(node.id, pending)
+            }
         } else {
-            println!("body: X");
+            // TODO: we could use Result for this.
+            match node.space.which_quadrant(&body.position) {
+                None => unreachable!("There must be a quadrant!"),
+                Some(quadrant) => match quadrant {
+                    NW(subspace) => match self.node(&node.nw()) {
+                        Some(nw) => self.changes(nw, body),
+                        None => {
+                            Changes::Insert(Node::new(node.nw(), subspace, Some(body)))
+                        },
+                    },
+                    NE(subspace) => match self.node(&node.ne()) {
+                        Some(ne) => self.changes(ne, body),
+                        None => {
+                            Changes::Insert(Node::new(node.ne(), subspace, Some(body)))
+                        },
+                    },
+                    SW(subspace) => match self.node(&node.sw()) {
+                        Some(sw) => self.changes(sw, body),
+                        None => {
+                            Changes::Insert(Node::new(node.sw(), subspace, Some(body)))
+                        },
+                    },
+                    SE(subspace) => match self.node(&node.se()) {
+                        Some(se) => self.changes(se, body),
+                        None => {
+                            Changes::Insert(Node::new(node.se(), subspace, Some(body)))
+                        },
+                    },
+                },
+            }
         }
+    }
+}
 
+#[derive(Clone, Debug)]
+struct Node {
+    id: Index,
+    space: Rect,
+    body: Option<Body>,
+}
 
-        if let Some(nw) = &self.nw {
-            nw.print(indent + 3, String::from("|NW"));
-        } else {
-            println!("{:width$}|NW: X", "", width = indent + 3);
-        }
+// TODO: needs testing
+impl Node {
+    /// Creates a new node.
+    fn new(id: Index, space: Rect, body: Option<Body>) -> Node {
+        Node { id, space, body }
+    }
 
-        if let Some(ne) = &self.ne {
-            ne.print(indent + 3, String::from("|NE"));
-        } else {
-            println!("{:width$}|NE: X", "", width = indent + 3);
-        }
+    /// Creates a copy with the given body.
+    fn with(&self, body: Body) -> Node {
+        Node { id: self.id, space: self.space.clone(), body: Some(body) }
+    }
 
-        if let Some(sw) = &self.sw {
-            sw.print(indent + 3, String::from("|SW"));
-        } else {
-            println!("{:width$}|SW: X", "", width = indent + 3);
-        }
+    /// Returns true if the node has no body.
+    fn is_empty(&self) -> bool {
+        self.body.is_none()
+    }
 
-        if let Some(se) = &self.se {
-            se.print(indent + 3, String::from("|SE"));
-        } else {
-            println!("{:width$}|SE: X", "", width = indent + 3);
-        }
+    /// Index of the parent node.
+    fn parent(&self) -> Option<Index> {
+        if self.id == 0 { None }
+        else { Some((self.id - 1) / 4) }
+    }
+
+    /// Index of the north west child.
+    fn nw(&self) -> Index { 4 * self.id + 1 }
+
+    /// Index of the north east child.
+    fn ne(&self) -> Index { 4 * self.id + 2 }
+
+    /// Index of the south west child.
+    fn sw(&self) -> Index { 4 * self.id + 3 }
+
+    /// Index of the south east child.
+    fn se(&self) -> Index { 4 * self.id + 4 }
+
+    /// Moves the self body into a new child node, if it exists.
+    fn child_from_self(&mut self) -> Option<Node> {
+        let body = match self.body.take() {
+            None => return None,
+            Some(body) => body,
+        };
+
+        let warning = "There must be a quadrant for body's node.";
+        let quadrant = self.space.which_quadrant(&body.position).expect(warning);
+
+        let child = match quadrant {
+            NW(space) => Node::new(self.nw(), space, Some(body)),
+            NE(space) => Node::new(self.ne(), space, Some(body)),
+            SW(space) => Node::new(self.sw(), space, Some(body)),
+            SE(space) => Node::new(self.se(), space, Some(body)),
+        };
+
+        Some(child)
     }
 }
 
 #[test]
-fn it_creates_tree() {
-    let mut n = BHNode::new(Rect::new(0.0, 0.0, 40.0, 40.0));
-    n.insert(RealBody::new(0, 1.0, 9.0, 12.5));
-    n.insert(RealBody::new(1, 10.0, 30.0, 20.5));
-    n.insert(RealBody::new(2, 0.2, 30.0, 20.501));
-    n.print(0, String::from("Root"));
+fn create_tree() {
+    let space = Rect::new(0.0, 0.0, 10.0, 10.0);
+    let mut tree = BHTree::new(space);
+    tree.add(Body::new(1.0, Point::new(1.0, 2.0), Vector::zero()));
+    tree.add(Body::new(1.0, Point::new(6.0, 8.0), Vector::zero()));
+    tree.add(Body::new(1.0, Point::new(4.0, 4.0), Vector::zero()));
+    println!("\nRESULTS ---------------------------------\n");
+    for (idx, node) in tree.nodes {
+        println!("NODE: {:?}: {:?}", idx, node.body);
+    }
+    println!("\n");
 }
