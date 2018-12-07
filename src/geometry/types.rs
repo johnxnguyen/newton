@@ -131,7 +131,7 @@ impl Vector {
 
 #[derive(Clone, PartialEq, Debug)]
 pub struct Size {
-    pub width: f32,
+    pub width: f32, // TODO: use unsigned ints, but ensure that quadrants full cover
     pub height: f32,
 }
 

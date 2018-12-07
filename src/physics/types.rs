@@ -37,7 +37,7 @@ impl Environment {
 
 #[derive(Clone, Debug)]
 pub struct Body {
-    pub mass: f32,
+    pub mass: f32, // TODO: make this a type with validation (for positive values)
     pub position: Point,
     pub velocity: Vector,
 }
