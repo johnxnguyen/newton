@@ -5,8 +5,7 @@ use super::types::Body;
 use std::collections::HashMap;
 use geometry::types::Vector;
 
-// TODO: NewType this
-type Index = i32;
+type Index = u32;
 
 enum Changes {
     None,
@@ -25,7 +24,7 @@ pub struct BHTree {
 impl BHTree {
     /// Initialized the tree with a root node.
     fn new(space: Rect) -> BHTree {
-        let mut nodes: HashMap<i32, Node> = HashMap::new();
+        let mut nodes: HashMap<Index, Node> = HashMap::new();
         let root = Node::new(0, space, None);
         nodes.insert(root.id, root);
         BHTree { nodes }
