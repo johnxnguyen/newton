@@ -35,7 +35,7 @@ impl Environment {
 //
 // A body represents a movable object in space.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct Body {
     pub mass: f32,
     pub position: Point,
