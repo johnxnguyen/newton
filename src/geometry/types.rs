@@ -1,9 +1,10 @@
-use std::ops::{Add, AddAssign, Div, Mul};
-use std::cmp::PartialEq;
-use self::Quadrant::{NW, NE, SW, SE};
-use geometry::types::ErrorKind::OutOfBounds;
-use std::fmt::Display;
 use std::fmt;
+use std::cmp::PartialEq;
+use std::ops::{Add, AddAssign, Div, Mul};
+
+use geometry::types::ErrorKind::OutOfBounds;
+
+use self::Quadrant::*;
 
 // Point /////////////////////////////////////////////////////////////////////
 //

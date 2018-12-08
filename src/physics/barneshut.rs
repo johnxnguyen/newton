@@ -1,15 +1,15 @@
-use geometry::types::Point;
-use geometry::types::Rect;
-use geometry::types::Quadrant::{NW, NE, SW, SE};
-use super::types::Body;
 use std::collections::HashMap;
-use geometry::types::Vector;
+
+use geometry::types::Point;
 use geometry::types::Quadrant;
+use geometry::types::Quadrant::*;
+use geometry::types::Rect;
+
+use super::types::Body;
 
 type Index = u32;
 
 enum Changes {
-    None,
     Insert(Node),
     Internalize(Index, Pending),
 }
@@ -24,21 +24,11 @@ pub struct BHTree {
 
 impl BHTree {
     /// Initialized the tree with a root node.
-    fn new(space: Rect) -> BHTree {
+    pub fn new(space: Rect) -> BHTree {
         let mut nodes: HashMap<Index, Node> = HashMap::new();
         let root = Node::new(0, space, None);
         nodes.insert(root.id, root);
         BHTree { nodes }
-    }
-
-    /// Returns true if the tree is empty.
-    fn is_empty(&self) -> bool {
-        self.nodes.is_empty()
-    }
-
-    /// Borrows the root node.
-    fn root(&self) -> &Node {
-        self.node(&0).expect("There should always be a root.")
     }
 
     /// Borrows the node for the given index, if it exists.
@@ -55,13 +45,13 @@ impl BHTree {
     }
 
     /// Inserts the given body into the tree.
-    fn add(&mut self, body: Body) {
+    pub fn add(&mut self, body: Body) {
         self.insert(Pending(0, body));
     }
 
     /// Inserts the given body into the tree at the given node.
     fn insert(&mut self, pending: Pending) {
-        let mut changes = Changes::None;
+        let changes: Changes;
         {
             // inspect the tree to find the necessary changes
             changes = self.changes(self.node(&pending.0).unwrap(), pending.1);
@@ -69,7 +59,7 @@ impl BHTree {
         {
             match self.process(changes) {
                 Some(pending) => self.insert(pending),
-                _ => (),
+                None => (),
             }
         }
     }
@@ -84,9 +74,6 @@ impl BHTree {
             Changes::Internalize(id, pending) => {
                 self.internalize(id);
                 Some(pending)
-            },
-            Changes::None => {
-                None
             },
         }
     }
@@ -115,19 +102,13 @@ impl BHTree {
         debug_assert!(node.space.contains(&body.position));
 
         if self.is_leaf(node) {
-            if node.is_empty() {
-                Changes::Insert(node.with(body))
-            } else {
-                let pending = Pending(node.id, body);
-                Changes::Internalize(node.id, pending)
-            }
+            if node.is_empty() { Changes::Insert(node.with(body)) }
+            else { Changes::Internalize(node.id, Pending(node.id, body)) }
         } else {
-            node.map_quadrant(body.position.clone(), move |idx, q| {
+            node.map_quadrant(body.position.clone(), move |idx: Index, q: Quadrant| {
                 match self.node(&idx) {
                     Some(child) => self.changes(child, body),
-                    None => {
-                        Changes::Insert(Node::new(idx, q.space().clone(), Some(body)))
-                    },
+                    None => Changes::Insert(Node::new(idx, q.space().clone(), Some(body))),
                 }
             })
         }
@@ -208,16 +189,25 @@ impl Node {
     }
 }
 
-#[test]
-fn create_tree() {
-    let space = Rect::new(0.0, 0.0, 10.0, 10.0);
-    let mut tree = BHTree::new(space);
-    tree.add(Body::new(1.0, Point::new(1.0, 2.0), Vector::zero()));
-    tree.add(Body::new(1.0, Point::new(6.0, 8.0), Vector::zero()));
-    tree.add(Body::new(1.0, Point::new(4.0, 4.0), Vector::zero()));
-    println!("\nRESULTS ---------------------------------\n");
-    for (idx, node) in tree.nodes {
-        println!("NODE: {:?}: {:?}", idx, node.body);
+#[cfg(test)]
+mod tests {
+    use geometry::types::Point;
+    use geometry::types::Rect;
+    use geometry::types::Vector;
+    use physics::barneshut::BHTree;
+    use physics::types::Body;
+
+    #[test]
+    fn create_tree() {
+        let space = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let mut tree = BHTree::new(space);
+        tree.add(Body::new(1.0, Point::new(1.0, 2.0), Vector::zero()));
+        tree.add(Body::new(1.0, Point::new(6.0, 8.0), Vector::zero()));
+        tree.add(Body::new(1.0, Point::new(4.0, 4.0), Vector::zero()));
+        println!("\nRESULTS ---------------------------------\n");
+        for (idx, node) in tree.nodes {
+            println!("NODE: {:?}: {:?}", idx, node.body);
+        }
+        println!("\n");
     }
-    println!("\n");
 }
