@@ -376,7 +376,7 @@ mod tests {
     }
 
     #[test]
-    fn rect_quadrants() {
+    fn rect_even_quadrants() {
         // given
         let sut = Rect::new(0.0, 0.0, 6, 8);
 
@@ -388,6 +388,21 @@ mod tests {
         assert_eq!(ne, NE(Rect::new(3.0, 4.0, 3, 4)));
         assert_eq!(sw, SW(Rect::new(0.0, 0.0, 3, 4)));
         assert_eq!(se, SE(Rect::new(3.0, 0.0, 3, 4)));
+    }
+
+    #[test]
+    fn rect_uneven_quadrants() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 5, 5);
+
+        // when
+        let (nw, ne, sw, se) = sut.quadrants();
+
+        // then
+        assert_eq!(nw, NW(Rect::new(0.0, 2.0, 2, 3)));
+        assert_eq!(ne, NE(Rect::new(2.0, 2.0, 3, 3)));
+        assert_eq!(sw, SW(Rect::new(0.0, 0.0, 2, 2)));
+        assert_eq!(se, SE(Rect::new(2.0, 0.0, 3, 2)));
     }
 
     #[test]
