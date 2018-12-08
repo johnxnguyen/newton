@@ -141,6 +141,26 @@ impl BHTree {
             })
         }
     }
+
+    /// Returns a descriptive string of the current tree state. Only existing
+    /// nodes are printed with their id and body.
+    fn report(&self) -> String {
+        let mut indices = vec!();
+        for idx in self.nodes.keys() { indices.push(idx); }
+        indices.sort();
+
+        let mut result = String::new();
+
+        for idx in indices {
+            let node = self.node(idx.clone()).unwrap();
+            result += &format!("#{:?}\t\t", node.id);
+            match node.body {
+                None => result += &format!("None\n"),
+                Some(ref body) => result += &format!("({:?}, {:?})\n", body.position.x, body.position.y),
+            }
+        }
+        result
+    }
 }
 
 // Node //////////////////////////////////////////////////////////////////////
@@ -235,17 +255,34 @@ mod tests {
     use physics::types::Body;
 
     #[test]
-    fn create_tree() {
+    fn tree_adds_bodies() {
+        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
         let space = Rect::new(0.0, 0.0, 10, 10);
+
         let mut tree = BHTree::new(space);
-        tree.add(Body::new(1.0, Point::new(1.0, 2.0), Vector::zero()));
-        tree.add(Body::new(1.0, Point::new(6.0, 8.0), Vector::zero()));
-        tree.add(Body::new(1.0, Point::new(4.0, 4.0), Vector::zero()));
+        assert_eq!(tree.report(),
+                   "#0\t\tNone\n".to_string());
+
+        tree.add(body(1.0, 2.0));
+        assert_eq!(tree.report(),
+                   "#0\t\t(1.0, 2.0)\n".to_string());
+
+        tree.add(body(6.0, 8.0));
+        assert_eq!(tree.report(),
+                   "#0\t\tNone\n\
+                    #2\t\t(6.0, 8.0)\n\
+                    #3\t\t(1.0, 2.0)\n".to_string());
+
+        tree.add(body(4.0, 4.0));
+        assert_eq!(tree.report(),
+                   "#0\t\tNone\n\
+                    #2\t\t(6.0, 8.0)\n\
+                    #3\t\tNone\n\
+                    #13\t\t(1.0, 2.0)\n\
+                    #14\t\t(4.0, 4.0)\n".to_string());
+
         println!("\nRESULTS ---------------------------------\n");
-        for (idx, node) in tree.nodes {
-            println!("NODE: {:?}: {:?}", idx, node.body);
-        }
-        println!("\n");
+        println!("{}", tree.report());
     }
 
     #[test]
