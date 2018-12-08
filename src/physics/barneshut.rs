@@ -58,6 +58,11 @@ impl BHTree {
         BHTree { nodes }
     }
 
+    /// Inserts the given body into the tree.
+    pub fn add(&mut self, body: Body) {
+        self.insert(Pending(0, body));
+    }
+
     /// Borrows the node for the given index, if it exists.
     fn node(&self, idx: &Index) -> Option<&Node> {
         self.nodes.get(idx)
@@ -69,11 +74,6 @@ impl BHTree {
         self.node(&node.ne()).is_none() &&
         self.node(&node.sw()).is_none() &&
         self.node(&node.se()).is_none()
-    }
-
-    /// Inserts the given body into the tree.
-    pub fn add(&mut self, body: Body) {
-        self.insert(Pending(0, body));
     }
 
     /// Inserts the given body into the tree at the given node.
@@ -159,7 +159,6 @@ struct Node {
     body: Option<Body>,
 }
 
-// TODO: needs testing
 impl Node {
     /// Creates a new node.
     fn new(id: Index, space: Rect, body: Option<Body>) -> Node {
@@ -247,5 +246,16 @@ mod tests {
             println!("NODE: {:?}: {:?}", idx, node.body);
         }
         println!("\n");
+    }
+
+    #[test]
+    #[should_panic]
+    fn tree_panics_if_body_out_of_bounds() {
+        // given
+        let mut tree = BHTree::new(Rect::new(0.0, 0.0, 5, 5));
+        let body = Body::new(1.0, Point::new(0.0, 5.5), Vector::zero());
+
+        // when, then
+        tree.add(body);
     }
 }
