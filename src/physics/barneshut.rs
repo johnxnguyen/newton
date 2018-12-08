@@ -37,10 +37,7 @@ impl BHTree {
 
     /// Borrows the root node.
     fn root(&self) -> &Node {
-        match self.node(&0) {
-            Some(root) => root,
-            None => unreachable!("There should always be a root node."),
-        }
+        self.node(&0).expect("There should always be a root.")
     }
 
     /// Borrows the node for the given index, if it exists.
@@ -101,6 +98,7 @@ impl BHTree {
         debug_assert!(self.is_leaf(&node), "Can't internalize an internal node");
 
         let child = node.child_from_self().expect("Where's the child?!");
+
         self.nodes.insert(node.id, node);
         self.nodes.insert(child.id, child);
     }
