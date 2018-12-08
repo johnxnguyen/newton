@@ -1,6 +1,9 @@
 use std::ops::{Add, AddAssign, Div, Mul};
 use std::cmp::PartialEq;
 use self::Quadrant::{NW, NE, SW, SE};
+use geometry::types::ErrorKind::OutOfBounds;
+use std::fmt::Display;
+use std::fmt;
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -114,6 +117,7 @@ impl Vector {
         (self.dx * self.dx + self.dy * self.dy).sqrt()
     }
 
+    // TODO: Result here
     pub fn normalized(&self) -> Option<Vector> {
         if self == &Vector::zero() {
             return None;
@@ -154,6 +158,20 @@ impl Size {
 #[derive(Clone, PartialEq, Debug)]
 pub enum Quadrant { NW(Rect), NE(Rect), SW(Rect), SE(Rect) }
 
+impl Quadrant {
+    fn space(&self) -> &Rect {
+        match self {
+            NW(space) => space,
+            NE(space) => space,
+            SW(space) => space,
+            SE(space) => space,
+        }
+    }
+    fn contains(&self, point: &Point) -> bool {
+        self.space().contains(point)
+    }
+}
+
 // Rect //////////////////////////////////////////////////////////////////////
 //
 // A rectangle whose origin denotes the position of the bottom left corner.
@@ -177,7 +195,7 @@ impl Rect {
             point.x <= self.upper_bound().x && point.y <= self.upper_bound().y
     }
 
-    pub fn quadrants(&self) -> (Rect, Rect, Rect, Rect) {
+    pub fn quadrants(&self) -> (Quadrant, Quadrant, Quadrant, Quadrant) {
         let southwest = self.quarter_sized();
         let size = southwest.size.clone();
 
@@ -190,17 +208,16 @@ impl Rect {
         let mut northwest = northeast.clone();
         northwest.origin.x -= size.width;
 
-        (northwest, northeast, southwest, southeast)
+        (NW(northwest), NE(northeast), SW(southwest), SE(southeast))
     }
 
-    pub fn which_quadrant(&self, point: &Point) -> Option<Quadrant> {
-        // TODO: rename this subspaces
-        let (nw, ne, sw, se) = self.quadrants();
-        if nw.contains(point) { return Some((NW(nw))); }
-        if ne.contains(point) { return Some((NE(ne))); }
-        if sw.contains(point) { return Some((SW(sw))); }
-        if se.contains(point) { return Some((SE(se))); }
-        None
+    pub fn quadrant(&self, point: &Point) -> Result<Quadrant, Error> {
+        let q = self.quadrants();
+        if      q.0.contains(point) { Ok(q.0) }
+        else if q.1.contains(point) { Ok(q.1) }
+        else if q.2.contains(point) { Ok(q.2) }
+        else if q.3.contains(point) { Ok(q.3) }
+        else                        { Err(Error(OutOfBounds)) }
     }
 
     fn quarter_sized(&self) -> Rect {
@@ -212,6 +229,27 @@ impl Rect {
         Point {
             x: self.origin.x + self.size.width,
             y: self.origin.y + self.size.height,
+        }
+    }
+}
+
+// Error /////////////////////////////////////////////////////////////////////
+
+#[derive(Debug)]
+pub struct Error(ErrorKind);
+impl Error {
+    pub fn kind(&self) -> ErrorKind { self.0 }
+}
+
+#[derive(Copy, Clone, Debug)]
+pub enum ErrorKind {
+    OutOfBounds
+}
+
+impl fmt::Display for ErrorKind {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            OutOfBounds => write!(f, "Cannot compare a point with a rect that does not contain it.")
         }
     }
 }

@@ -123,9 +123,9 @@ impl BHTree {
             }
         } else {
             // TODO: we could use Result for this.
-            match node.space.which_quadrant(&body.position) {
-                None => unreachable!("There must be a quadrant!"),
-                Some(quadrant) => match quadrant {
+            match node.space.quadrant(&body.position) {
+                Err(_) => unreachable!("There must be a quadrant!"),
+                Ok(quadrant) => match quadrant {
                     NW(subspace) => match self.node(&node.nw()) {
                         Some(nw) => self.changes(nw, body),
                         None => {
@@ -200,13 +200,14 @@ impl Node {
 
     /// Moves the self body into a new child node, if it exists.
     fn child_from_self(&mut self) -> Option<Node> {
+        // TODO: Return a Result
         let body = match self.body.take() {
             None => return None,
             Some(body) => body,
         };
 
         let warning = "There must be a quadrant for body's node.";
-        let quadrant = self.space.which_quadrant(&body.position).expect(warning);
+        let quadrant = self.space.quadrant(&body.position).expect(warning);
 
         let child = match quadrant {
             NW(space) => Node::new(self.nw(), space, Some(body)),
