@@ -64,16 +64,16 @@ impl BHTree {
     }
 
     /// Borrows the node for the given index, if it exists.
-    fn node(&self, idx: &Index) -> Option<&Node> {
-        self.nodes.get(idx)
+    fn node(&self, idx: Index) -> Option<&Node> {
+        self.nodes.get(&idx)
     }
 
     /// Returns true if the given node is a leaf.
     fn is_leaf(&self, node: &Node) -> bool {
-        self.node(&node.nw()).is_none() &&
-        self.node(&node.ne()).is_none() &&
-        self.node(&node.sw()).is_none() &&
-        self.node(&node.se()).is_none()
+        self.node(node.nw()).is_none() &&
+        self.node(node.ne()).is_none() &&
+        self.node(node.sw()).is_none() &&
+        self.node(node.se()).is_none()
     }
 
     /// Inserts the given body into the tree at the given node.
@@ -81,7 +81,7 @@ impl BHTree {
         let action: Action;
         {
             // inspect the tree to find the necessary action
-            action = self.action(self.node(&pending.0).unwrap(), pending.1);
+            action = self.action(self.node(pending.0).unwrap(), pending.1);
         }
         {
             match self.process(action) {
@@ -134,7 +134,7 @@ impl BHTree {
             else { Action::Internalize(node.id, Pending(node.id, body)) }
         } else {
             node.map_quadrant(body.position.clone(), move |idx: Index, q: Quadrant| {
-                match self.node(&idx) {
+                match self.node(idx) {
                     Some(child) => self.action(child, body),
                     None => Action::Insert(Node::new(idx, q.space().clone(), Some(body))),
                 }
