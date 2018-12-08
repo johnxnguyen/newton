@@ -90,14 +90,13 @@ impl BHTree {
         }
     }
 
-
     /// Internalizes the node at the given index by taking the node's body
     /// and inserting it in the appropriate child.
     fn internalize(&mut self, id: Index) {
-        let mut node = self.nodes.remove(&id).expect("Where's the node?!");
+        let mut node = self.nodes.remove(&id).expect("Node doesn't exist.");
         debug_assert!(self.is_leaf(&node), "Can't internalize an internal node");
 
-        let child = node.child_from_self().expect("Where's the child?!");
+        let child = node.child_from_self().expect("Can't internalize empty leaf.");
 
         self.nodes.insert(node.id, node);
         self.nodes.insert(child.id, child);
