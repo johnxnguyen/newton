@@ -115,7 +115,7 @@ impl BruteForceField {
     pub fn new() -> BruteForceField {
         BruteForceField {
             force: Gravity::new(1.0, 4.0),
-            sun: Some(Attractor::new(10000.0, Point::origin(), 1.0, 4.0)),
+            sun: Some(Attractor::new(10000.0, Point::zero(), 1.0, 4.0)),
         }
     }
 }
@@ -131,14 +131,14 @@ mod tests {
     #[should_panic(expected = "A body's mass must be greater than 0.")]
     fn body_with_zero_mass() {
         // given
-        Body::new(0.0, Point::origin(), Vector::zero());
+        Body::new(0.0, Point::zero(), Vector::zero());
     }
 
     #[test]
     #[should_panic(expected = "A body's mass must be greater than 0.")]
     fn body_with_negative_mass() {
         // given
-        Body::new(-10.0, Point::origin(), Vector::zero());
+        Body::new(-10.0, Point::zero(), Vector::zero());
     }
 
     #[test]

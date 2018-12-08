@@ -21,12 +21,12 @@ impl Point {
         Point { x, y }
     }
 
-    pub fn origin() -> Point {
+    pub fn zero() -> Point {
         Point::new(0.0, 0.0)
     }
 
-    pub fn is_origin(&self) -> bool {
-        self == &Point::origin()
+    pub fn is_zero(&self) -> bool {
+        self == &Point::zero()
     }
 
     pub fn distance_to(&self, other: &Point) -> f32 {

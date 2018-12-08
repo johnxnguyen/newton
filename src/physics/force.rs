@@ -157,7 +157,7 @@ mod tests {
         // given
         let sut = Attractor::new(
             100.0,
-            Point::origin(),
+            Point::zero(),
             2.3,
             1.0
         );
