@@ -117,12 +117,9 @@ impl Vector {
     pub fn magnitude(&self) -> f32 {
         (self.dx * self.dx + self.dy * self.dy).sqrt()
     }
-
-    // TODO: Result here
+    
     pub fn normalized(&self) -> Option<Vector> {
-        if self == &Vector::zero() {
-            return None;
-        }
+        if self == &Vector::zero() { return None; }
         let magnitude = self.magnitude();
 
         Some(Vector {
@@ -350,13 +347,10 @@ mod tests {
         let sut = Vector { dx: 3.3, dy: 5.2 };
 
         // when
-        match sut.normalized() {
-            None => panic!(),
-            Some(result) => {
-                // then
-                assert!((result.magnitude() - 1.0).abs() < 0.0000001);
-            }
-        };
+        let result = sut.normalized().unwrap();
+
+        // then
+        assert!((result.magnitude() - 1.0).abs() < 0.0000001);
     }
 
     #[test]
