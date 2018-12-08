@@ -183,11 +183,17 @@ impl Rect {
         }
     }
 
+    /// Returns true if the given point is contained by self.
     pub fn contains(&self, point: &Point) -> bool {
         point.x >= self.origin.x && point.y >= self.origin.y &&
             point.x <= self.upper_bound().x && point.y <= self.upper_bound().y
     }
 
+    /// Returns a partition of self in the order northeast, northwest,
+    /// southeast, southwest. If the width and height of self are even,
+    /// then the four quadrants are of equal size. Otherwise the boundaries
+    /// of the quadrants is shifted so their widths and heights remain
+    /// integers. This eliminates gaps in the coverage of the quadrants.
     pub fn quadrants(&self) -> (Quadrant, Quadrant, Quadrant, Quadrant) {
         let split = |n: u32| {
             let half = n >> 1;
@@ -205,6 +211,8 @@ impl Rect {
         (NW(nw), NE(ne), SW(sw), SE(se))
     }
 
+    /// Returns the quadrant for the given point. If the point is not
+    /// contained by any quadrant, an OutOfBounds error is returned.
     pub fn quadrant(&self, point: &Point) -> Result<Quadrant, Error> {
         let q = self.quadrants();
         if      q.0.contains(point) { Ok(q.0) }
