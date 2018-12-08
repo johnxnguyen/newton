@@ -121,33 +121,33 @@ impl BHTree {
                 Changes::Internalize(node.id, pending)
             }
         } else {
-            // TODO: we could use Result for this.
-            match node.space.quadrant(&body.position) {
-                Err(_) => unreachable!("There must be a quadrant!"),
-                Ok(quadrant) => match quadrant {
-                    NW(subspace) => match self.node(&node.nw()) {
-                        Some(nw) => self.changes(nw, body),
-                        None => {
-                            Changes::Insert(Node::new(node.nw(), subspace, Some(body)))
-                        },
+            let quadrant = node.space.quadrant(&body.position).unwrap_or_else(|err| {
+                panic!("Couldn't find quadrant: {}", err.kind());
+            });
+
+            match quadrant {
+                NW(subspace) => match self.node(&node.nw()) {
+                    Some(nw) => self.changes(nw, body),
+                    None => {
+                        Changes::Insert(Node::new(node.nw(), subspace, Some(body)))
                     },
-                    NE(subspace) => match self.node(&node.ne()) {
-                        Some(ne) => self.changes(ne, body),
-                        None => {
-                            Changes::Insert(Node::new(node.ne(), subspace, Some(body)))
-                        },
+                },
+                NE(subspace) => match self.node(&node.ne()) {
+                    Some(ne) => self.changes(ne, body),
+                    None => {
+                        Changes::Insert(Node::new(node.ne(), subspace, Some(body)))
                     },
-                    SW(subspace) => match self.node(&node.sw()) {
-                        Some(sw) => self.changes(sw, body),
-                        None => {
-                            Changes::Insert(Node::new(node.sw(), subspace, Some(body)))
-                        },
+                },
+                SW(subspace) => match self.node(&node.sw()) {
+                    Some(sw) => self.changes(sw, body),
+                    None => {
+                        Changes::Insert(Node::new(node.sw(), subspace, Some(body)))
                     },
-                    SE(subspace) => match self.node(&node.se()) {
-                        Some(se) => self.changes(se, body),
-                        None => {
-                            Changes::Insert(Node::new(node.se(), subspace, Some(body)))
-                        },
+                },
+                SE(subspace) => match self.node(&node.se()) {
+                    Some(se) => self.changes(se, body),
+                    None => {
+                        Changes::Insert(Node::new(node.se(), subspace, Some(body)))
                     },
                 },
             }
@@ -197,16 +197,16 @@ impl Node {
     /// Index of the south east child.
     fn se(&self) -> Index { 4 * self.id + 4 }
 
-    /// Moves the self body into a new child node, if it exists.
+    /// Moves the self body into a new child node and returns it, if it exists.
     fn child_from_self(&mut self) -> Option<Node> {
-        // TODO: Return a Result
         let body = match self.body.take() {
             None => return None,
             Some(body) => body,
         };
 
-        let warning = "There must be a quadrant for body's node.";
-        let quadrant = self.space.quadrant(&body.position).expect(warning);
+        let quadrant = self.space.quadrant(&body.position).unwrap_or_else(|err| {
+            panic!("Couldn't find quadrant: {}", err.kind());
+        });
 
         let child = match quadrant {
             NW(space) => Node::new(self.nw(), space, Some(body)),
