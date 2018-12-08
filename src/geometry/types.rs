@@ -236,13 +236,13 @@ impl Rect {
 
 // Error /////////////////////////////////////////////////////////////////////
 
-#[derive(Debug)]
+#[derive(PartialEq, Debug)]
 pub struct Error(ErrorKind);
 impl Error {
     pub fn kind(&self) -> ErrorKind { self.0 }
 }
 
-#[derive(Copy, Clone, Debug)]
+#[derive(PartialEq, Copy, Clone, Debug)]
 pub enum ErrorKind {
     OutOfBounds
 }
@@ -383,71 +383,71 @@ mod tests {
 
     // Rect //////////////////////////////////////////////////////////////////
 
-//    #[test]
-//    #[should_panic(expected = "A size's width and/or height must be positive.")]
-//    fn rect_non_positive_size() {
-//        // given, when , then
-//        Rect::new(-1.0, 1.0, -1.0, 0.0);
-//    }
-//
-//    #[test]
-//    fn rect_quadrants() {
-//        // given
-//        let sut = Rect::new(0.0, 0.0, 6.0, 8.0);
-//
-//        // when
-//        let (nw, ne, sw, se) = sut.quadrants();
-//
-//        // then
-//        assert_eq!(nw, Rect::new(0.0, 4.0, 3.0, 4.0));
-//        assert_eq!(ne, Rect::new(3.0, 4.0, 3.0, 4.0));
-//        assert_eq!(sw, Rect::new(0.0, 0.0, 3.0, 4.0));
-//        assert_eq!(se, Rect::new(3.0, 0.0, 3.0, 4.0));
-//    }
-//
-//    #[test]
-//    fn rect_contains_point() {
-//        // given
-//        let sut = Rect::new(0.0, 0.0, 10.0, 5.0);
-//
-//        // then
-//        assert!(sut.contains(&Point::new(0.0, 0.0)));
-//        assert!(sut.contains(&Point::new(3.0, 3.0)));
-//        assert!(sut.contains(&Point::new(10.0, 5.0)));
-//
-//        assert!(!sut.contains(&Point::new(-0.0001, 0.0)));
-//        assert!(!sut.contains(&Point::new(10.0000, 5.00001)));
-//        assert!(!sut.contains(&Point::new(14.0, 5.01)));
-//    }
+    #[test]
+    #[should_panic(expected = "A size's width and/or height must be positive.")]
+    fn rect_non_positive_size() {
+        // given, when , then
+        Rect::new(-1.0, 1.0, -1.0, 0.0);
+    }
 
-//    #[test]
-//    fn rect_which_quadrant() {
-//        // given
-//        let sut = Rect::new(0.0, 0.0, 5.0, 5.0);
-//        let (nw, ne, sw, se) = sut.quadrants();
-//
-//        // then (bottom left of each quadrant)
-//        assert_eq!(sut.which_quadrant(&Point::new(0.0, 2.5)), Some((NW, nw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(2.5, 2.5)), Some((NW, nw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(0.0, 0.0)), Some((SW, sw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(2.5, 0.0)), Some((SW, sw.clone())));
-//
-//        // then (top right of each quadrant)
-//        assert_eq!(sut.which_quadrant(&Point::new(2.5, 5.0)), Some((NW, nw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(5.0, 5.0)), Some((NE, ne.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(2.5, 2.5)), Some((NW, nw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(5.0, 2.5)), Some((NE, ne.clone())));
-//
-//        // then (anywhere in quadrant)
-//        assert_eq!(sut.which_quadrant(&Point::new(0.3, 2.9)), Some((NW, nw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(2.6, 4.2)), Some((NE, ne.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(1.0, 2.0)), Some((SW, sw.clone())));
-//        assert_eq!(sut.which_quadrant(&Point::new(3.7, 2.4)), Some((SE, se.clone())));
-//
-//        // then
-//        assert_eq!(sut.which_quadrant(&Point::new(-2.5, 5.0)), None);
-//        assert_eq!(sut.which_quadrant(&Point::new(5.4, 0.4)),  None);
-//        assert_eq!(sut.which_quadrant(&Point::new(2.5, -4.0)), None);
-//        assert_eq!(sut.which_quadrant(&Point::new(4.0, 6.5)),  None);
-//    }
+    #[test]
+    fn rect_quadrants() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 6.0, 8.0);
+
+        // when
+        let (nw, ne, sw, se) = sut.quadrants();
+
+        // then
+        assert_eq!(nw, NW(Rect::new(0.0, 4.0, 3.0, 4.0)));
+        assert_eq!(ne, NE(Rect::new(3.0, 4.0, 3.0, 4.0)));
+        assert_eq!(sw, SW(Rect::new(0.0, 0.0, 3.0, 4.0)));
+        assert_eq!(se, SE(Rect::new(3.0, 0.0, 3.0, 4.0)));
+    }
+
+    #[test]
+    fn rect_contains_point() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 10.0, 5.0);
+
+        // then
+        assert!(sut.contains(&Point::new(0.0, 0.0)));
+        assert!(sut.contains(&Point::new(3.0, 3.0)));
+        assert!(sut.contains(&Point::new(10.0, 5.0)));
+
+        assert!(!sut.contains(&Point::new(-0.0001, 0.0)));
+        assert!(!sut.contains(&Point::new(10.0000, 5.00001)));
+        assert!(!sut.contains(&Point::new(14.0, 5.01)));
+    }
+
+    #[test]
+    fn rect_which_quadrant() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 5.0, 5.0);
+        let (nw, ne, sw, se) = sut.quadrants();
+
+        // then (bottom left of each quadrant)
+        assert_eq!(sut.quadrant(&Point::new(0.0, 2.5)), Ok(nw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(2.5, 2.5)), Ok(nw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(0.0, 0.0)), Ok(sw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(2.5, 0.0)), Ok(sw.clone()));
+
+        // then (top right of each quadrant)
+        assert_eq!(sut.quadrant(&Point::new(2.5, 5.0)), Ok(nw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(5.0, 5.0)), Ok(ne.clone()));
+        assert_eq!(sut.quadrant(&Point::new(2.5, 2.5)), Ok(nw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(5.0, 2.5)), Ok(ne.clone()));
+
+        // then (anywhere in quadrant)
+        assert_eq!(sut.quadrant(&Point::new(0.3, 2.9)), Ok(nw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(2.6, 4.2)), Ok(ne.clone()));
+        assert_eq!(sut.quadrant(&Point::new(1.0, 2.0)), Ok(sw.clone()));
+        assert_eq!(sut.quadrant(&Point::new(3.7, 2.4)), Ok(se.clone()));
+
+        // then
+        assert_eq!(sut.quadrant(&Point::new(-2.5, 5.0)), Err(Error(OutOfBounds)));
+        assert_eq!(sut.quadrant(&Point::new(5.4, 0.4)),  Err(Error(OutOfBounds)));
+        assert_eq!(sut.quadrant(&Point::new(2.5, -4.0)), Err(Error(OutOfBounds)));
+        assert_eq!(sut.quadrant(&Point::new(4.0, 6.5)),  Err(Error(OutOfBounds)));
+    }
 }
