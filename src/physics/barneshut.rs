@@ -4,6 +4,7 @@ use geometry::types::Quadrant::{NW, NE, SW, SE};
 use super::types::Body;
 use std::collections::HashMap;
 use geometry::types::Vector;
+use geometry::types::Quadrant;
 
 type Index = u32;
 
@@ -121,36 +122,14 @@ impl BHTree {
                 Changes::Internalize(node.id, pending)
             }
         } else {
-            let quadrant = node.space.quadrant(&body.position).unwrap_or_else(|err| {
-                panic!("Couldn't find quadrant: {}", err.kind());
-            });
-
-            match quadrant {
-                NW(subspace) => match self.node(&node.nw()) {
-                    Some(nw) => self.changes(nw, body),
+            node.map_quadrant(body.position.clone(), move |idx, q| {
+                match self.node(&idx) {
+                    Some(child) => self.changes(child, body),
                     None => {
-                        Changes::Insert(Node::new(node.nw(), subspace, Some(body)))
+                        Changes::Insert(Node::new(idx, q.space().clone(), Some(body)))
                     },
-                },
-                NE(subspace) => match self.node(&node.ne()) {
-                    Some(ne) => self.changes(ne, body),
-                    None => {
-                        Changes::Insert(Node::new(node.ne(), subspace, Some(body)))
-                    },
-                },
-                SW(subspace) => match self.node(&node.sw()) {
-                    Some(sw) => self.changes(sw, body),
-                    None => {
-                        Changes::Insert(Node::new(node.sw(), subspace, Some(body)))
-                    },
-                },
-                SE(subspace) => match self.node(&node.se()) {
-                    Some(se) => self.changes(se, body),
-                    None => {
-                        Changes::Insert(Node::new(node.se(), subspace, Some(body)))
-                    },
-                },
-            }
+                }
+            })
         }
     }
 }
@@ -204,18 +183,28 @@ impl Node {
             Some(body) => body,
         };
 
-        let quadrant = self.space.quadrant(&body.position).unwrap_or_else(|err| {
+        let child = self.map_quadrant(body.position.clone(), move |idx, q| {
+            Node::new(idx, q.space().clone(), Some(body))
+        });
+
+        Some(child)
+    }
+
+    /// Finds quadrant containing the given point and passes it together with
+    /// its index to the function f. Panics if the point is out of bounds.
+    fn map_quadrant<U, F>(&self, point: Point, f: F) -> U
+        where F: FnOnce(Index, Quadrant) -> U {
+
+        let quadrant = self.space.quadrant(&point).unwrap_or_else(|err| {
             panic!("Couldn't find quadrant: {}", err.kind());
         });
 
-        let child = match quadrant {
-            NW(space) => Node::new(self.nw(), space, Some(body)),
-            NE(space) => Node::new(self.ne(), space, Some(body)),
-            SW(space) => Node::new(self.sw(), space, Some(body)),
-            SE(space) => Node::new(self.se(), space, Some(body)),
-        };
-
-        Some(child)
+        match quadrant {
+            NW(space) => f(self.nw(), NW(space)),
+            NE(space) => f(self.ne(), NE(space)),
+            SW(space) => f(self.sw(), SW(space)),
+            SE(space) => f(self.se(), SE(space)),
+        }
     }
 }
 
