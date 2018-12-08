@@ -237,7 +237,7 @@ mod tests {
 
     #[test]
     fn create_tree() {
-        let space = Rect::new(0.0, 0.0, 10.0, 10.0);
+        let space = Rect::new(0.0, 0.0, 10, 10);
         let mut tree = BHTree::new(space);
         tree.add(Body::new(1.0, Point::new(1.0, 2.0), Vector::zero()));
         tree.add(Body::new(1.0, Point::new(6.0, 8.0), Vector::zero()));
