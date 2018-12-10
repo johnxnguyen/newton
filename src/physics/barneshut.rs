@@ -6,6 +6,7 @@ use geometry::types::Point;
 use geometry::types::Quadrant;
 use geometry::types::Quadrant::*;
 use geometry::types::Rect;
+use geometry::types::Vector;
 
 use super::types::Body;
 
@@ -142,23 +143,49 @@ impl BHTree {
         }
     }
 
-    // TODO: test
     /// Returns the virtual body at the given node. The virtual body is
-    /// a body computed by the real bodies contained descendant leaves.
+    /// computed from the real bodies contained descendant leaves.
     /// Its mass is the sum of all real body masses, its position is the
     /// center of mass of these bodies, and its velocity is zero.
-    fn virtual_body(&self, node: Index) -> Body {
-        unimplemented!()
+    /// If there are no descendant leaves (node is itself an empty leaf),
+    /// returns None.
+    fn virtual_body(&self, node: Index) -> Option<Body> {
+        let (mass, position) = self.leaves_at(node).into_iter()
+            // extract mass & weighted position for each body
+            .filter_map(|n|
+                n.body.clone()
+                    .map(|b| (b.mass, b.weighted_position())))
+            // sum
+            .fold((0f32, Point::zero()), |acc, e|
+                (acc.0 + e.0, acc.1 + e.1));
+
+        // zero mass means no real bodies
+        if mass <= 0.0 { return None }
+        let center = &position / mass;
+
+        Some(Body::new(mass, center, Vector::zero()))
     }
 
-    /// Returns a vector of the leaves.
+    /// Returns a vector of the leaves in order.
     fn leaves(&self) -> Vec<&Node> {
-        self.preorder().filter(|n| self.is_leaf(*n)).collect()
+        self.leaves_at(0)
     }
 
-    /// Returns a preorder traversal iterator.
+    // TODO: test
+    /// Returns a vector of the leaves in order below the given index.
+    fn leaves_at(&self, idx: Index) -> Vec<&Node> {
+        self.preorder_at(idx).filter(|n| self.is_leaf(*n)).collect()
+    }
+
+    /// Returns a preorder traversal iterator starting at the root node.
     fn preorder(&self) -> PreorderTraverser {
-        PreorderTraverser::new(self)
+        self.preorder_at(0)
+    }
+
+    // TODO: test
+    /// Returns a preorder traversal iterator starting at given index.
+    fn preorder_at(&self, idx: Index) -> PreorderTraverser {
+        PreorderTraverser::new(self, idx)
     }
 
     /// Returns a descriptive string of the current tree state. Only existing
@@ -209,10 +236,10 @@ impl<'a> Iterator for PreorderTraverser<'a> {
 }
 
 impl<'a> PreorderTraverser<'a> {
-    /// Returns a new iterator at the root node of the given tree.
-    fn new(tree: &'a BHTree) -> PreorderTraverser<'a> {
-        let root = tree.node(0).unwrap();
-        PreorderTraverser { tree, first: Some(root), stack: Vec::new() }
+    /// Returns a new iterator at the node for the given index.
+    fn new(tree: &'a BHTree, idx: Index) -> PreorderTraverser<'a> {
+        let node = tree.node(idx).expect("Node doesn't exist");
+        PreorderTraverser { tree, first: Some(node), stack: Vec::new() }
     }
 }
 
@@ -363,17 +390,22 @@ mod tests {
     use geometry::types::Rect;
     use geometry::types::Vector;
     use physics::barneshut::BHTree;
-    use physics::types::Body;
     use physics::barneshut::Index;
+    use physics::barneshut::Node;
+    use physics::types::Body;
+
+    // helpers
+    fn body(mass: f32, x: f32, y: f32) -> Body {
+        Body::new(mass, Point::new(x, y), Vector::zero())
+    }
 
     fn small_tree() -> BHTree {
-        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
         let space = Rect::new(0.0, 0.0, 10, 10);
 
         let mut tree = BHTree::new(space);
-        tree.add(body(1.0, 2.0));
-        tree.add(body(6.0, 8.0));
-        tree.add(body(4.0, 4.0));
+        tree.add(body(1.0, 1.0, 2.0));
+        tree.add(body(1.0, 6.0, 8.0));
+        tree.add(body(1.0, 4.0, 4.0));
         tree
     }
 
@@ -440,12 +472,12 @@ mod tests {
         let sut = small_tree();
 
         // then
-        assert!(!sut.is_leaf(sut.node(0u32).unwrap()));
-        assert!(!sut.is_leaf(sut.node(3u32).unwrap()));
+        assert!(!sut.is_leaf(sut.node(0).unwrap()));
+        assert!(!sut.is_leaf(sut.node(3).unwrap()));
 
-        assert!(sut.is_leaf(sut.node(2u32).unwrap()));
-        assert!(sut.is_leaf(sut.node(13u32).unwrap()));
-        assert!(sut.is_leaf(sut.node(14u32).unwrap()));
+        assert!(sut.is_leaf(sut.node(2).unwrap()));
+        assert!(sut.is_leaf(sut.node(13).unwrap()));
+        assert!(sut.is_leaf(sut.node(14).unwrap()));
     }
 
     #[test]
@@ -458,5 +490,54 @@ mod tests {
         
         // then
         assert_eq!(vec![2, 13, 14], result);
+    }
+
+    #[test]
+    fn tree_virtual_body() {
+        // given
+        let space = Rect::new(0.0, 0.0, 10, 10);
+        let mut tree = BHTree::new(space);
+        tree.add(body(2.0, 1.0, 2.0)); // A
+        tree.add(body(4.1, 6.0, 8.0)); // B
+        tree.add(body(3.6, 4.0, 4.0)); // C
+
+        // bodies equate on reference, hence this helper
+        fn assert_eq(lhs: Body, rhs: Body) {
+            assert_eq!(lhs.mass, rhs.mass);
+            assert_eq!(lhs.position, rhs.position);
+        }
+
+        // then
+
+        // A B and C
+        // (41.0, 51.2) / 9.7 = (4.226804124, 5.278350515)
+        let expected = body(9.7, 4.226804124, 5.278350515);
+        assert_eq(expected, tree.virtual_body(0).unwrap());
+
+        // just B
+        let expected = body(4.1, 6.0, 8.0);
+        assert_eq(expected, tree.virtual_body(2).unwrap());
+
+        // A and C
+        // (16.4, 18.4) / 5.6 = (2.928571429, 3.285714286)
+        let expected = body(5.6, 2.928571429, 3.285714286);
+        assert_eq(expected, tree.virtual_body(3).unwrap());
+
+        // just A
+        let expected = body(2.0, 1.0, 2.0);
+        assert_eq(expected, tree.virtual_body(13).unwrap());
+
+        // just C
+        let expected = body(3.6, 4.0, 4.0);
+        assert_eq(expected, tree.virtual_body(14).unwrap());
+    }
+
+    #[test]
+    fn tree_virtual_body_empty_leaf() {
+        // given
+        let tree = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+
+        // then
+        assert_eq!(None, tree.virtual_body(0));
     }
 }

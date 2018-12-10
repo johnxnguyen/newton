@@ -9,6 +9,7 @@ use super::force::{Attractor, Gravity};
 //
 // An environment represents a space in which bodies interact with fields.
 
+// TODO: when passing the bodies to the field, we need to return them back in the same order.
 pub struct Environment {
     pub bodies: Vec<Body>,
     pub fields: Vec<Box<Field>>,
@@ -79,6 +80,11 @@ impl Body {
         self.velocity += force / self.mass;
         self.position.x += self.velocity.dx;
         self.position.y += self.velocity.dy;
+    }
+
+    // TODO: test
+    pub fn weighted_position(&self) -> Point {
+        Point::new(self.mass * self.position.x, self.mass * self.position.y)
     }
 }
 
