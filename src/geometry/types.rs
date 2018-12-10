@@ -16,9 +16,6 @@ pub struct Point {
     pub y: f32,
 }
 
-// TODO: Does it make sense to define a common point/vector type, then newtype them?
-
-// TODO: test
 impl Add for Point {
     type Output = Point;
 
@@ -180,7 +177,7 @@ impl Size {
 // Quadrant //////////////////////////////////////////////////////////////////
 //
 // The four quadrants of a rectangle.
-//TODO: make this a struct
+
 #[derive(Clone, PartialEq, Debug)]
 pub enum Quadrant { NW(Rect), NE(Rect), SW(Rect), SE(Rect) }
 
@@ -314,6 +311,42 @@ mod tests {
 
         // then
         assert_eq!(result, 5.0);
+    }
+
+    #[test]
+    fn point_addition() {
+        // given
+        let sut = Point::new(-4.6, 7.5);
+
+        // when
+        let result = sut + Point::new(-8.8, -6.5);
+
+        // then
+        assert_eq!(Point::new(-13.4, 1.0), result);
+    }
+
+    #[test]
+    fn point_scalar_multiplication() {
+        // given
+        let sut = Point::new(5.5, 2.0);
+
+        // when
+        let result = &sut * -3.5;
+
+        // then
+        assert_eq!(Point::new(-19.25, -7.0), result);
+    }
+
+    #[test]
+    fn point_scalar_division() {
+        // given
+        let sut = Point::new(-6.2, 14.8);
+
+        // when
+        let result = &sut / 2.0;
+
+        // then
+        assert_eq!(Point::new(-3.1, 7.4), result);
     }
 
     // Vector ////////////////////////////////////////////////////////////////
