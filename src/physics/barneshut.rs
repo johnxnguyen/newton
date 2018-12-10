@@ -105,6 +105,7 @@ impl BHTree {
         }
     }
 
+    // TODO: Test
     /// Internalizes the node at the given index by taking the node's body
     /// and inserting it in the appropriate child.
     fn internalize(&mut self, id: Index) {
@@ -141,10 +142,30 @@ impl BHTree {
         }
     }
 
+    // TODO: test
+    /// Returns the virtual body at the given node. The virtual body is
+    /// a body computed by the real bodies contained descendant leaves.
+    /// Its mass is the sum of all real body masses, its position is the
+    /// center of mass of these bodies, and its velocity is zero.
+    fn virtual_body(&self, node: Index) -> Body {
+        unimplemented!()
+    }
+
+    // TODO: test
+    /// Returns a vector of the leaves.
+    fn leaves(&self) -> Vec<&Node> {
+        self.preorder().filter(|n| self.is_leaf(*n)).collect()
+    }
+
+    // TODO: test
+    fn preorder(&self) -> PreorderTraverser {
+        PreorderTraverser::new(self)
+    }
+
     /// Returns a descriptive string of the current tree state. Only existing
     /// nodes are printed with their id and body.
     fn report(&self) -> String {
-        PreorderTraverser::new(self).fold(String::new(), |acc, n| {
+        self.preorder().fold(String::new(), |acc, n| {
             if let Some(ref b) = n.body {
                 acc + &format!("#{}\t({}, {})\n", n.id, b.position.x, b.position.y)
             } else {
@@ -343,8 +364,9 @@ mod tests {
     use geometry::types::Rect;
     use geometry::types::Vector;
     use physics::barneshut::BHTree;
-    use physics::barneshut::PreorderTraverser;
     use physics::types::Body;
+    use physics::barneshut::Index;
+
 
     #[test]
     fn tree_adds_bodies() {
@@ -391,6 +413,7 @@ mod tests {
 
     #[test]
     fn tree_iterates() {
+        // given
         let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
         let space = Rect::new(0.0, 0.0, 10, 10);
 
@@ -399,11 +422,51 @@ mod tests {
         tree.add(body(6.0, 8.0));
         tree.add(body(4.0, 4.0));
 
-        let mut iter = PreorderTraverser::new(&tree);
+        let mut iter = tree.preorder();
+
+        // then
         assert_eq!(iter.next().unwrap().id, 0);
         assert_eq!(iter.next().unwrap().id, 2);
         assert_eq!(iter.next().unwrap().id, 3);
         assert_eq!(iter.next().unwrap().id, 13);
         assert_eq!(iter.next().unwrap().id, 14);
+    }
+
+    #[test]
+    fn tree_is_leaf() {
+        // given
+        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
+        let space = Rect::new(0.0, 0.0, 10, 10);
+
+        let mut tree = BHTree::new(space);
+        tree.add(body(1.0, 2.0));
+        tree.add(body(6.0, 8.0));
+        tree.add(body(4.0, 4.0));
+
+        // then
+        assert!(!tree.is_leaf(tree.node(0u32).unwrap()));
+        assert!(!tree.is_leaf(tree.node(3u32).unwrap()));
+
+        assert!(tree.is_leaf(tree.node(2u32).unwrap()));
+        assert!(tree.is_leaf(tree.node(13u32).unwrap()));
+        assert!(tree.is_leaf(tree.node(14u32).unwrap()));
+    }
+
+    #[test]
+    fn tree_leaves() {
+        // given
+        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
+        let space = Rect::new(0.0, 0.0, 10, 10);
+
+        let mut tree = BHTree::new(space);
+        tree.add(body(1.0, 2.0));
+        tree.add(body(6.0, 8.0));
+        tree.add(body(4.0, 4.0));
+
+        // when
+        let result: Vec<Index> = tree.leaves().iter().map(|n| n.id).collect();
+        
+        // then
+        assert_eq!(vec![2, 13, 14], result);
     }
 }
