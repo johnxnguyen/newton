@@ -1,6 +1,9 @@
-use geometry::types::{Point, Vector};
-use super::force::{Gravity, Attractor};
 use std::cmp::Eq;
+use std::fmt;
+
+use geometry::types::{Point, Vector};
+
+use super::force::{Attractor, Gravity};
 
 // Environment ///////////////////////////////////////////////////////////////
 //
@@ -40,6 +43,15 @@ pub struct Body {
     pub mass: f32, // TODO: make this a type with validation (for positive values)
     pub position: Point,
     pub velocity: Vector,
+}
+
+impl fmt::Display for Body {
+    fn fmt(&self, f: &mut fmt::Formatter<>) -> Result<(), fmt::Error> {
+        write!(f, "M({}) P({}, {}) V({}, {})",
+               self.mass,
+               self.position.x, self.position.y,
+               self.velocity.dx, self.velocity.dy)
+    }
 }
 
 impl Eq for Body {}
@@ -124,8 +136,9 @@ impl BruteForceField {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use geometry::types::{Point, Vector};
+
+    use super::*;
 
     #[test]
     #[should_panic(expected = "A body's mass must be greater than 0.")]

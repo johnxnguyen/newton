@@ -1,4 +1,6 @@
 use std::collections::HashMap;
+use std::fmt;
+use std::ops::Range;
 
 use geometry::types::Point;
 use geometry::types::Quadrant;
@@ -145,21 +147,55 @@ impl BHTree {
     /// Returns a descriptive string of the current tree state. Only existing
     /// nodes are printed with their id and body.
     fn report(&self) -> String {
-        let mut indices = vec!();
-        for idx in self.nodes.keys() { indices.push(idx); }
-        indices.sort();
+        PreorderTraverser::new(self).fold(String::new(), |acc, n| {
+            if let Some(ref b) = n.body {
+                acc + &format!("#{}\t({}, {})\n", n.id, b.position.x, b.position.y)
+            } else {
+                acc + &format!("#{}\n", n.id)
+            }
+        })
+    }
+}
 
-        let mut result = String::new();
+// PreorderTraverser /////////////////////////////////////////////////////////
+//
+// An iterator over nodes of a tree in preorder (Root, child 1, ..., child n).
 
-        for idx in indices {
-            let node = self.node(idx.clone()).unwrap();
-            result += &format!("#{:?}\t\t", node.id);
-            match node.body {
-                None => result += &format!("None\n"),
-                Some(ref body) => result += &format!("({:?}, {:?})\n", body.position.x, body.position.y),
+struct PreorderTraverser<'a> {
+    tree: &'a BHTree,
+    first: Option<&'a Node>,
+    stack: Vec<ChildIterator>,
+}
+
+impl<'a> Iterator for PreorderTraverser<'a> {
+    type Item = &'a Node;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        // first element
+        if let Some(node) = self.first.take() {
+            self.stack.push(node.iter());
+            return Some(node);
+        }
+
+        // next element
+        while let Some(mut iter) = self.stack.pop() {
+            while let Some(idx) = iter.next() {
+                if let Some(node) = self.tree.node(idx) {
+                    self.stack.push(iter);
+                    self.stack.push(node.iter());
+                    return Some(node)
+                }
             }
         }
-        result
+        None
+    }
+}
+
+impl<'a> PreorderTraverser<'a> {
+    /// Returns a new iterator at the root node of the given tree.
+    fn new(tree: &'a BHTree) -> PreorderTraverser<'a> {
+        let root = tree.node(0).unwrap();
+        PreorderTraverser { tree, first: Some(root), stack: Vec::new() }
     }
 }
 
@@ -174,9 +210,22 @@ impl BHTree {
 
 #[derive(Clone, Debug)]
 struct Node {
-    id: Index,
-    space: Rect,
-    body: Option<Body>,
+    pub id: Index,
+    pub space: Rect,
+    pub body: Option<Body>,
+}
+
+impl fmt::Display for Node {
+    /// Prints "#(id) (space) (body)". Eg: "#1 (0, 0, 4, 4) M(1) P(3, 4) V(3, 6)"
+    fn fmt(&self, f: &mut fmt::Formatter<>) -> Result<(), fmt::Error> {
+        write!(f, "#{}\t({}, {}, ", self.id, self.space.origin.x, self.space.origin.y)?;
+        write!(f, "{}, {}) ", self.space.size.width, self.space.size.height)?;
+        match &self.body {
+            Some(body) => write!(f, "{}", body)?,
+            None => write!(f, "None")?,
+        }
+        Ok(())
+    }
 }
 
 impl Node {
@@ -202,16 +251,36 @@ impl Node {
     }
 
     /// Index of the north west child.
-    fn nw(&self) -> Index { 4 * self.id + 1 }
+    fn nw(&self) -> Index {
+        4 * self.id + 1
+    }
 
     /// Index of the north east child.
-    fn ne(&self) -> Index { 4 * self.id + 2 }
+    fn ne(&self) -> Index {
+        4 * self.id + 2
+    }
 
     /// Index of the south west child.
-    fn sw(&self) -> Index { 4 * self.id + 3 }
+    fn sw(&self) -> Index {
+        4 * self.id + 3
+    }
 
     /// Index of the south east child.
-    fn se(&self) -> Index { 4 * self.id + 4 }
+    fn se(&self) -> Index {
+        4 * self.id + 4
+    }
+
+    /// Returns true if the given node is an ancestor.
+    fn is_ancestor(&self, node: &Node) -> bool {
+        let parent = |idx: Index| (idx - 1) / 4;
+        let mut curr = self.id;
+        while curr != 0 {
+            let next = parent(curr);
+            if next == node.id { return true }
+            curr = next;
+        }
+        false
+    }
 
     /// Moves the body into a new child node and returns it, if it exists.
     fn child_from_self(&mut self) -> Option<Node> {
@@ -242,6 +311,31 @@ impl Node {
             SE(space) => f(self.se(), SE(space)),
         }
     }
+
+    /// Returns an iterator over the children indices.
+    fn iter(&self) -> ChildIterator {
+        ChildIterator::new(self.id, 4)
+    }
+}
+
+// ChildIterator /////////////////////////////////////////////////////////////
+//
+// An iterator over child indices in order (child 1, ..., child n).
+
+struct ChildIterator(Range<Index>);
+
+impl Iterator for ChildIterator {
+    type Item = Index;
+    fn next(&mut self) -> Option<Self::Item> { self.0.next() }
+}
+
+impl ChildIterator {
+    /// Returns a new iterator for children of the given index. Degree specifies
+    /// number of children at this node.
+    fn new(parent: Index, degree: u32) -> ChildIterator {
+        let start = degree * parent + 1;
+        ChildIterator(start..(start + degree))
+    }
 }
 
 // Tests /////////////////////////////////////////////////////////////////////
@@ -252,6 +346,7 @@ mod tests {
     use geometry::types::Rect;
     use geometry::types::Vector;
     use physics::barneshut::BHTree;
+    use physics::barneshut::PreorderTraverser;
     use physics::types::Body;
 
     #[test]
@@ -260,26 +355,27 @@ mod tests {
         let space = Rect::new(0.0, 0.0, 10, 10);
 
         let mut tree = BHTree::new(space);
+
         assert_eq!(tree.report(),
-                   "#0\t\tNone\n".to_string());
+                   "#0\n".to_string());
 
         tree.add(body(1.0, 2.0));
         assert_eq!(tree.report(),
-                   "#0\t\t(1.0, 2.0)\n".to_string());
+                   "#0\t(1, 2)\n".to_string());
 
         tree.add(body(6.0, 8.0));
         assert_eq!(tree.report(),
-                   "#0\t\tNone\n\
-                    #2\t\t(6.0, 8.0)\n\
-                    #3\t\t(1.0, 2.0)\n".to_string());
+                   "#0\n\
+                    #2\t(6, 8)\n\
+                    #3\t(1, 2)\n".to_string());
 
         tree.add(body(4.0, 4.0));
         assert_eq!(tree.report(),
-                   "#0\t\tNone\n\
-                    #2\t\t(6.0, 8.0)\n\
-                    #3\t\tNone\n\
-                    #13\t\t(1.0, 2.0)\n\
-                    #14\t\t(4.0, 4.0)\n".to_string());
+                   "#0\n\
+                    #2\t(6, 8)\n\
+                    #3\n\
+                    #13\t(1, 2)\n\
+                    #14\t(4, 4)\n".to_string());
 
         println!("\nRESULTS ---------------------------------\n");
         println!("{}", tree.report());
@@ -294,5 +390,23 @@ mod tests {
 
         // when, then
         tree.add(body);
+    }
+
+    #[test]
+    fn tree_iterates() {
+        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
+        let space = Rect::new(0.0, 0.0, 10, 10);
+
+        let mut tree = BHTree::new(space);
+        tree.add(body(1.0, 2.0));
+        tree.add(body(6.0, 8.0));
+        tree.add(body(4.0, 4.0));
+
+        let mut iter = PreorderTraverser::new(&tree);
+        assert_eq!(iter.next().unwrap().id, 0);
+        assert_eq!(iter.next().unwrap().id, 2);
+        assert_eq!(iter.next().unwrap().id, 3);
+        assert_eq!(iter.next().unwrap().id, 13);
+        assert_eq!(iter.next().unwrap().id, 14);
     }
 }
