@@ -154,7 +154,7 @@ impl BHTree {
             // extract mass & weighted position for each body
             .filter_map(|n|
                 n.body.clone()
-                    .map(|b| (b.mass, b.weighted_position())))
+                    .map(|b| (b.mass.value(), b.weighted_position())))
             // sum
             .fold((0f32, Point::zero()), |acc, e|
                 (acc.0 + e.0, acc.1 + e.1));
@@ -391,7 +391,6 @@ mod tests {
     use geometry::types::Vector;
     use physics::barneshut::BHTree;
     use physics::barneshut::Index;
-    use physics::barneshut::Node;
     use physics::types::Body;
 
     // helpers
@@ -501,7 +500,7 @@ mod tests {
 
         // bodies equate on reference, hence this helper
         fn assert_eq(lhs: Body, rhs: Body) {
-            assert_eq!(lhs.mass, rhs.mass);
+            assert_eq!(lhs.mass.value(), rhs.mass.value());
             assert_eq!(lhs.position, rhs.position);
         }
 

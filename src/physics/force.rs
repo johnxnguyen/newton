@@ -30,7 +30,7 @@ impl Gravity {
 
         let difference = Vector::difference(&b2.position, &b1.position);
         let distance = difference.magnitude().max(self.min_dist);
-        let force = (self.g * b1.mass * b2.mass) / (distance * distance);
+        let force = (self.g * b1.mass.value() * b2.mass.value()) / (distance * distance);
         let direction = difference.normalized().unwrap_or(Vector::zero());
         &direction * force
     }

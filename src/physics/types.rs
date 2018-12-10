@@ -5,6 +5,42 @@ use geometry::types::{Point, Vector};
 
 use super::force::{Attractor, Gravity};
 
+// Mass //////////////////////////////////////////////////////////////////////
+//
+// Simple wrapper type that can only hold a positive floating point value.
+
+#[derive(Copy, Clone)]
+pub struct Mass(f32);
+
+impl fmt::Display for Mass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for Mass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl From<f32> for Mass {
+    fn from(m: f32) -> Self {
+        Mass::new(m)
+    }
+}
+
+impl Mass {
+    pub fn new(m: f32) -> Mass {
+        if m <= 0.0 { panic!("A mass must be greater than 0. Got {}", m); }
+        Mass(m)
+    }
+
+    pub fn value(&self) -> f32 {
+        self.0
+    }
+}
+
 // Environment ///////////////////////////////////////////////////////////////
 //
 // An environment represents a space in which bodies interact with fields.
@@ -41,7 +77,7 @@ impl Environment {
 
 #[derive(Clone, Debug)]
 pub struct Body {
-    pub mass: f32, // TODO: make this a type with validation (for positive values)
+    pub mass: Mass,
     pub position: Point,
     pub velocity: Vector,
 }
@@ -66,24 +102,21 @@ impl PartialEq for Body {
 
 impl Body {
     pub fn new(mass: f32, position: Point, velocity: Vector) -> Body {
-        if mass <= 0.0 {
-            panic!("A body's mass must be greater than 0. Got {}", mass);
-        }
         Body {
-            mass,
+            mass: Mass::from(mass),
             position,
             velocity,
         }
     }
 
     pub fn apply_force(&mut self, force: &Vector) {
-        self.velocity += force / self.mass;
+        self.velocity += force / self.mass.value();
         self.position.x += self.velocity.dx;
         self.position.y += self.velocity.dy;
     }
     
     pub fn weighted_position(&self) -> Point {
-        Point::new(self.mass * self.position.x, self.mass * self.position.y)
+        Point::new(self.mass.value() * self.position.x, self.mass.value() * self.position.y)
     }
 }
 
@@ -146,14 +179,14 @@ mod tests {
     use super::*;
 
     #[test]
-    #[should_panic(expected = "A body's mass must be greater than 0.")]
+    #[should_panic(expected = "A mass must be greater than 0.")]
     fn body_with_zero_mass() {
         // given
         Body::new(0.0, Point::zero(), Vector::zero());
     }
 
     #[test]
-    #[should_panic(expected = "A body's mass must be greater than 0.")]
+    #[should_panic(expected = "A mass must be greater than 0.")]
     fn body_with_negative_mass() {
         // given
         Body::new(-10.0, Point::zero(), Vector::zero());
@@ -162,17 +195,8 @@ mod tests {
     #[test]
     fn body_has_referential_equivalence() {
         // given
-        let b1 = Body {
-            mass: 1.0,
-            position: Point { x: 1.0, y: 2.0 },
-            velocity: Vector::zero(),
-        };
-
-        let b2 = Body {
-            mass: 1.0,
-            position: Point { x: 1.0, y: 2.0 },
-            velocity: Vector::zero(),
-        };
+        let b1 = Body::new(1.0, Point::new(1.0, 2.0), Vector::zero());
+        let b2 = b1.clone();
 
         // then
         assert_eq!(b1, b1);
@@ -182,12 +206,7 @@ mod tests {
     #[test]
     fn body_applies_force() {
         // given
-        let mut sut = Body {
-            mass: 2.0,
-            position: Point { x: 1.0, y: 2.0 },
-            velocity: Vector { dx: -2.0, dy: 5.0 },
-        };
-
+        let mut sut = Body::new(2.0, Point::new(1.0, 2.0), Vector::new(-2.0, 5.0));
         let force = Vector { dx: 3.0, dy: -3.0 };
 
         // when
