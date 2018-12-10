@@ -360,7 +360,7 @@ mod tests {
         sut += Vector { dx: 9.5, dy: -3.5 };
 
         // then
-        assert_eq!(sut, Vector { dx: 12.5, dy: 0.5 });
+        assert_eq!(Vector { dx: 12.5, dy: 0.5 }, sut);
     }
 
     #[test]
@@ -403,7 +403,7 @@ mod tests {
     #[test]
     fn vector_magnitude() {
         // given, when, then
-        assert_eq!(Vector { dx: 3.0, dy: 4.0 }.magnitude(), 5.0)
+        assert_eq!(5.0, Vector { dx: 3.0, dy: 4.0 }.magnitude())
     }
 
     #[test]
@@ -421,7 +421,7 @@ mod tests {
     #[test]
     fn vector_does_not_normalize_if_zero() {
         // given, when, then
-        assert_eq!(Vector::zero().normalized(), None)
+        assert_eq!(None, Vector::zero().normalized())
     }
 
     // Size //////////////////////////////////////////////////////////////////
@@ -458,10 +458,10 @@ mod tests {
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(nw, NW(Rect::new(4.0, 6.0, 3, 4)));
-        assert_eq!(ne, NE(Rect::new(7.0, 6.0, 3, 4)));
-        assert_eq!(sw, SW(Rect::new(4.0, 2.0, 3, 4)));
-        assert_eq!(se, SE(Rect::new(7.0, 2.0, 3, 4)));
+        assert_eq!(NW(Rect::new(4.0, 6.0, 3, 4)), nw);
+        assert_eq!(NE(Rect::new(7.0, 6.0, 3, 4)), ne);
+        assert_eq!(SW(Rect::new(4.0, 2.0, 3, 4)), sw);
+        assert_eq!(SE(Rect::new(7.0, 2.0, 3, 4)), se);
     }
 
     #[test]
@@ -473,10 +473,10 @@ mod tests {
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(nw, NW(Rect::new(-5.0, -3.0, 2, 3)));
-        assert_eq!(ne, NE(Rect::new(-3.0, -3.0, 3, 3)));
-        assert_eq!(sw, SW(Rect::new(-5.0, -5.0, 2, 2)));
-        assert_eq!(se, SE(Rect::new(-3.0, -5.0, 3, 2)));
+        assert_eq!(NW(Rect::new(-5.0, -3.0, 2, 3)), nw);
+        assert_eq!(NE(Rect::new(-3.0, -3.0, 3, 3)), ne);
+        assert_eq!(SW(Rect::new(-5.0, -5.0, 2, 2)), sw);
+        assert_eq!(SE(Rect::new(-3.0, -5.0, 3, 2)), se);
     }
 
     #[test]
@@ -501,27 +501,27 @@ mod tests {
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then (bottom left of each quadrant)
-        assert_eq!(sut.quadrant(&Point::new(0.0, 2.5)), Ok(nw.clone()));
-        assert_eq!(sut.quadrant(&Point::new(2.5, 2.5)), Ok(ne.clone()));
-        assert_eq!(sut.quadrant(&Point::new(0.0, 0.0)), Ok(sw.clone()));
-        assert_eq!(sut.quadrant(&Point::new(2.5, 0.0)), Ok(se.clone()));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(0.0, 2.5)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(2.5, 2.5)));
+        assert_eq!(Ok(sw.clone()), sut.quadrant(&Point::new(0.0, 0.0)));
+        assert_eq!(Ok(se.clone()), sut.quadrant(&Point::new(2.5, 0.0)));
 
         // then (top right of each quadrant)
-        assert_eq!(sut.quadrant(&Point::new(2.0, 5.0)), Ok(nw.clone()));
-        assert_eq!(sut.quadrant(&Point::new(5.0, 5.0)), Ok(ne.clone()));
-        assert_eq!(sut.quadrant(&Point::new(2.0, 1.0)), Ok(sw.clone()));
-        assert_eq!(sut.quadrant(&Point::new(5.0, 1.0)), Ok(se.clone()));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(2.0, 5.0)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(5.0, 5.0)));
+        assert_eq!(Ok(sw.clone()), sut.quadrant(&Point::new(2.0, 1.0)));
+        assert_eq!(Ok(se.clone()), sut.quadrant(&Point::new(5.0, 1.0)));
 
         // then (anywhere in quadrant)
-        assert_eq!(sut.quadrant(&Point::new(0.3, 2.9)), Ok(nw.clone()));
-        assert_eq!(sut.quadrant(&Point::new(2.6, 4.2)), Ok(ne.clone()));
-        assert_eq!(sut.quadrant(&Point::new(1.0, 2.0)), Ok(nw.clone()));
-        assert_eq!(sut.quadrant(&Point::new(3.7, 2.4)), Ok(ne.clone()));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(0.3, 2.9)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(2.6, 4.2)));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(1.0, 2.0)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(3.7, 2.4)));
 
         // then
-        assert_eq!(sut.quadrant(&Point::new(-2.5, 5.0)), Err(Error(OutOfBounds)));
-        assert_eq!(sut.quadrant(&Point::new(5.4, 0.4)),  Err(Error(OutOfBounds)));
-        assert_eq!(sut.quadrant(&Point::new(2.5, -4.0)), Err(Error(OutOfBounds)));
-        assert_eq!(sut.quadrant(&Point::new(4.0, 6.5)),  Err(Error(OutOfBounds)));
+        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(-2.5, 5.0)));
+        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(5.4, 0.4)));
+        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(2.5, -4.0)));
+        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(4.0, 6.5)),);
     }
 }
