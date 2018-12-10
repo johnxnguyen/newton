@@ -213,8 +213,8 @@ mod tests {
         sut.apply_force(&force);
 
         // then
-        assert_eq!(sut.velocity, Vector { dx: -0.5, dy: 3.5 });
-        assert_eq!(sut.position, Point { x: 0.5, y: 5.5 });
+        assert_eq!(Vector { dx: -0.5, dy: 3.5 }, sut.velocity);
+        assert_eq!(Point { x: 0.5, y: 5.5 }, sut.position);
     }
     
     #[test]
