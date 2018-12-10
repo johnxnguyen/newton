@@ -16,6 +16,36 @@ pub struct Point {
     pub y: f32,
 }
 
+// TODO: Does it make sense to define a common point/vector type, then newtype them?
+
+// TODO: test
+impl Add for Point {
+    type Output = Point;
+
+    fn add(self, rhs: Point) -> Self::Output {
+        Point::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+impl<'a> Mul<f32> for &'a Point {
+    type Output = Point;
+
+    fn mul(self, rhs: f32) -> Self::Output {
+        Point::new(self.x * rhs, self.y * rhs)
+    }
+}
+
+impl<'a> Div<f32> for &'a Point {
+    type Output = Point;
+
+    fn div(self, rhs: f32) -> Self::Output {
+        Point::new(
+            self.x / rhs,
+            self.y / rhs
+        )
+    }
+}
+
 impl Point {
     pub fn new(x: f32, y: f32) -> Point {
         Point { x, y }
