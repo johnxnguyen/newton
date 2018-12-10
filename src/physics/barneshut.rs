@@ -72,10 +72,7 @@ impl BHTree {
 
     /// Returns true if the given node is a leaf.
     fn is_leaf(&self, node: &Node) -> bool {
-        self.node(node.nw()).is_none() &&
-        self.node(node.ne()).is_none() &&
-        self.node(node.sw()).is_none() &&
-        self.node(node.se()).is_none()
+        node.iter().all(|n| self.node(n).is_none())
     }
 
     /// Inserts the given body into the tree at the given node.
