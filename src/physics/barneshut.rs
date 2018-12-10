@@ -151,13 +151,12 @@ impl BHTree {
         unimplemented!()
     }
 
-    // TODO: test
     /// Returns a vector of the leaves.
     fn leaves(&self) -> Vec<&Node> {
         self.preorder().filter(|n| self.is_leaf(*n)).collect()
     }
 
-    // TODO: test
+    /// Returns a preorder traversal iterator.
     fn preorder(&self) -> PreorderTraverser {
         PreorderTraverser::new(self)
     }
@@ -367,6 +366,16 @@ mod tests {
     use physics::types::Body;
     use physics::barneshut::Index;
 
+    fn small_tree() -> BHTree {
+        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
+        let space = Rect::new(0.0, 0.0, 10, 10);
+
+        let mut tree = BHTree::new(space);
+        tree.add(body(1.0, 2.0));
+        tree.add(body(6.0, 8.0));
+        tree.add(body(4.0, 4.0));
+        tree
+    }
 
     #[test]
     fn tree_adds_bodies() {
@@ -414,57 +423,38 @@ mod tests {
     #[test]
     fn tree_iterates() {
         // given
-        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
-        let space = Rect::new(0.0, 0.0, 10, 10);
-
-        let mut tree = BHTree::new(space);
-        tree.add(body(1.0, 2.0));
-        tree.add(body(6.0, 8.0));
-        tree.add(body(4.0, 4.0));
-
-        let mut iter = tree.preorder();
+        let tree = small_tree();
+        let mut sut = tree.preorder();
 
         // then
-        assert_eq!(iter.next().unwrap().id, 0);
-        assert_eq!(iter.next().unwrap().id, 2);
-        assert_eq!(iter.next().unwrap().id, 3);
-        assert_eq!(iter.next().unwrap().id, 13);
-        assert_eq!(iter.next().unwrap().id, 14);
+        assert_eq!(0, sut.next().unwrap().id);
+        assert_eq!(2, sut.next().unwrap().id);
+        assert_eq!(3, sut.next().unwrap().id);
+        assert_eq!(13, sut.next().unwrap().id);
+        assert_eq!(14, sut.next().unwrap().id);
     }
 
     #[test]
     fn tree_is_leaf() {
         // given
-        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
-        let space = Rect::new(0.0, 0.0, 10, 10);
-
-        let mut tree = BHTree::new(space);
-        tree.add(body(1.0, 2.0));
-        tree.add(body(6.0, 8.0));
-        tree.add(body(4.0, 4.0));
+        let sut = small_tree();
 
         // then
-        assert!(!tree.is_leaf(tree.node(0u32).unwrap()));
-        assert!(!tree.is_leaf(tree.node(3u32).unwrap()));
+        assert!(!sut.is_leaf(sut.node(0u32).unwrap()));
+        assert!(!sut.is_leaf(sut.node(3u32).unwrap()));
 
-        assert!(tree.is_leaf(tree.node(2u32).unwrap()));
-        assert!(tree.is_leaf(tree.node(13u32).unwrap()));
-        assert!(tree.is_leaf(tree.node(14u32).unwrap()));
+        assert!(sut.is_leaf(sut.node(2u32).unwrap()));
+        assert!(sut.is_leaf(sut.node(13u32).unwrap()));
+        assert!(sut.is_leaf(sut.node(14u32).unwrap()));
     }
 
     #[test]
     fn tree_leaves() {
         // given
-        let body = |x, y| Body::new(1.0, Point::new(x, y), Vector::zero());
-        let space = Rect::new(0.0, 0.0, 10, 10);
-
-        let mut tree = BHTree::new(space);
-        tree.add(body(1.0, 2.0));
-        tree.add(body(6.0, 8.0));
-        tree.add(body(4.0, 4.0));
+        let sut = small_tree();
 
         // when
-        let result: Vec<Index> = tree.leaves().iter().map(|n| n.id).collect();
+        let result: Vec<Index> = sut.leaves().iter().map(|n| n.id).collect();
         
         // then
         assert_eq!(vec![2, 13, 14], result);
