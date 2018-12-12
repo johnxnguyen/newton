@@ -47,7 +47,7 @@ pub unsafe extern "C" fn newton_distribute_bodies(
 
     let bodies = distributor.distribution();
     let environment = &mut *environment;
-    environment.bodies = bodies;
+    environment.bodies = Some(bodies);
 }
 
 #[no_mangle]
@@ -56,14 +56,14 @@ pub unsafe extern "C" fn newton_step(environment: *mut Environment) {
     environment.update()
 }
 
-#[no_mangle]
-pub unsafe extern "C" fn newton_body_pos(environment: *const Environment, id: u32) -> NewtonPoint {
-    let environment = &*environment;
-    match environment.bodies.get(id as usize) {
-        Some(val) => NewtonPoint::from(&((val as &Body).position)),
-        None => NewtonPoint {
-            x: 0.0,
-            y: 0.0,
-        },
-    }
-}
+//#[no_mangle]
+//pub unsafe extern "C" fn newton_body_pos(environment: *const Environment, id: u32) -> NewtonPoint {
+//    let environment = &*environment;
+//    match environment.bodies.get(id as usize) {
+//        Some(val) => NewtonPoint::from(&((val as &Body).position)),
+//        None => NewtonPoint {
+//            x: 0.0,
+//            y: 0.0,
+//        },
+//    }
+//}

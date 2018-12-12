@@ -1,9 +1,11 @@
 use std::cmp::Eq;
+use std::collections::HashMap;
 use std::fmt;
 
 use uuid::Uuid;
 
 use geometry::types::{Point, Vector};
+use util::DataWriter;
 
 use super::force::{Attractor, Gravity};
 
@@ -47,9 +49,9 @@ impl Mass {
 //
 // An environment represents a space in which bodies interact with fields.
 
-// TODO: when passing the bodies to the field, we need to return them back in the same order.
 pub struct Environment {
-    pub bodies: Vec<Body>,
+    writer: DataWriter,
+    pub bodies: Option<HashMap<Uuid, Body>>,
     pub fields: Vec<Box<Field>>,
 }
 
@@ -57,19 +59,37 @@ impl Environment {
     pub fn new() -> Environment {
         let field = BruteForceField::new();
         Environment {
-            bodies: vec![],
+            writer: DataWriter::new("data"),
+            bodies: Some(HashMap::new()),
             fields: vec![Box::from(field)],
         }
     }
 
-    pub fn update(&mut self) {
-        for field in self.fields.iter() {
-            let forces = field.forces(&self.bodies[..]);
+    pub fn step(&mut self) {
+        self.update();
 
-            for (body, force) in self.bodies.iter_mut().zip(forces.iter()) {
-                body.apply_force(force);
-            }
+        let points = self.bodies
+            .as_ref()
+            .unwrap()
+            .values()
+            .map(|b| b.position.clone())
+            .collect();
+
+        self.writer.write(points);
+    }
+
+    pub fn update(&mut self) {
+        let mut bodies = self.bodies.take().unwrap();
+
+        for field in self.fields.iter() {
+            bodies = field.apply(bodies);
         }
+
+        for body in bodies.values_mut() {
+            body.apply_velocity();
+        }
+
+        self.bodies = Some(bodies);
     }
 }
 
@@ -118,8 +138,15 @@ impl Body {
         }
     }
 
+    pub fn id(&self) -> Uuid {
+        self.id
+    }
+
     pub fn apply_force(&mut self, force: &Vector) {
         self.velocity += force / self.mass.value();
+    }
+
+    pub fn apply_velocity(&mut self) {
         self.position.x += self.velocity.dx;
         self.position.y += self.velocity.dy;
     }
@@ -135,7 +162,9 @@ impl Body {
 // gravitational force.
 
 pub trait Field {
-    fn forces(&self, bodies: &[Body]) -> Vec<Vector>;
+    /// Takes ownership of the given bodies, applies force vectors to each
+    /// body, returning ownership upon completion.
+    fn apply(&self, bodies: HashMap<Uuid, Body>) -> HashMap<Uuid, Body>;
 }
 
 // BruteForceField ///////////////////////////////////////////////////////////
@@ -149,24 +178,32 @@ pub struct BruteForceField {
 }
 
 impl Field for BruteForceField {
-    fn forces(&self, bodies: &[Body]) -> Vec<Vector> {
-        let mut result: Vec<Vector> = vec![];
+    fn apply(&self, mut bodies: HashMap<Uuid, Body>) -> HashMap<Uuid, Body> {
+        let mut result: HashMap<Uuid, Vector> = HashMap::new();
+        {
+            // generate force map
+            for body in bodies.values() {
+                let mut cumulative_force = Vector::zero();
 
-        for body in bodies {
-            let mut cumulative_force = Vector::zero();
+                for other in bodies.values() {
+                    cumulative_force += self.force.between(body, other);
+                }
 
-            for other in bodies {
-                cumulative_force += self.force.between(body, other);
+                if let Some(ref sun) = self.sun {
+                    cumulative_force += sun.force(body);
+                }
+
+                result.insert(body.id, cumulative_force);
             }
-
-            if let Some(ref sun) = self.sun {
-                cumulative_force += sun.force(body);
-            }
-
-            result.push(cumulative_force);
         }
-
-        result
+        {
+            // apply forces
+            for (id, force) in result {
+                let body = bodies.get_mut(&id).expect("Body not found.");
+                body.apply_force(&force);
+            }
+        }
+        bodies
     }
 }
 
