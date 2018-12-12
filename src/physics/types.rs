@@ -1,6 +1,8 @@
 use std::cmp::Eq;
 use std::fmt;
 
+use uuid::Uuid;
+
 use geometry::types::{Point, Vector};
 
 use super::force::{Attractor, Gravity};
@@ -75,11 +77,18 @@ impl Environment {
 //
 // A body represents a movable object in space.
 
-#[derive(Clone, Debug)]
+#[derive(Debug)]
 pub struct Body {
+    id: Uuid,
     pub mass: Mass,
     pub position: Point,
     pub velocity: Vector,
+}
+
+impl Clone for Body {
+    fn clone(&self) -> Self {
+        Body:: new(self.mass.value(), self.position.clone(), self.velocity.clone())
+    }
 }
 
 impl fmt::Display for Body {
@@ -95,14 +104,14 @@ impl Eq for Body {}
 
 impl PartialEq for Body {
     fn eq(&self, other: &'_ Body) -> bool {
-        // Bodies are compared referentially.
-        self as *const _ == other as *const _
+        self.id == other.id
     }
 }
 
 impl Body {
     pub fn new(mass: f32, position: Point, velocity: Vector) -> Body {
         Body {
+            id: Uuid::new_v4(),
             mass: Mass::from(mass),
             position,
             velocity,
