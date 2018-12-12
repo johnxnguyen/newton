@@ -10,3 +10,4 @@ crate-type = ["staticlib"]
 
 [dependencies]
 rand = "0.5"
+uuid = { version = "0.7", features = ["v4"] }
