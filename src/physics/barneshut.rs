@@ -318,7 +318,8 @@ impl Node {
     fn is_ancestor(&self, node: &Node) -> bool {
         let parent = |idx: Index| (idx - 1) / 4;
         let mut curr = self.id;
-        while curr != 0 {
+        // ancestor nodes always have a lower index
+        while curr > node.id {
             let next = parent(curr);
             if next == node.id { return true }
             curr = next;
