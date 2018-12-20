@@ -24,6 +24,14 @@ impl Add for Point {
     }
 }
 
+// TODO: Test
+impl AddAssign for Point {
+    fn add_assign(&mut self, rhs: Point) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
 impl<'a> Mul<f32> for &'a Point {
     type Output = Point;
 
