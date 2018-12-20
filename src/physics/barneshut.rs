@@ -10,6 +10,42 @@ use geometry::types::Vector;
 
 use super::types::Body;
 
+#[derive(Clone, PartialEq)]
+struct VirtualBody {
+    mass: f32,
+    position: Point,
+}
+
+impl fmt::Display for VirtualBody {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{:?}, ({:?}, {:?})", self.mass, self.position.x, self.position.y)?;
+        Ok(())
+    }
+}
+
+impl fmt::Debug for VirtualBody {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{:?}, ({:?}, {:?})", self.mass, self.position.x, self.position.y)?;
+        Ok(())
+    }
+}
+
+impl VirtualBody {
+    fn new(body: &Body) -> VirtualBody {
+        VirtualBody {
+            mass: body.mass.value(),
+            position: body.position.clone(),
+        }
+    }
+
+    fn zero() -> VirtualBody {
+        VirtualBody {
+            mass: 0.0,
+            position: Point::zero(),
+        }
+    }
+}
+
 // Action ////////////////////////////////////////////////////////////////////
 //
 // Represents an action to take on a `BHTree`. Either insert the given node
@@ -29,7 +65,7 @@ enum Action {
 // which case, the current index and the body need to be stored temporarily
 // so that the insertion algorithm can continue at a later time.
 
-struct Pending(Index, Body);
+struct Pending(Index, VirtualBody);
 
 // BHTree ////////////////////////////////////////////////////////////////////
 //
@@ -56,14 +92,15 @@ impl BHTree {
     /// Initialized tree with a root nodes spanning the given space.
     pub fn new(space: Rect) -> BHTree {
         let mut nodes: HashMap<Index, Node> = HashMap::new();
-        let root = Node::new(0, space, None);
+        let root = Node::new(0, space, VirtualBody::zero());
         nodes.insert(root.id, root);
         BHTree { nodes }
     }
 
     /// Inserts the given body into the tree.
-    pub fn add(&mut self, body: Body) {
-        self.insert(Pending(0, body));
+    pub fn add(&mut self, body: &Body) {
+        let vb = VirtualBody::new(body);
+        self.insert(Pending(0, vb));
     }
 
     /// Borrows the node for the given index, if it exists.
@@ -113,7 +150,7 @@ impl BHTree {
         let mut node = self.nodes.remove(&id).expect("Node doesn't exist.");
         debug_assert!(self.is_leaf(&node), "Can't internalize an internal node");
 
-        let child = node.child_from_self().expect("Can't internalize empty leaf.");
+        let child = node.child_from_self();
 
         self.nodes.insert(node.id, node);
         self.nodes.insert(child.id, child);
@@ -127,17 +164,23 @@ impl BHTree {
     /// needs to be internalize. Additionally, the current index and body
     /// is included in the return so that the search can continue after
     /// the leaf has been internalized.
-    fn action(&self, node: &Node, body: Body) -> Action {
+    fn action(&self, node: &Node, body: VirtualBody) -> Action {
         debug_assert!(node.space.contains(&body.position));
 
         if self.is_leaf(node) {
+            // just add the body here to existing leaf
             if node.is_empty() { Action::Insert(node.with(body)) }
+            // now internalize means to copy the body to a leaf (but keep the body
+            // at the internal node), then process the pending
             else { Action::Internalize(node.id, Pending(node.id, body)) }
         } else {
             node.map_quadrant(body.position.clone(), move |idx: Index, q: Quadrant| {
                 match self.node(idx) {
+                    // when we go to a child, we need to add the current node to list
+                    // of nodes to update. We will need to pass a list of
+                    // accumulated updates, or list of "visited" nodes
                     Some(child) => self.action(child, body),
-                    None => Action::Insert(Node::new(idx, q.space().clone(), Some(body))),
+                    None => Action::Insert(Node::new(idx, q.space().clone(), body)),
                 }
             })
         }
@@ -149,22 +192,22 @@ impl BHTree {
     /// center of mass of these bodies, and its velocity is zero.
     /// If there are no descendant leaves (node is itself an empty leaf),
     /// returns None.
-    fn virtual_body(&self, node: Index) -> Option<Body> {
-        let (mass, position) = self.leaves_at(node).into_iter()
-            // extract mass & weighted position for each body
-            .filter_map(|n|
-                n.body.clone()
-                    .map(|b| (b.mass.value(), b.weighted_position())))
-            // sum
-            .fold((0f32, Point::zero()), |acc, e|
-                (acc.0 + e.0, acc.1 + e.1));
-
-        // zero mass means no real bodies
-        if mass <= 0.0 { return None }
-        let center = &position / mass;
-
-        Some(Body::new(mass, center, Vector::zero()))
-    }
+//    fn virtual_body(&self, node: Index) -> Option<Body> {
+//        let (mass, position) = self.leaves_at(node).into_iter()
+//            // extract mass & weighted position for each body
+//            .filter_map(|n|
+//                n.body.clone()
+//                    .map(|b| (b.mass.value(), b.weighted_position())))
+//            // sum
+//            .fold((0f32, Point::zero()), |acc, e|
+//                (acc.0 + e.0, acc.1 + e.1));
+//
+//        // zero mass means no real bodies
+//        if mass <= 0.0 { return None }
+//        let center = &position / mass;
+//
+//        Some(Body::new(mass, center, Vector::zero()))
+//    }
 
     /// Returns a vector of the leaves in order.
     fn leaves(&self) -> Vec<&Node> {
@@ -192,8 +235,8 @@ impl BHTree {
     /// nodes are printed with their id and body.
     fn report(&self) -> String {
         self.preorder().fold(String::new(), |acc, n| {
-            if let Some(ref b) = n.body {
-                acc + &format!("#{}\t({}, {})\n", n.id, b.position.x, b.position.y)
+            if self.is_leaf(n) {
+                acc + &format!("#{}\t({}, {})\n", n.id, n.body.position.x, n.body.position.y)
             } else {
                 acc + &format!("#{}\n", n.id)
             }
@@ -256,7 +299,7 @@ impl<'a> PreorderTraverser<'a> {
 struct Node {
     pub id: Index,
     pub space: Rect,
-    pub body: Option<Body>,
+    pub body: VirtualBody,
 }
 
 impl fmt::Display for Node {
@@ -264,28 +307,25 @@ impl fmt::Display for Node {
     fn fmt(&self, f: &mut fmt::Formatter<>) -> Result<(), fmt::Error> {
         write!(f, "#{}\t({}, {}, ", self.id, self.space.origin.x, self.space.origin.y)?;
         write!(f, "{}, {}) ", self.space.size.width, self.space.size.height)?;
-        match &self.body {
-            Some(body) => write!(f, "{}", body)?,
-            None => write!(f, "None")?,
-        }
+        write!(f, "{}", self.body)?;
         Ok(())
     }
 }
 
 impl Node {
     /// Creates a new node.
-    fn new(id: Index, space: Rect, body: Option<Body>) -> Node {
+    fn new(id: Index, space: Rect, body: VirtualBody) -> Node {
         Node { id, space, body }
     }
 
     /// Creates a copy with the given body.
-    fn with(&self, body: Body) -> Node {
-        Node { id: self.id, space: self.space.clone(), body: Some(body) }
+    fn with(&self, body: VirtualBody) -> Node {
+        Node { id: self.id, space: self.space.clone(), body }
     }
 
     /// Returns true if the node has no body.
     fn is_empty(&self) -> bool {
-        self.body.is_none()
+        self.body == VirtualBody::zero()
     }
 
     /// Index of the parent node.
@@ -328,17 +368,15 @@ impl Node {
     }
 
     /// Moves the body into a new child node and returns it, if it exists.
-    fn child_from_self(&mut self) -> Option<Node> {
-        let body = match self.body.take() {
-            None => return None,
-            Some(body) => body,
-        };
-
+    fn child_from_self(&mut self) -> Node {
+        // TODO: does this need to be mut?
+        // TODO: check that this is a leaf
+        let body = self.body.clone();
         let child = self.map_quadrant(body.position.clone(), move |idx, q| {
-            Node::new(idx, q.space().clone(), Some(body))
+            Node::new(idx, q.space().clone(), body)
         });
 
-        Some(child)
+        child
     }
 
     /// Finds quadrant containing the given point and passes it together with
@@ -403,9 +441,9 @@ mod tests {
         let space = Rect::new(0.0, 0.0, 10, 10);
 
         let mut tree = BHTree::new(space);
-        tree.add(body(1.0, 1.0, 2.0));
-        tree.add(body(1.0, 6.0, 8.0));
-        tree.add(body(1.0, 4.0, 4.0));
+        tree.add(&body(1.0, 1.0, 2.0));
+        tree.add(&body(1.0, 6.0, 8.0));
+        tree.add(&body(1.0, 4.0, 4.0));
         tree
     }
 
@@ -415,19 +453,19 @@ mod tests {
         let mut tree = BHTree::new(space);
 
         assert_eq!(tree.report(),
-                   "#0\n".to_string());
+                   "#0\t(0, 0)\n".to_string());
 
-        tree.add(body(1.0, 1.0, 2.0));
+        tree.add(&body(1.0, 1.0, 2.0));
         assert_eq!(tree.report(),
                    "#0\t(1, 2)\n".to_string());
 
-        tree.add(body(1.0, 6.0, 8.0));
+        tree.add(&body(1.0, 6.0, 8.0));
         assert_eq!(tree.report(),
                    "#0\n\
                     #2\t(6, 8)\n\
                     #3\t(1, 2)\n".to_string());
 
-        tree.add(body(1.0, 4.0, 4.0));
+        tree.add(&body(1.0, 4.0, 4.0));
         assert_eq!(tree.report(),
                    "#0\n\
                     #2\t(6, 8)\n\
@@ -447,7 +485,7 @@ mod tests {
         let body = Body::new(1.0, Point::new(0.0, 5.5), Vector::zero());
 
         // when, then
-        tree.add(body);
+        tree.add(&body);
     }
 
     #[test]
@@ -490,52 +528,52 @@ mod tests {
         assert_eq!(vec![2, 13, 14], result);
     }
 
-    #[test]
-    fn tree_virtual_body() {
-        // given
-        let space = Rect::new(0.0, 0.0, 10, 10);
-        let mut tree = BHTree::new(space);
-        tree.add(body(2.0, 1.0, 2.0)); // A
-        tree.add(body(4.1, 6.0, 8.0)); // B
-        tree.add(body(3.6, 4.0, 4.0)); // C
+//    #[test]
+//    fn tree_virtual_body() {
+//        // given
+//        let space = Rect::new(0.0, 0.0, 10, 10);
+//        let mut tree = BHTree::new(space);
+//        tree.add(&body(2.0, 1.0, 2.0)); // A
+//        tree.add(&body(4.1, 6.0, 8.0)); // B
+//        tree.add(&body(3.6, 4.0, 4.0)); // C
+//
+//        // bodies equate on reference, hence this helper
+//        fn assert_eq(lhs: Body, rhs: Body) {
+//            assert_eq!(lhs.mass.value(), rhs.mass.value());
+//            assert_eq!(lhs.position, rhs.position);
+//        }
+//
+//        // then
+//
+//        // A B and C
+//        // (41.0, 51.2) / 9.7 = (4.226804124, 5.278350515)
+//        let expected = body(9.7, 4.226804124, 5.278350515);
+//        assert_eq(expected, tree.virtual_body(0).unwrap());
+//
+//        // just B
+//        let expected = body(4.1, 6.0, 8.0);
+//        assert_eq(expected, tree.virtual_body(2).unwrap());
+//
+//        // A and C
+//        // (16.4, 18.4) / 5.6 = (2.928571429, 3.285714286)
+//        let expected = body(5.6, 2.928571429, 3.285714286);
+//        assert_eq(expected, tree.virtual_body(3).unwrap());
+//
+//        // just A
+//        let expected = body(2.0, 1.0, 2.0);
+//        assert_eq(expected, tree.virtual_body(13).unwrap());
+//
+//        // just C
+//        let expected = body(3.6, 4.0, 4.0);
+//        assert_eq(expected, tree.virtual_body(14).unwrap());
+//    }
 
-        // bodies equate on reference, hence this helper
-        fn assert_eq(lhs: Body, rhs: Body) {
-            assert_eq!(lhs.mass.value(), rhs.mass.value());
-            assert_eq!(lhs.position, rhs.position);
-        }
-
-        // then
-
-        // A B and C
-        // (41.0, 51.2) / 9.7 = (4.226804124, 5.278350515)
-        let expected = body(9.7, 4.226804124, 5.278350515);
-        assert_eq(expected, tree.virtual_body(0).unwrap());
-
-        // just B
-        let expected = body(4.1, 6.0, 8.0);
-        assert_eq(expected, tree.virtual_body(2).unwrap());
-
-        // A and C
-        // (16.4, 18.4) / 5.6 = (2.928571429, 3.285714286)
-        let expected = body(5.6, 2.928571429, 3.285714286);
-        assert_eq(expected, tree.virtual_body(3).unwrap());
-
-        // just A
-        let expected = body(2.0, 1.0, 2.0);
-        assert_eq(expected, tree.virtual_body(13).unwrap());
-
-        // just C
-        let expected = body(3.6, 4.0, 4.0);
-        assert_eq(expected, tree.virtual_body(14).unwrap());
-    }
-
-    #[test]
-    fn tree_virtual_body_empty_leaf() {
-        // given
-        let tree = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
-
-        // then
-        assert_eq!(None, tree.virtual_body(0));
-    }
+//    #[test]
+//    fn tree_virtual_body_empty_leaf() {
+//        // given
+//        let tree = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+//
+//        // then
+//        assert_eq!(None, tree.virtual_body(0));
+//    }
 }
