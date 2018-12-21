@@ -53,7 +53,7 @@ impl VirtualBody {
     }
 
     fn centered(&self) -> VirtualBody {
-        debug_assert!(self.mass > 0.0, "Mass must be positive");
+        debug_assert!(self.mass > 0.0, "Mass must be positive. Got {}", self.mass);
         VirtualBody {
             mass: self.mass,
             position: &self.position / self.mass,
@@ -237,8 +237,8 @@ impl BHTree {
     fn report(&self) -> String {
         self.preorder().fold(String::new(), |acc, n| {
             if self.is_leaf(n) {
-                // TODO: this should be centered
-                acc + &format!("#{}\t({}, {})\n", n.id, n.body.position.x, n.body.position.y)
+                let v = n.body.centered();
+                acc + &format!("#{}\t({}, {})\n", n.id, v.position.x, v.position.y)
             } else {
                 acc + &format!("#{}\n", n.id)
             }
@@ -493,10 +493,7 @@ mod tests {
         let space = Rect::new(0.0, 0.0, 10, 10);
         let mut tree = BHTree::new(space);
 
-        assert_eq!(tree.report(),
-                   "#0\t(0, 0)\n".to_string());
-
-        tree.add(body(1.0, 1.0, 2.0));
+        tree.add(body(2.0, 1.0, 2.0));
         assert_eq!(tree.report(),
                    "#0\t(1, 2)\n".to_string());
 
@@ -506,7 +503,7 @@ mod tests {
                     #2\t(6, 8)\n\
                     #3\t(1, 2)\n".to_string());
 
-        tree.add(body(1.0, 4.0, 4.0));
+        tree.add(body(4.0, 4.0, 4.0));
         assert_eq!(tree.report(),
                    "#0\n\
                     #2\t(6, 8)\n\
