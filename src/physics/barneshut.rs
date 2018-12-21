@@ -10,7 +10,13 @@ use geometry::types::Vector;
 
 use super::types::Body;
 
-#[derive(Clone, PartialEq)]
+// VirtualBody ///////////////////////////////////////////////////////////////
+//
+// A virtual body represents an amalgamation of real bodies. Its mass is the
+// total sum of the collected masses and its position is the center of mass
+// of the group.
+
+#[derive(Clone, PartialEq, Debug)]
 struct VirtualBody {
     mass: f32,
     position: Point,
@@ -23,30 +29,28 @@ impl fmt::Display for VirtualBody {
     }
 }
 
-impl fmt::Debug for VirtualBody {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{:?}, ({:?}, {:?})", self.mass, self.position.x, self.position.y)?;
-        Ok(())
-    }
-}
-
-impl VirtualBody {
-    fn new(body: &Body) -> VirtualBody {
+impl From<&Body> for VirtualBody {
+    fn from(body: &Body) -> Self {
         VirtualBody {
             mass: body.mass.value(),
             position: body.position.clone(),
         }
     }
+}
 
-    fn zero() -> VirtualBody {
+impl VirtualBody {
+    fn new(mass: f32, x: f32, y: f32) -> VirtualBody {
         VirtualBody {
-            mass: 0.0,
-            position: Point::zero(),
+            mass,
+            position: Point::new(x, y),
         }
     }
 
-    // TODO: test
-    pub fn weighted_position(&self) -> Point {
+    fn zero() -> VirtualBody {
+        VirtualBody::new(0.0, 0.0, 0.0)
+    }
+
+    fn weighted_position(&self) -> Point {
         Point::new(self.mass * self.position.x, self.mass * self.position.y)
     }
 }
@@ -94,7 +98,7 @@ pub struct BHTree {
 }
 
 impl BHTree {
-    /// Initialized tree with a root nodes spanning the given space.
+    /// Initialized tree with a root node spanning the given space.
     pub fn new(space: Rect) -> BHTree {
         let mut nodes: HashMap<Index, Node> = HashMap::new();
         let root = Node::new(0, space, VirtualBody::zero());
@@ -104,8 +108,7 @@ impl BHTree {
 
     /// Inserts the given body into the tree.
     pub fn add(&mut self, body: &Body) {
-        let vb = VirtualBody::new(body);
-        self.insert(Pending(0, vb));
+        self.insert(Pending(0, VirtualBody::from(body)));
     }
 
     /// Borrows the node for the given index, if it exists.
@@ -115,7 +118,7 @@ impl BHTree {
 
     /// Returns true if the given node is a leaf.
     fn is_leaf(&self, node: &Node) -> bool {
-        node.iter().all(|n| self.node(n).is_none())
+        node.children().all(|n| self.node(n).is_none())
     }
 
     /// Inserts the given body into the tree at the given node.
@@ -123,7 +126,9 @@ impl BHTree {
         let action: Action;
         {
             // inspect the tree to find the necessary action
-            action = self.action(self.node(pending.0).unwrap(), pending.1);
+            let node = self.node(pending.0).expect("Expected a node");
+            let body = pending.1;
+            action = self.action(node, body);
         }
         {
             match self.process(action) {
@@ -139,8 +144,7 @@ impl BHTree {
         match action {
             Action::Insert(node) => {
                 // go up from node to root, update virtual bodies along the way
-                for idx in node.parent_iter() {
-                    // TODO: Are we sure that this adds all the positions?
+                for idx in node.ancestors() {
                     // TODO: check if we can edit in place
                     let mut parent = self.nodes.remove(&idx).expect("Expected a parent");
                     parent.body.mass += node.body.mass;
@@ -165,10 +169,9 @@ impl BHTree {
         let mut node = self.nodes.remove(&id).expect("Node doesn't exist.");
         debug_assert!(self.is_leaf(&node), "Can't internalize an internal node");
 
-        // copies the body into the appropriate child node
         let child = node.child_from_self();
 
-        // we must convert the position of node to weighted position
+        // internal nodes have weighted positions
         node.body.position = node.body.weighted_position();
 
         self.nodes.insert(node.id, node);
@@ -187,17 +190,11 @@ impl BHTree {
         debug_assert!(node.space.contains(&body.position));
 
         if self.is_leaf(node) {
-            // just add the body here to existing leaf
             if node.is_empty() { Action::Insert(node.with(body)) }
-            // now internalize means to copy the body to a leaf (but keep the body
-            // at the internal node), then process the pending
             else { Action::Internalize(node.id, Pending(node.id, body)) }
         } else {
             node.map_quadrant(body.position.clone(), move |idx: Index, q: Quadrant| {
                 match self.node(idx) {
-                    // when we go to a child, we need to add the current node to list
-                    // of nodes to update. We will need to pass a list of
-                    // accumulated updates, or list of "visited" nodes
                     Some(child) => self.action(child, body),
                     None => Action::Insert(Node::new(idx, q.space().clone(), body)),
                 }
@@ -277,7 +274,7 @@ impl<'a> Iterator for PreorderTraverser<'a> {
     fn next(&mut self) -> Option<Self::Item> {
         // first element
         if let Some(node) = self.first.take() {
-            self.stack.push(node.iter());
+            self.stack.push(node.children());
             return Some(node);
         }
 
@@ -286,7 +283,7 @@ impl<'a> Iterator for PreorderTraverser<'a> {
             while let Some(idx) = iter.next() {
                 if let Some(node) = self.tree.node(idx) {
                     self.stack.push(iter);
-                    self.stack.push(node.iter());
+                    self.stack.push(node.children());
                     return Some(node)
                 }
             }
@@ -385,8 +382,7 @@ impl Node {
     }
 
     /// Moves the body into a new child node and returns it, if it exists.
-    fn child_from_self(&mut self) -> Node {
-        // TODO: does this need to be mut?
+    fn child_from_self(&self) -> Node {
         // TODO: check that this is a leaf
         let body = self.body.clone();
         let child = self.map_quadrant(body.position.clone(), move |idx, q| {
@@ -412,13 +408,41 @@ impl Node {
         }
     }
 
-    /// Returns an iterator over the children indices.
-    fn iter(&self) -> ChildIterator {
-        ChildIterator::new(self.id, 4)
+    /// Returns an iterator over the ancestor indices.
+    fn ancestors(&self) -> AncestorIterator {
+        AncestorIterator::new(self.id)
     }
 
-    fn parent_iter(&self) -> ParentIterator {
-        ParentIterator(self.id)
+    /// Returns an iterator over the children indices.
+    fn children(&self) -> ChildIterator {
+        ChildIterator::new(self.id, 4)
+    }
+}
+
+// AncestorIterator /////////////////////////////////////////////////////////////
+
+// TODO: Test
+struct AncestorIterator {
+    current: Index,
+}
+
+impl Iterator for AncestorIterator {
+    type Item = Index;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.current <= 0 {
+            None
+        } else {
+            self.current -= 1;
+            self.current /= 4;
+            Some(self.current)
+        }
+    }
+}
+
+impl AncestorIterator {
+    fn new(start: Index) -> AncestorIterator {
+        AncestorIterator { current: start }
     }
 }
 
@@ -441,25 +465,6 @@ impl ChildIterator {
         ChildIterator(start..(start + degree))
     }
 }
-
-// TODO: Test
-struct ParentIterator(Index);
-
-impl Iterator for ParentIterator {
-    type Item = Index;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        if self.0 == 0 { 
-            None
-        }
-        else {
-            self.0 -= 1;
-            self.0 /= 4;
-            Some(self.0)
-        }
-    }
-}
-
 
 // Tests /////////////////////////////////////////////////////////////////////
 
@@ -624,5 +629,20 @@ mod tests {
 
         // when
         tree.virtual_body(0);
+    }
+
+    #[test]
+    fn virtual_body_weighted_position() {
+        // given, then
+        let sut = VirtualBody::new(3.7, 4.6, 7.5);
+        assert_eq!(Point::new(17.02, 27.75), sut.weighted_position());
+
+        // given, then
+        let sut = VirtualBody::new(2.1, -24.6, -9.0);
+        assert_eq!(Point::new(-51.66, -18.9), sut.weighted_position());
+
+        // given, then
+        let sut = VirtualBody::new(14.5, 0.0, 0.0);
+        assert_eq!(Point::zero(), sut.weighted_position());
     }
 }

@@ -274,19 +274,4 @@ mod tests {
         // then
         assert_eq!(Point::new(-1.0, 7.0), sut.position);
     }
-    
-//    #[test]
-//    fn body_weighted_position() {
-//        // given, then
-//        let sut = Body::new(3.7, Point::new(4.6, 7.5), Vector::zero());
-//        assert_eq!(Point::new(17.02, 27.75), sut.weighted_position());
-//
-//        // given, then
-//        let sut = Body::new(2.1, Point::new(-24.6, -9.0), Vector::zero());
-//        assert_eq!(Point::new(-51.66, -18.9), sut.weighted_position());
-//
-//        // given, then
-//        let sut = Body::new(14.5, Point::zero(), Vector::zero());
-//        assert_eq!(Point::zero(), sut.weighted_position());
-//    }
 }
