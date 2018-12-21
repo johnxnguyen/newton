@@ -13,8 +13,9 @@ use super::types::Body;
 // VirtualBody ///////////////////////////////////////////////////////////////
 //
 // A virtual body represents an amalgamation of real bodies. Its mass is the
-// total sum of the collected masses and its position is the center of mass
-// of the group.
+// total sum of the collected masses and its position is the total sum of mass
+// weighted positions. To obtain a copy with the position centered on its
+// mass, call the `centered()` method.
 
 #[derive(Clone, PartialEq, Debug)]
 struct VirtualBody {
@@ -24,16 +25,17 @@ struct VirtualBody {
 
 impl fmt::Display for VirtualBody {
     fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        write!(f, "{:?}, ({:?}, {:?})", self.mass, self.position.x, self.position.y)?;
+        let v = self.centered();
+        write!(f, "{:?}, ({:?}, {:?})", v.mass, v.position.x, v.position.y)?;
         Ok(())
     }
 }
 
-impl From<&Body> for VirtualBody {
-    fn from(body: &Body) -> Self {
+impl From<Body> for VirtualBody {
+    fn from(body: Body) -> Self {
         VirtualBody {
             mass: body.mass.value(),
-            position: body.position.clone(),
+            position: &body.position * body.mass.value(),
         }
     }
 }
@@ -50,8 +52,12 @@ impl VirtualBody {
         VirtualBody::new(0.0, 0.0, 0.0)
     }
 
-    fn weighted_position(&self) -> Point {
-        Point::new(self.mass * self.position.x, self.mass * self.position.y)
+    fn centered(&self) -> VirtualBody {
+        debug_assert!(self.mass > 0.0, "Mass must be positive");
+        VirtualBody {
+            mass: self.mass,
+            position: &self.position / self.mass,
+        }
     }
 }
 
@@ -74,7 +80,7 @@ enum Action {
 // which case, the current index and the body need to be stored temporarily
 // so that the insertion algorithm can continue at a later time.
 
-struct Pending(Index, VirtualBody);
+struct Pending(Index, Body);
 
 // BHTree ////////////////////////////////////////////////////////////////////
 //
@@ -107,8 +113,8 @@ impl BHTree {
     }
 
     /// Inserts the given body into the tree.
-    pub fn add(&mut self, body: &Body) {
-        self.insert(Pending(0, VirtualBody::from(body)));
+    pub fn add(&mut self, body: Body) {
+        self.insert(Pending(0, body));
     }
 
     /// Borrows the node for the given index, if it exists.
@@ -148,7 +154,7 @@ impl BHTree {
                     // TODO: check if we can edit in place
                     let mut parent = self.nodes.remove(&idx).expect("Expected a parent");
                     parent.body.mass += node.body.mass;
-                    parent.body.position += node.body.weighted_position();
+                    parent.body.position += node.body.position.clone();
                     self.nodes.insert(idx, parent);
                 }
 
@@ -171,9 +177,6 @@ impl BHTree {
 
         let child = node.child_from_self();
 
-        // internal nodes have weighted positions
-        node.body.position = node.body.weighted_position();
-
         self.nodes.insert(node.id, node);
         self.nodes.insert(child.id, child);
     }
@@ -186,7 +189,7 @@ impl BHTree {
     /// needs to be internalize. Additionally, the current index and body
     /// is included in the return so that the search can continue after
     /// the leaf has been internalized.
-    fn action(&self, node: &Node, body: VirtualBody) -> Action {
+    fn action(&self, node: &Node, body: Body) -> Action {
         debug_assert!(node.space.contains(&body.position));
 
         if self.is_leaf(node) {
@@ -196,31 +199,15 @@ impl BHTree {
             node.map_quadrant(body.position.clone(), move |idx: Index, q: Quadrant| {
                 match self.node(idx) {
                     Some(child) => self.action(child, body),
-                    None => Action::Insert(Node::new(idx, q.space().clone(), body)),
+                    None => Action::Insert(Node::new(idx, q.space().clone(), VirtualBody::from(body))),
                 }
             })
         }
     }
 
-    /// Returns the virtual body at the given node. The virtual body is
-    /// computed from the real bodies contained descendant leaves.
-    /// Its mass is the sum of all real body masses, its position is the
-    /// center of mass of these bodies, and its velocity is zero.
-    /// If there are no descendant leaves (node is itself an empty leaf),
-    /// returns None.
-    // TODO: would be nice to separate this for internal nodes and leaves.
+    /// Returns the centered virtual body at the given node.
     fn virtual_body(&self, node: Index) -> VirtualBody {
-        let n = self.node(node).expect("Expected a node");
-        debug_assert!(n.body.mass > 0.0, "Mass must be positive");
-
-        if self.is_leaf(n) {
-            n.body.clone()
-        } else {
-            VirtualBody {
-                mass: n.body.mass,
-                position: &n.body.position / n.body.mass,
-            }
-        }
+        self.node(node).expect("Expected a node").body.centered()
     }
 
     /// Returns a vector of the leaves in order.
@@ -250,6 +237,7 @@ impl BHTree {
     fn report(&self) -> String {
         self.preorder().fold(String::new(), |acc, n| {
             if self.is_leaf(n) {
+                // TODO: this should be centered
                 acc + &format!("#{}\t({}, {})\n", n.id, n.body.position.x, n.body.position.y)
             } else {
                 acc + &format!("#{}\n", n.id)
@@ -333,8 +321,8 @@ impl Node {
     }
 
     /// Creates a copy with the given body.
-    fn with(&self, body: VirtualBody) -> Node {
-        Node { id: self.id, space: self.space.clone(), body }
+    fn with(&self, body: Body) -> Node {
+        Node { id: self.id, space: self.space.clone(), body: VirtualBody::from(body) }
     }
 
     /// Returns true if the node has no body.
@@ -494,9 +482,9 @@ mod tests {
         let space = Rect::new(0.0, 0.0, 10, 10);
 
         let mut tree = BHTree::new(space);
-        tree.add(&body(1.0, 1.0, 2.0));
-        tree.add(&body(1.0, 6.0, 8.0));
-        tree.add(&body(1.0, 4.0, 4.0));
+        tree.add(body(1.0, 1.0, 2.0));
+        tree.add(body(1.0, 6.0, 8.0));
+        tree.add(body(1.0, 4.0, 4.0));
         tree
     }
 
@@ -508,17 +496,17 @@ mod tests {
         assert_eq!(tree.report(),
                    "#0\t(0, 0)\n".to_string());
 
-        tree.add(&body(1.0, 1.0, 2.0));
+        tree.add(body(1.0, 1.0, 2.0));
         assert_eq!(tree.report(),
                    "#0\t(1, 2)\n".to_string());
 
-        tree.add(&body(1.0, 6.0, 8.0));
+        tree.add(body(1.0, 6.0, 8.0));
         assert_eq!(tree.report(),
                    "#0\n\
                     #2\t(6, 8)\n\
                     #3\t(1, 2)\n".to_string());
 
-        tree.add(&body(1.0, 4.0, 4.0));
+        tree.add(body(1.0, 4.0, 4.0));
         assert_eq!(tree.report(),
                    "#0\n\
                     #2\t(6, 8)\n\
@@ -538,7 +526,7 @@ mod tests {
         let body = Body::new(1.0, Point::new(0.0, 5.5), Vector::zero());
 
         // when, then
-        tree.add(&body);
+        tree.add(body);
     }
 
     #[test]
@@ -586,9 +574,9 @@ mod tests {
         // given
         let space = Rect::new(0.0, 0.0, 10, 10);
         let mut tree = BHTree::new(space);
-        tree.add(&body(2.0, 1.0, 2.0)); // A
-        tree.add(&body(4.1, 6.0, 8.0)); // B
-        tree.add(&body(3.6, 4.0, 4.0)); // C
+        tree.add(body(2.0, 1.0, 2.0)); // A
+        tree.add(body(4.1, 6.0, 8.0)); // B
+        tree.add(body(3.6, 4.0, 4.0)); // C
 
         // bodies equate on reference, hence this helper
 //        fn assert_eq(lhs: Body, rhs: Body) {
@@ -632,17 +620,24 @@ mod tests {
     }
 
     #[test]
-    fn virtual_body_weighted_position() {
+    fn virtual_body_centered() {
         // given, then
-        let sut = VirtualBody::new(3.7, 4.6, 7.5);
-        assert_eq!(Point::new(17.02, 27.75), sut.weighted_position());
+        let sut = VirtualBody::new(2.5, 5.0, 7.5);
+        assert_eq!(Point::new(2.0, 3.0), sut.centered().position);
 
         // given, then
-        let sut = VirtualBody::new(2.1, -24.6, -9.0);
-        assert_eq!(Point::new(-51.66, -18.9), sut.weighted_position());
+        let sut = VirtualBody::new(2.4, -24.6, -4.8);
+        assert_eq!(Point::new(-10.25, -2.0), sut.centered().position);
 
         // given, then
         let sut = VirtualBody::new(14.5, 0.0, 0.0);
-        assert_eq!(Point::zero(), sut.weighted_position());
+        assert_eq!(Point::zero(), sut.centered().position);
+    }
+
+    #[test]
+    #[should_panic]
+    fn virtual_body_centered_zero_mass() {
+        // given, when
+        VirtualBody::new(0.0, 5.0, 7.5).centered();
     }
 }
