@@ -3,6 +3,7 @@ use std::io::Write;
 use std::path::Path;
 
 use geometry::types::Point;
+use geometry::types::Vector;
 
 // DataWriter ////////////////////////////////////////////////////////////////
 //
@@ -30,18 +31,23 @@ impl DataWriter {
 
     /// Creates a new file in the writers directory with each point written
     /// on a separate line.
-    pub fn write(&mut self, points: Vec<Point>) {
+    pub fn write(&mut self, points: Vec<Point>, velocities: Vec<Vector> ) {
         let path = format!("{}/frame-{}.txt", self.directory, self.counter);
-        match self.write_points(points, path) {
+        match self.write_points(points, velocities, path) {
             Err(e) => panic!("Error writing data. {}", e),
             Ok(_) => (),
         }
         self.counter += 1;
     }
 
-    fn write_points(&self, points: Vec<Point>, path: String) -> std::io::Result<()> {
+    fn write_points(&self, points: Vec<Point>, velocities: Vec<Vector> ,path: String) -> std::io::Result<()> {
         let mut file = fs::File::create(path)?;
-        for point in points { write!(file, "{},{}\n", point.x, point.y)?; }
+        for point in points {
+            for velocity in velocities{
+                write!(file, "{},{},{},{},\n", point.x, point.y, velocity.dx, velocity.dy)?;
+            }
+        }
+
         Ok(())
     }
 }
