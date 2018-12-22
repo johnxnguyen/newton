@@ -150,10 +150,6 @@ impl Body {
         self.position.x += self.velocity.dx;
         self.position.y += self.velocity.dy;
     }
-    
-//    pub fn weighted_position(&self) -> Point {
-//        Point::new(self.mass.value() * self.position.x, self.mass.value() * self.position.y)
-//    }
 }
 
 // Field /////////////////////////////////////////////////////////////////////
