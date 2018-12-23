@@ -221,6 +221,13 @@ impl Rect {
         }
     }
 
+    /// Returns the length of the hypotenuse.
+    pub fn diameter(&self) -> f32 {
+        let w_sq = (self.size.width as f32).powi(2);
+        let h_sq = (self.size.height as f32).powi(2);
+        (w_sq + h_sq).sqrt()
+    }
+
     /// Returns true if the given point is contained by self.
     pub fn contains(&self, point: &Point) -> bool {
         point.x >= self.origin.x && point.y >= self.origin.y &&
@@ -449,6 +456,18 @@ mod tests {
     }
 
     // Rect //////////////////////////////////////////////////////////////////
+
+    #[test]
+    fn rect_diameter() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 3, 4);
+
+        // when
+        let result = sut.diameter();
+
+        // then
+        assert_eq!(5.0, result);
+    }
 
     #[test]
     #[should_panic(expected = "A size's width and/or height must be positive.")]
