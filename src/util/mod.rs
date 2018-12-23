@@ -2,8 +2,9 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use geometry::types::Point;
-use geometry::types::Vector;
+use physics::types::Body;
+//use geometry::types::Point;
+//use geometry::types::Vector;
 
 // DataWriter ////////////////////////////////////////////////////////////////
 //
@@ -31,21 +32,21 @@ impl DataWriter {
 
     /// Creates a new file in the writers directory with each point written
     /// on a separate line.
-    pub fn write(&mut self, points: Vec<Point>, velocities: Vec<Vector> ) {
+    pub fn write(&mut self, bodies: Vec<Body>) {
         let path = format!("{}/frame-{}.txt", self.directory, self.counter);
-        match self.write_points(points, velocities, path) {
+        match self.write_bodies(bodies, path) {
             Err(e) => panic!("Error writing data. {}", e),
             Ok(_) => (),
         }
         self.counter += 1;
     }
 
-    fn write_points(&self, points: Vec<Point>, velocities: Vec<Vector> ,path: String) -> std::io::Result<()> {
+    fn write_bodies(&self, bodies: Vec<Body>,path: String) -> std::io::Result<()> {
         let mut file = fs::File::create(path)?;
-        for point in points {
-            for velocity in velocities{
-                write!(file, "{},{},{},{},\n", point.x, point.y, velocity.dx, velocity.dy)?;
-            }
+
+        for body in bodies {
+            write!(file, "{},{},{},{},{},\n", body.mass, body.position.x, body.position.y,
+                                            body.velocity.dx, body.velocity.dy)?;
         }
 
         Ok(())
@@ -64,21 +65,32 @@ mod tests {
     fn data_writer_writes() {
         // given
         let mut writer = DataWriter::new("temp");
+        let b1 = Body {
+            mass: 1.0,
+            position: Point { x: 1.0, y: 2.0 },
+            velocity: Vector::zero(),
+        };
+
+        let b2 = Body {
+            mass: 2.0,
+            position: Point { x: 4.0, y: 5.0 },
+            velocity: Vector::zero(),
+        };
 
         // when
-        writer.write(vec![Point::new(3.4, 6.7)]);
-        writer.write(vec![Point::new(6.4, 6.785)]);
+        writer.write(vec![b1]);
+        writer.write(vec![b2]);
 
         // then
         let mut file = fs::File::open("temp/frame-0.txt").expect("Error opening file.");
         let mut contents = String::new();
         file.read_to_string(&mut contents);
-        assert_eq!(contents, "3.4,6.7\n".to_owned());
+        assert_eq!(contents, "1.0, (1.0, 2.0) ,(0.0, 0.0)\n".to_owned());
 
         let mut file = fs::File::open("temp/frame-1.txt").expect("Error opening file.");
         let mut contents = String::new();
         file.read_to_string(&mut contents);
-        assert_eq!(contents, "6.4,6.785\n".to_owned());
+        assert_eq!(contents, "2.0 , (4.0, 5.0) ,(0.0, 0.0) \n".to_owned());
 
         // after
         fs::remove_dir_all("temp").expect("Error cleaning up test.");
