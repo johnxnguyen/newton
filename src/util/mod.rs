@@ -3,8 +3,8 @@ use std::io::Write;
 use std::path::Path;
 
 use physics::types::Body;
-//use geometry::types::Point;
-//use geometry::types::Vector;
+use geometry::types::Point;
+use geometry::types::Vector;
 
 // DataWriter ////////////////////////////////////////////////////////////////
 //
