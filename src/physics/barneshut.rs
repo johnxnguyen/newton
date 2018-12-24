@@ -286,6 +286,10 @@ impl<'a> PreorderTraverser<'a> {
         let node = tree.node(idx).expect("Node doesn't exist");
         PreorderTraverser { tree, first: Some(node), stack: Vec::new() }
     }
+
+    fn skip_children(&mut self) {
+        self.stack.pop();
+    }
 }
 
 // Node //////////////////////////////////////////////////////////////////////
@@ -373,7 +377,7 @@ impl Node {
     fn child_from_self(&self) -> Node {
         // TODO: check that this is a leaf
         let body = self.body.clone();
-        let child = self.map_quadrant(body.position.clone(), move |idx, q| {
+        let child = self.map_quadrant(body.centered().position, move |idx, q| {
             Node::new(idx, q.space().clone(), body)
         });
 
@@ -385,7 +389,7 @@ impl Node {
     fn map_quadrant<U, F>(&self, point: Point, f: F) -> U
     where F: FnOnce(Index, Quadrant) -> U {
         let quadrant = self.space.quadrant(&point).unwrap_or_else(|err| {
-            panic!("Couldn't find quadrant: {}", err.kind());
+            panic!("Couldn't find quadrant. Reason: {} Got {:?}", err.kind(), point);
         });
 
         match quadrant {
@@ -488,6 +492,34 @@ mod tests {
         tree
     }
 
+    ///                           []
+    ///              _____________|_______________
+    ///            /       /             \        \
+    ///          []       X              []       [G]
+    ///     _____|____              _____|____
+    ///    /   /   \  \           /   /   \   \
+    ///  X   [A]  [B]  X         []  X   [F]   X
+    ///                      ____|____
+    ///                    /   /  \   \
+    ///                   X   X   []  [E]
+    ///                       ____|____
+    ///                      /  /   \  \
+    ///                   [C] [D]   X   X
+    ///
+    fn medium_tree() -> BHTree {
+        let space = Rect::new(0.0, 0.0, 32, 32);
+
+        let mut tree = BHTree::new(space);
+        tree.add(body(2.0, 10.0, 25.0));    // A
+        tree.add(body(2.0, 6.0, 20.0));     // B
+        tree.add(body(2.0, 1.0, 10.0));     // C
+        tree.add(body(2.0, 3.0, 11.0));     // D
+        tree.add(body(2.0, 5.0, 10.0));     // E
+        tree.add(body(2.0, 1.0, 1.0));      // F
+        tree.add(body(2.0, 20.0, 10.0));    // G
+        tree
+    }
+
     #[test]
     fn tree_adds_bodies() {
         let space = Rect::new(0.0, 0.0, 10, 10);
@@ -540,6 +572,34 @@ mod tests {
         assert_eq!(14, sut.next().unwrap().id);
     }
 
+
+    #[test]
+    fn tree_iterator_skips() {
+        // given
+        let tree = medium_tree();
+        let mut sut = tree.preorder();
+
+        // then
+        assert_eq!(0, sut.next().unwrap().id);
+        assert_eq!(1, sut.next().unwrap().id);
+        assert_eq!(6, sut.next().unwrap().id);
+        assert_eq!(7, sut.next().unwrap().id);
+        assert_eq!(3, sut.next().unwrap().id);
+        assert_eq!(13, sut.next().unwrap().id);
+
+        // when
+        sut.skip_children();
+
+        // then
+        assert_eq!(15, sut.next().unwrap().id);
+
+        // when
+        sut.skip_children();
+
+        // then
+        assert_eq!(4, sut.next().unwrap().id);
+    }
+
     #[test]
     fn tree_is_leaf() {
         // given
@@ -574,12 +634,6 @@ mod tests {
         tree.add(body(2.0, 1.0, 2.0)); // A
         tree.add(body(4.1, 6.0, 8.0)); // B
         tree.add(body(3.6, 4.0, 4.0)); // C
-
-        // bodies equate on reference, hence this helper
-//        fn assert_eq(lhs: Body, rhs: Body) {
-//            assert_eq!(lhs.mass.value(), rhs.mass.value());
-//            assert_eq!(lhs.position, rhs.position);
-//        }
 
         // then
 
