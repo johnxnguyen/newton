@@ -5,6 +5,7 @@ use std::ops::{Add, AddAssign, Div, Mul};
 use geometry::types::ErrorKind::OutOfBounds;
 
 use self::Quadrant::*;
+use std::ops::SubAssign;
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -29,6 +30,14 @@ impl AddAssign for Point {
     fn add_assign(&mut self, rhs: Point) {
         self.x += rhs.x;
         self.y += rhs.y;
+    }
+}
+
+// TODO: Test
+impl SubAssign for Point {
+    fn sub_assign(&mut self, rhs: Point) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
     }
 }
 
