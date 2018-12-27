@@ -117,6 +117,53 @@ impl BHTree {
         self.insert(Pending(0, body));
     }
 
+    fn virtual_bodies(&self, body: &Body) -> Vec<VirtualBody> {
+        /*
+        The idea is this.
+
+        Until the tree is traversed
+            Stop at the first node that passes the predicate.
+            If a leaf is reached and predicate still doesn't pass
+                Take the centered virtual body, subtract self.
+                Repeat
+            Otherwise
+                Take the centered virtual body.
+                Jump to sibling.
+                Repeat
+        */
+
+        let mut result = vec![];
+        let mut traverser = self.preorder();
+
+        loop {
+            match traverser.next() {
+                None => break,
+                Some(node) => {
+                    let other = node.body.centered().position;
+                    let dist = body.position.distance_to(&other);
+                    let passes = node.space.diameter() / dist < 2.0;
+
+                    if passes {
+                        traverser.skip_children();
+                        result.push(node.body.centered());
+
+                    } else if self.is_leaf(node) {
+                        // subtract the body form the virtual body
+                        let mut virtual_body = node.body.centered();
+                        virtual_body.mass -= body.mass.value();
+                        virtual_body.position -= body.position.clone();
+
+                        if virtual_body != VirtualBody::zero() {
+                            result.push(virtual_body);
+                        }
+                    }
+                },
+            }
+        }
+
+        result
+    }
+
     /// Borrows the node for the given index, if it exists.
     fn node(&self, idx: Index) -> Option<&Node> {
         self.nodes.get(&idx)
@@ -482,41 +529,50 @@ mod tests {
         }
     }
 
+    ///                           []
+    ///              _____________|_______________
+    ///            /       /             \        \
+    ///           X      [B]             []       X
+    ///                             _____|_____
+    ///                           /    /  \    \
+    ///                         [A]  [C]  X    X
+    ///
     fn small_tree() -> BHTree {
         let space = Rect::new(0.0, 0.0, 10, 10);
 
         let mut tree = BHTree::new(space);
-        tree.add(body(1.0, 1.0, 2.0));
-        tree.add(body(1.0, 6.0, 8.0));
-        tree.add(body(1.0, 4.0, 4.0));
+        tree.add(body(1.0, 1.0, 2.0));  // A
+        tree.add(body(1.0, 6.0, 8.0));  // B
+        tree.add(body(1.0, 4.0, 4.0));  // C
         tree
     }
 
     ///                           []
     ///              _____________|_______________
     ///            /       /             \        \
-    ///          []       X              []       [G]
+    ///          []       C              []       [H]
     ///     _____|____              _____|____
     ///    /   /   \  \           /   /   \   \
-    ///  X   [A]  [B]  X         []  X   [F]   X
+    ///  X   [A]  [B]  X         []  X   [G]   X
     ///                      ____|____
     ///                    /   /  \   \
-    ///                   X   X   []  [E]
+    ///                   X   X   []  [F]
     ///                       ____|____
     ///                      /  /   \  \
-    ///                   [C] [D]   X   X
+    ///                   [D] [E]   X   X
     ///
     fn medium_tree() -> BHTree {
         let space = Rect::new(0.0, 0.0, 32, 32);
 
         let mut tree = BHTree::new(space);
         tree.add(body(2.0, 10.0, 25.0));    // A
-        tree.add(body(2.0, 6.0, 20.0));     // B
-        tree.add(body(2.0, 1.0, 10.0));     // C
-        tree.add(body(2.0, 3.0, 11.0));     // D
-        tree.add(body(2.0, 5.0, 10.0));     // E
-        tree.add(body(2.0, 1.0, 1.0));      // F
-        tree.add(body(2.0, 20.0, 10.0));    // G
+        tree.add(body(1.0, 6.0, 20.0));     // B
+        tree.add(body(4.0, 31.0, 31.0));    // C
+        tree.add(body(3.0, 1.0, 10.0));     // D
+        tree.add(body(2.5, 3.0, 11.0));     // E
+        tree.add(body(1.5, 5.0, 10.0));     // F
+        tree.add(body(2.0, 1.0, 1.0));      // G
+        tree.add(body(3.5, 20.0, 10.0));    // H
         tree
     }
 
@@ -572,7 +628,6 @@ mod tests {
         assert_eq!(14, sut.next().unwrap().id);
     }
 
-
     #[test]
     fn tree_iterator_skips() {
         // given
@@ -584,6 +639,7 @@ mod tests {
         assert_eq!(1, sut.next().unwrap().id);
         assert_eq!(6, sut.next().unwrap().id);
         assert_eq!(7, sut.next().unwrap().id);
+        assert_eq!(2, sut.next().unwrap().id);
         assert_eq!(3, sut.next().unwrap().id);
         assert_eq!(13, sut.next().unwrap().id);
 
@@ -668,6 +724,75 @@ mod tests {
 
         // when
         tree.virtual_body(0);
+    }
+
+    #[test]
+    fn tree_virtual_bodies_small() {
+        // given
+        let sut = small_tree();
+        let body = body(1.0, 1.0, 2.0);
+
+        // when
+        let result = sut.virtual_bodies(&body);
+
+        // then
+        assert_eq!(2, result.len());
+        assert_eq!(VirtualBody::new(1.0, 6.0, 8.0), result[0]);
+        assert_eq!(VirtualBody::new(1.0, 4.0, 4.0), result[1]);
+    }
+    
+    #[test]
+    fn tree_virtual_bodies_medium_1() {
+        // given
+        let sut = medium_tree();
+
+        // A
+        let body = body(2.0, 10.0, 25.0);
+
+        // when
+        let result = sut.virtual_bodies(&body);
+
+        // then
+        assert_eq!(4, result.len());
+
+        // B
+        assert_eq!(VirtualBody::new(1.0, 6.0, 20.0), result[0]);
+
+        // C
+        assert_eq!(VirtualBody::new(4.0, 31.0, 31.0), result[1]);
+
+        // D, E, F & G
+        assert_eq!(VirtualBody::new(9.0, 2.222222222, 8.277777778), result[2]);
+
+        // H
+        assert_eq!(VirtualBody::new(3.5, 20.0, 10.0), result[3]);
+    }
+
+    #[test]
+    fn tree_virtual_bodies_medium_2() {
+        // given
+        let sut = medium_tree();
+
+        // G
+        let body = body(2.0, 1.0, 1.0);
+
+        // when
+        let result = sut.virtual_bodies(&body);
+
+        // then
+        assert_eq!(4, result.len());
+
+        // A & B
+        assert_eq!(VirtualBody::new(3.0, 8.666666667, 23.333333333), result[0]);
+
+        // C
+        assert_eq!(VirtualBody::new(4.0, 31.0, 31.0), result[1]);
+        
+        // D, E & F
+        assert_eq!(VirtualBody::new(7.0, 2.571428571, 10.357142857), result[2]);
+        
+        // H
+        assert_eq!(VirtualBody::new(3.5, 20.0, 10.0), result[3]);
     }
 
     #[test]
