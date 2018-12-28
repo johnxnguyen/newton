@@ -149,12 +149,12 @@ impl BHTree {
 
                     } else if self.is_leaf(node) {
                         // subtract the body form the virtual body
-                        let mut virtual_body = node.body.centered();
+                        let mut virtual_body = node.body.clone();
                         virtual_body.mass -= body.mass.value();
-                        virtual_body.position -= body.position.clone();
+                        virtual_body.position -= &body.position * body.mass.value();
 
                         if virtual_body != VirtualBody::zero() {
-                            result.push(virtual_body);
+                            result.push(virtual_body.centered());
                         }
                     }
                 },
@@ -829,15 +829,22 @@ mod tests {
         assert_eq!(VirtualBody::new(2.5, 1.25, 4.0), body);
         assert_eq!(VirtualBody::new(2.5, 0.5, 1.6), body.centered());
     }
-
-    #[test]
-    fn tree_minimum_quadrant() {
-        unimplemented!()
-    }
-
+    
     #[test]
     fn tree_virtual_body_subtracts_given_body_from_leaf() {
-        unimplemented!()
+        // given
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+
+        // two bodies within same unit
+        sut.add(body(0.5, 0.5, 2.0));
+        sut.add(body(2.0, 0.5, 1.5));
+
+        // when
+        let result = sut.virtual_bodies(&body(0.5, 0.5, 2.0));
+
+        // then
+        assert_eq!(1, result.len());
+        assert_eq!(VirtualBody::new(2.0, 0.5, 1.5), result[0]);
     }
 
     #[test]
