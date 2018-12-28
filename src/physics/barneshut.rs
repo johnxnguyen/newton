@@ -240,8 +240,11 @@ impl BHTree {
         debug_assert!(node.space.contains(&body.position));
 
         if self.is_leaf(node) {
-            if node.is_empty() { Action::Insert(node.with(body)) }
-            else { Action::Internalize(node.id, Pending(node.id, body)) }
+            if node.is_empty() || node.space.has_minimum_dimension() {
+                Action::Insert(node.with(body))
+            } else {
+                Action::Internalize(node.id, Pending(node.id, body))
+            }
         } else {
             node.map_quadrant(body.position.clone(), move |idx: Index, q: Quadrant| {
                 match self.node(idx) {
@@ -371,9 +374,12 @@ impl Node {
         Node { id, space, body }
     }
 
-    /// Creates a copy with the given body.
+    /// Creates a copy of the node after adding the given body.
     fn with(&self, body: Body) -> Node {
-        Node { id: self.id, space: self.space.clone(), body: VirtualBody::from(body) }
+        let mut body = VirtualBody::from(body);
+        body.mass += self.body.mass;
+        body.position += self.body.position.clone();
+        Node::new(self.id, self.space.clone(), body)
     }
 
     /// Returns true if the node has no body.
