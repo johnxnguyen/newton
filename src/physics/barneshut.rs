@@ -802,6 +802,45 @@ mod tests {
     }
 
     #[test]
+    fn tree_virtual_bodies_does_not_include_given_body() {
+        // given
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 4, 4));
+        let body = body(1.0, 2.0, 2.0);
+        sut.add(body.clone());
+
+        // when, then
+        assert_eq!(0, sut.virtual_bodies(&body).len());
+    }
+
+    #[test]
+    fn tree_has_maximum_depth() {
+        // given
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+
+        // when two bodies within same unit
+        sut.add(body(0.5, 0.5, 2.0));
+        sut.add(body(2.0, 0.5, 1.5));
+
+        // then there is only root & nw child
+        assert_eq!(2, sut.nodes.len());
+
+        // and the virtual body contains both bodies
+        let body = sut.node(1).unwrap().body.clone();
+        assert_eq!(VirtualBody::new(2.5, 1.25, 4.0), body);
+        assert_eq!(VirtualBody::new(2.5, 0.5, 1.6), body.centered());
+    }
+
+    #[test]
+    fn tree_minimum_quadrant() {
+        unimplemented!()
+    }
+
+    #[test]
+    fn tree_virtual_body_subtracts_given_body_from_leaf() {
+        unimplemented!()
+    }
+
+    #[test]
     fn virtual_body_centered() {
         // given, then
         let sut = VirtualBody::new(2.5, 5.0, 7.5);
