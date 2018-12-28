@@ -5,6 +5,7 @@ use std::ops::{Add, AddAssign, Div, Mul};
 use geometry::types::ErrorKind::OutOfBounds;
 
 use self::Quadrant::*;
+use std::ops::SubAssign;
 
 // Point /////////////////////////////////////////////////////////////////////
 //
@@ -21,6 +22,22 @@ impl Add for Point {
 
     fn add(self, rhs: Point) -> Self::Output {
         Point::new(self.x + rhs.x, self.y + rhs.y)
+    }
+}
+
+// TODO: Test
+impl AddAssign for Point {
+    fn add_assign(&mut self, rhs: Point) {
+        self.x += rhs.x;
+        self.y += rhs.y;
+    }
+}
+
+// TODO: Test
+impl SubAssign for Point {
+    fn sub_assign(&mut self, rhs: Point) {
+        self.x -= rhs.x;
+        self.y -= rhs.y;
     }
 }
 
@@ -213,6 +230,18 @@ impl Rect {
         }
     }
 
+    // TODO: test
+    pub fn has_minimum_dimension(&self) -> bool {
+        self.size.width <= 1 || self.size.height <= 1
+    }
+
+    /// Returns the length of the hypotenuse.
+    pub fn diameter(&self) -> f32 {
+        let w_sq = (self.size.width as f32).powi(2);
+        let h_sq = (self.size.height as f32).powi(2);
+        (w_sq + h_sq).sqrt()
+    }
+
     /// Returns true if the given point is contained by self.
     pub fn contains(&self, point: &Point) -> bool {
         point.x >= self.origin.x && point.y >= self.origin.y &&
@@ -229,6 +258,8 @@ impl Rect {
             let half = n >> 1;
             if n & 1 == 0 { (half, half) } else { (half, half + 1) }
         };
+
+        assert!(!self.has_minimum_dimension(), "Cannot split rect with minimal dimension.");
 
         let (x, y) = (self.origin.x, self.origin.y);
         let (w1, w2) = split(self.size.width);
@@ -443,6 +474,18 @@ mod tests {
     // Rect //////////////////////////////////////////////////////////////////
 
     #[test]
+    fn rect_diameter() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 3, 4);
+
+        // when
+        let result = sut.diameter();
+
+        // then
+        assert_eq!(5.0, result);
+    }
+
+    #[test]
     #[should_panic(expected = "A size's width and/or height must be positive.")]
     fn rect_non_positive_size() {
         // given, when , then
@@ -477,6 +520,26 @@ mod tests {
         assert_eq!(NE(Rect::new(-3.0, -3.0, 3, 3)), ne);
         assert_eq!(SW(Rect::new(-5.0, -5.0, 2, 2)), sw);
         assert_eq!(SE(Rect::new(-3.0, -5.0, 3, 2)), se);
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot split rect with minimal dimension.")]
+    fn rect_quadrants_of_rect_with_minimum_width() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 10, 1);
+
+        // when, then
+        sut.quadrants();
+    }
+
+    #[test]
+    #[should_panic(expected = "Cannot split rect with minimal dimension.")]
+    fn rect_quadrants_of_rect_with_minimum_height() {
+        // given
+        let sut = Rect::new(0.0, 0.0, 1, 10);
+
+        // when, then
+        sut.quadrants();
     }
 
     #[test]
