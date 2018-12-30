@@ -120,36 +120,41 @@ impl BHTree {
 
     /// Inserts the given body into the tree.
     pub fn add(&mut self, body: Body) {
-        self.insert(Pending(0, body));
+        // TODO: better way to handle this
+        if self.node(0).unwrap().space.contains(&body.position) {
+            self.insert(Pending(0, body));
+        }
     }
 
+    /// Returns a list of virtual bodies for the given body. Each virtual
+    /// body is potentially an abstraction of a group of real bodes. The
+    /// degree of abstraction is determined by a ratio between the distance
+    /// of the virtual body to the given body, and the diameter of the space
+    /// containing the virtual body. The diameter may not be more than twice
+    /// the distance.
+    ///
+    /// The virtual bodies are collected as follows. 1) Starting at the root,
+    /// we dive depth first until a node that fulfills the condition
+    /// mentioned above is reached, or the a leaf is reached. In both cases,
+    /// the virtual body at that node is collected. Then we move the cursor
+    /// to the next sibling if any, or to the next node. Then the next virtual
+    /// body is found by repeating this process.
+    ///
     pub fn virtual_bodies(&self, body: &Body) -> Vec<VirtualBody> {
-        /*
-        The idea is this.
-
-        Until the tree is traversed
-            Stop at the first node that passes the predicate.
-            If a leaf is reached and predicate still doesn't pass
-                Take the centered virtual body, subtract self.
-                Repeat
-            Otherwise
-                Take the centered virtual body.
-                Jump to sibling.
-                Repeat
-        */
-
         let mut result = vec![];
         let mut traverser = self.preorder();
+
+        let condition = |node: &Node| {
+            let pos = node.body.centered().position;
+            let dist = body.position.distance_to(&pos);
+            node.space.diameter() / dist < 2.0
+        };
 
         loop {
             match traverser.next() {
                 None => break,
                 Some(node) => {
-                    let other = node.body.centered().position;
-                    let dist = body.position.distance_to(&other);
-                    let passes = node.space.diameter() / dist < 2.0;
-
-                    if passes {
+                    if condition(&node) {
                         traverser.skip_children();
                         result.push(node.body.centered());
 
@@ -161,7 +166,8 @@ impl BHTree {
 
                         if virtual_body != VirtualBody::zero() {
                             if virtual_body.mass <= 0.0 {
-//                                println!("{}", virtual_body);
+                                // this is reachable when there are two
+                                // adjacent points in separate quadrants.
                             } else {
                                 result.push(virtual_body.centered());
                             }

@@ -6,15 +6,17 @@ use newton::geometry::util::Distributor;
 fn main() {
     let mut env = Environment::new();
     let distributor = Distributor {
-        num_bodies: 1000,
-        min_dist: 50.0,
+        num_bodies: 5000,
+        min_dist: 200.0,
         max_dist: 250.0,
         dy: 10.0
     };
 
     env.bodies = distributor.distribution();
 
-    for _ in 0..150 {
+    let upper = 500;
+    for x in 1..=upper {
+        println!("frame: {}/{}", x, upper);
         env.update();
     }
 }

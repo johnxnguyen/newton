@@ -207,12 +207,13 @@ impl Field for BHField {
         }
 
         for body in bodies {
-            let f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
-                self.force.between(body, &n.to_body())
+            let mut f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
+                acc + self.force.between(body, &n.to_body())
             });
 
+            f += self.sun.force(body);
             result.push(f);
-        }
+        };
 
         result
     }
@@ -223,7 +224,7 @@ impl BHField {
         BHField {
             space: Rect::new(-1920.0, -1080.0, 3840, 2160),
             force: Gravity::new(1.0, 4.0),
-            sun: Attractor::new(10000.0, Point::zero(), 1.0, 4.0),
+            sun: Attractor::new(10000.0, Point::zero(), 2.5, 4.0),
         }
     }
 }
