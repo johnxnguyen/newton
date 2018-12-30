@@ -12,9 +12,9 @@ fn main() {
         dy: 10.0
     };
 
-    env.bodies = Some(distributor.distribution());
+    env.bodies = distributor.distribution();
 
     for _ in 0..150 {
-        env.step();
+        env.update();
     }
 }

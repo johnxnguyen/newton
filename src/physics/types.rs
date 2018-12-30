@@ -6,6 +6,7 @@ use uuid::Uuid;
 use geometry::types::{Point, Vector};
 
 use super::force::{Attractor, Gravity};
+use util::DataWriter;
 
 // Mass //////////////////////////////////////////////////////////////////////
 //
@@ -50,6 +51,7 @@ impl Mass {
 pub struct Environment {
     pub bodies: Vec<Body>,
     pub fields: Vec<Box<Field>>,
+    writer: DataWriter,
 }
 
 impl Environment {
@@ -58,6 +60,7 @@ impl Environment {
         Environment {
             bodies: vec![],
             fields: vec![Box::from(field)],
+            writer: DataWriter::new("data"),
         }
     }
 
@@ -73,6 +76,9 @@ impl Environment {
         for body in self.bodies.iter_mut() {
             body.apply_velocity();
         }
+
+        let points = self.bodies.iter().map(|b| b.position.clone()).collect();
+        self.writer.write(points);
     }
 }
 
