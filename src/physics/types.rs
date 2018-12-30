@@ -47,7 +47,6 @@ impl Mass {
 //
 // An environment represents a space in which bodies interact with fields.
 
-// TODO: when passing the bodies to the field, we need to return them back in the same order.
 pub struct Environment {
     pub bodies: Vec<Body>,
     pub fields: Vec<Box<Field>>,
@@ -69,6 +68,10 @@ impl Environment {
             for (body, force) in self.bodies.iter_mut().zip(forces.iter()) {
                 body.apply_force(force);
             }
+        }
+
+        for body in self.bodies.iter_mut() {
+            body.apply_velocity();
         }
     }
 }
@@ -120,6 +123,9 @@ impl Body {
 
     pub fn apply_force(&mut self, force: &Vector) {
         self.velocity += force / self.mass.value();
+    }
+
+    pub fn apply_velocity(&mut self) {
         self.position.x += self.velocity.dx;
         self.position.y += self.velocity.dy;
     }
