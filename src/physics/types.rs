@@ -7,6 +7,8 @@ use geometry::types::{Point, Vector};
 
 use super::force::{Attractor, Gravity};
 use util::DataWriter;
+use physics::barneshut::BHTree;
+use geometry::types::Rect;
 
 // Mass //////////////////////////////////////////////////////////////////////
 //
@@ -56,7 +58,7 @@ pub struct Environment {
 
 impl Environment {
     pub fn new() -> Environment {
-        let field = BruteForceField::new();
+        let field = BHField::new();
         Environment {
             bodies: vec![],
             fields: vec![Box::from(field)],
@@ -183,6 +185,45 @@ impl BruteForceField {
         BruteForceField {
             force: Gravity::new(1.0, 4.0),
             sun: Some(Attractor::new(10000.0, Point::zero(), 1.0, 4.0)),
+        }
+    }
+}
+
+// BHField ///////////////////////////////////////////////////////////////////
+
+struct BHField {
+    space: Rect,
+    force: Gravity,
+    sun: Attractor,
+}
+
+impl Field for BHField {
+    fn forces(&self, bodies: &[Body]) -> Vec<Vector> {
+        let mut result: Vec<Vector> = vec![];
+        let mut tree = BHTree::new(self.space.clone());
+
+        for body in bodies {
+            tree.add(body.clone());
+        }
+
+        for body in bodies {
+            let f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
+                self.force.between(body, &n.to_body())
+            });
+
+            result.push(f);
+        }
+
+        result
+    }
+}
+
+impl BHField {
+    pub fn new() -> BHField {
+        BHField {
+            space: Rect::new(-1920.0, -1080.0, 3840, 2160),
+            force: Gravity::new(1.0, 4.0),
+            sun: Attractor::new(10000.0, Point::zero(), 1.0, 4.0),
         }
     }
 }

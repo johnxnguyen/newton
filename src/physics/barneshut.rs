@@ -17,8 +17,9 @@ use super::types::Body;
 // weighted positions. To obtain a copy with the position centered on its
 // mass, call the `centered()` method.
 
+// TODO: make private
 #[derive(Clone, PartialEq, Debug)]
-struct VirtualBody {
+pub struct VirtualBody {
     mass: f32,
     position: Point,
 }
@@ -58,6 +59,11 @@ impl VirtualBody {
             mass: self.mass,
             position: &self.position / self.mass,
         }
+    }
+
+    // TODO: Remove this, instead create a body trait
+    pub fn to_body(&self) -> Body {
+        Body::new(self.mass, Point::new(self.position.x, self.position.y), Vector::zero())
     }
 }
 
@@ -117,7 +123,7 @@ impl BHTree {
         self.insert(Pending(0, body));
     }
 
-    fn virtual_bodies(&self, body: &Body) -> Vec<VirtualBody> {
+    pub fn virtual_bodies(&self, body: &Body) -> Vec<VirtualBody> {
         /*
         The idea is this.
 
@@ -154,7 +160,11 @@ impl BHTree {
                         virtual_body.position -= &body.position * body.mass.value();
 
                         if virtual_body != VirtualBody::zero() {
-                            result.push(virtual_body.centered());
+                            if virtual_body.mass <= 0.0 {
+//                                println!("{}", virtual_body);
+                            } else {
+                                result.push(virtual_body.centered());
+                            }
                         }
                     }
                 },
