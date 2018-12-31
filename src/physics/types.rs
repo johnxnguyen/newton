@@ -4,11 +4,11 @@ use std::fmt;
 use uuid::Uuid;
 
 use geometry::types::{Point, Vector};
+use geometry::types::Rect;
+use physics::barneshut::BHTree;
+use util::DataWriter;
 
 use super::force::{Attractor, Gravity};
-use util::DataWriter;
-use physics::barneshut::BHTree;
-use geometry::types::Rect;
 
 // Mass //////////////////////////////////////////////////////////////////////
 //
