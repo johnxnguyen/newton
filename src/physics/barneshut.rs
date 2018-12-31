@@ -17,7 +17,6 @@ use super::types::Body;
 // weighted positions. To obtain a copy with the position centered on its
 // mass, call the `centered()` method.
 
-// TODO: make private
 #[derive(Clone, PartialEq, Debug)]
 pub struct VirtualBody {
     mass: f32,
@@ -42,6 +41,10 @@ impl From<Body> for VirtualBody {
 }
 
 impl VirtualBody {
+    pub fn to_body(&self) -> Body {
+        Body::new(self.mass, self.position.clone(), Vector::zero())
+    }
+
     fn new(mass: f32, x: f32, y: f32) -> VirtualBody {
         VirtualBody {
             mass,
@@ -59,10 +62,6 @@ impl VirtualBody {
             mass: self.mass,
             position: &self.position / self.mass,
         }
-    }
-
-    pub fn to_body(&self) -> Body {
-        Body::new(self.mass, Point::new(self.position.x, self.position.y), Vector::zero())
     }
 }
 
@@ -230,7 +229,6 @@ impl BHTree {
         }
     }
 
-    // TODO: Test
     /// Internalizes the node at the given index by taking the node's body
     /// and inserting it in the appropriate child.
     fn internalize(&mut self, id: Index) {
@@ -481,7 +479,6 @@ impl Node {
 //
 // An iterator over the ancestor indices up towards the root index.
 
-// TODO: Test
 struct AncestorIterator {
     current: Index,
 }
@@ -635,6 +632,22 @@ mod tests {
 
         // when, then
         tree.insert(Pending(0, body));
+    }
+
+    #[test]
+    fn tree_internalizes() {
+        // given
+        let mut sut = small_tree();
+        assert!(sut.is_leaf(sut.node(2).unwrap()));
+
+        // when
+        sut.internalize(2);
+
+        // then
+        assert!(!sut.is_leaf(sut.node(2).unwrap()));
+
+        let body = sut.node(9).unwrap().body.centered();
+        assert_eq!(VirtualBody::new(1.0, 6.0, 8.0), body);
     }
 
     #[test]
@@ -830,6 +843,23 @@ mod tests {
     }
 
     #[test]
+    fn tree_virtual_body_subtracts_given_body_from_leaf() {
+        // given
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+
+        // two bodies within same unit
+        sut.add(body(0.5, 0.5, 2.0));
+        sut.add(body(2.0, 0.5, 1.5));
+
+        // when
+        let result = sut.virtual_bodies(&body(0.5, 0.5, 2.0));
+
+        // then
+        assert_eq!(1, result.len());
+        assert_eq!(VirtualBody::new(2.0, 0.5, 1.5), result[0]);
+    }
+
+    #[test]
     fn tree_has_maximum_depth() {
         // given
         let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
@@ -845,23 +875,6 @@ mod tests {
         let body = sut.node(1).unwrap().body.clone();
         assert_eq!(VirtualBody::new(2.5, 1.25, 4.0), body);
         assert_eq!(VirtualBody::new(2.5, 0.5, 1.6), body.centered());
-    }
-    
-    #[test]
-    fn tree_virtual_body_subtracts_given_body_from_leaf() {
-        // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
-
-        // two bodies within same unit
-        sut.add(body(0.5, 0.5, 2.0));
-        sut.add(body(2.0, 0.5, 1.5));
-
-        // when
-        let result = sut.virtual_bodies(&body(0.5, 0.5, 2.0));
-
-        // then
-        assert_eq!(1, result.len());
-        assert_eq!(VirtualBody::new(2.0, 0.5, 1.5), result[0]);
     }
 
     #[test]
