@@ -61,7 +61,6 @@ impl VirtualBody {
         }
     }
 
-    // TODO: Remove this, instead create a body trait
     pub fn to_body(&self) -> Body {
         Body::new(self.mass, Point::new(self.position.x, self.position.y), Vector::zero())
     }
@@ -106,6 +105,7 @@ type Index = u32;
 
 #[derive(Debug)]
 pub struct BHTree {
+    space: Rect,
     nodes: HashMap<Index, Node>,
 }
 
@@ -113,15 +113,16 @@ impl BHTree {
     /// Initialized tree with a root node spanning the given space.
     pub fn new(space: Rect) -> BHTree {
         let mut nodes: HashMap<Index, Node> = HashMap::new();
-        let root = Node::new(0, space, VirtualBody::zero());
+        let root = Node::new(0, space.clone(), VirtualBody::zero());
         nodes.insert(root.id, root);
-        BHTree { nodes }
+        BHTree { space, nodes }
     }
 
     /// Inserts the given body into the tree.
     pub fn add(&mut self, body: Body) {
-        // TODO: better way to handle this
-        if self.node(0).unwrap().space.contains(&body.position) {
+        // TODO: this is just temporary workaround. We should properly
+        // handle the case when bodies leave the root space
+        if self.space.contains(&body.position) {
             self.insert(Pending(0, body));
         }
     }
@@ -164,13 +165,11 @@ impl BHTree {
                         virtual_body.mass -= body.mass.value();
                         virtual_body.position -= &body.position * body.mass.value();
 
-                        if virtual_body != VirtualBody::zero() {
-                            if virtual_body.mass <= 0.0 {
-                                // this is reachable when there are two
-                                // adjacent points in separate quadrants.
-                            } else {
-                                result.push(virtual_body.centered());
-                            }
+                        if virtual_body.mass <= 0.0 {
+                            // this is reachable when there are two
+                            // adjacent points in separate quadrants.
+                        } else {
+                            result.push(virtual_body.centered());
                         }
                     }
                 },
@@ -365,8 +364,6 @@ impl<'a> PreorderTraverser<'a> {
 // indices of related nodes can be calculated in constant time and thus
 // do not need to be stored.
 
-// TODO: Consider if its possible to use an enum
-
 #[derive(Clone, Debug)]
 struct Node {
     pub id: Index,
@@ -476,11 +473,13 @@ impl Node {
 
     /// Returns an iterator over the children indices.
     fn children(&self) -> ChildIterator {
-        ChildIterator::new(self.id, 4)
+        ChildIterator::new(self.id)
     }
 }
 
 // AncestorIterator /////////////////////////////////////////////////////////////
+//
+// An iterator over the ancestor indices up towards the root index.
 
 // TODO: Test
 struct AncestorIterator {
@@ -519,11 +518,10 @@ impl Iterator for ChildIterator {
 }
 
 impl ChildIterator {
-    /// Returns a new iterator for children of the given index. Degree specifies
-    /// number of children at this node.
-    fn new(parent: Index, degree: u32) -> ChildIterator {
-        let start = degree * parent + 1;
-        ChildIterator(start..(start + degree))
+    /// Returns a new iterator for children of the given index.
+    fn new(parent: Index) -> ChildIterator {
+        let start = 4 * parent + 1;
+        ChildIterator(start..(start + 4))
     }
 }
 
@@ -538,6 +536,9 @@ mod tests {
     use physics::barneshut::Index;
     use physics::types::Body;
     use physics::barneshut::VirtualBody;
+    use physics::barneshut::Pending;
+    use physics::barneshut::ChildIterator;
+    use physics::barneshut::AncestorIterator;
 
     // helpers
     fn body(mass: f32, x: f32, y: f32) -> Body {
@@ -633,7 +634,7 @@ mod tests {
         let body = Body::new(1.0, Point::new(0.0, 5.5), Vector::zero());
 
         // when, then
-        tree.add(body);
+        tree.insert(Pending(0, body));
     }
 
     #[test]
@@ -883,5 +884,32 @@ mod tests {
     fn virtual_body_centered_zero_mass() {
         // given, when
         VirtualBody::new(0.0, 5.0, 7.5).centered();
+    }
+
+    #[test]
+    fn ancestor_iterator_iterates() {
+        // given
+        let mut sut = AncestorIterator { current: 632 };
+
+        // then
+        assert_eq!(Some(157), sut.next());
+        assert_eq!(Some(39), sut.next());
+        assert_eq!(Some(9), sut.next());
+        assert_eq!(Some(2), sut.next());
+        assert_eq!(Some(0), sut.next());
+        assert_eq!(None, sut.next());
+    }
+
+    #[test]
+    fn child_iterator_iterates() {
+        // given
+        let mut sut = ChildIterator::new(6);
+
+        // then
+        assert_eq!(Some(25), sut.next());
+        assert_eq!(Some(26), sut.next());
+        assert_eq!(Some(27), sut.next());
+        assert_eq!(Some(28), sut.next());
+        assert_eq!(None, sut.next());
     }
 }
