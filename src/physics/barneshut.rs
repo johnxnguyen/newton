@@ -268,28 +268,11 @@ impl BHTree {
         }
     }
 
-    /// Returns the centered virtual body at the given node.
-    fn virtual_body(&self, node: Index) -> VirtualBody {
-        self.node(node).expect("Expected a node").body.centered()
-    }
-
-    /// Returns a vector of the leaves in order.
-    fn leaves(&self) -> Vec<&Node> {
-        self.leaves_at(0)
-    }
-
-    // TODO: test
-    /// Returns a vector of the leaves in order below the given index.
-    fn leaves_at(&self, idx: Index) -> Vec<&Node> {
-        self.preorder_at(idx).filter(|n| self.is_leaf(*n)).collect()
-    }
-
     /// Returns a preorder traversal iterator starting at the root node.
     fn preorder(&self) -> PreorderTraverser {
         self.preorder_at(0)
     }
 
-    // TODO: test
     /// Returns a preorder traversal iterator starting at given index.
     fn preorder_at(&self, idx: Index) -> PreorderTraverser {
         PreorderTraverser::new(self, idx)
@@ -707,18 +690,6 @@ mod tests {
     }
 
     #[test]
-    fn tree_leaves() {
-        // given
-        let sut = small_tree();
-
-        // when
-        let result: Vec<Index> = sut.leaves().iter().map(|n| n.id).collect();
-        
-        // then
-        assert_eq!(vec![2, 13, 14], result);
-    }
-
-    #[test]
     fn tree_virtual_body() {
         // given
         let space = Rect::new(0.0, 0.0, 10, 10);
@@ -727,41 +698,33 @@ mod tests {
         tree.add(body(4.1, 6.0, 8.0)); // B
         tree.add(body(3.6, 4.0, 4.0)); // C
 
+        let result = |idx: Index| tree.node(idx).unwrap().body.centered();
+
         // then
 
         // A B and C
         // (41.0, 51.2) / 9.7 = (4.226804124, 5.278350515)
         let expected = virtual_body(9.7, 4.226804124, 5.278350515);
-        assert_eq!(expected, tree.virtual_body(0));
+        assert_eq!(expected, result(0));
 
         // just B
         let expected = virtual_body(4.1, 6.0, 8.0);
-        assert_eq!(expected, tree.virtual_body(2));
+        assert_eq!(expected, result(2));
 
         // A and C
         // (16.4, 18.4) / 5.6 = (2.928571429, 3.285714286)
         let expected = virtual_body(5.6, 2.928571429, 3.285714286);
-        assert_eq!(expected, tree.virtual_body(3));
+        assert_eq!(expected, result(3));
 
         // just A
         let expected = virtual_body(2.0, 1.0, 2.0);
-        assert_eq!(expected, tree.virtual_body(13));
+        assert_eq!(expected, result(13));
 
         // just C
         let expected = virtual_body(3.6, 4.0, 4.0);
-        assert_eq!(expected, tree.virtual_body(14));
+        assert_eq!(expected, result(14));
     }
-
-    #[test]
-    #[should_panic]
-    fn tree_virtual_body_empty_leaf() {
-        // given
-        let tree = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
-
-        // when
-        tree.virtual_body(0);
-    }
-
+    
     #[test]
     fn tree_virtual_bodies_small() {
         // given
