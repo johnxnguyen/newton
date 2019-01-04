@@ -89,4 +89,17 @@ mod tests {
         assert!(within_range(sut.next()));
         assert!(within_range(sut.next()));
     }
+
+    #[test]
+    fn mass_gen_generates() {
+        // given
+        let mut sut = MassGen::new(1.0, 2.0);
+        let within_range = |n: Mass| n.value() >= 1.0 && n.value() <= 2.0;
+
+        // then
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+    }
 }
