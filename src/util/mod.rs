@@ -66,12 +66,12 @@ mod tests {
         // then
         let mut file = fs::File::open("temp/frame-0.txt").expect("Error opening file.");
         let mut contents = String::new();
-        file.read_to_string(&mut contents);
+        let _ = file.read_to_string(&mut contents);
         assert_eq!(contents, "3.4,6.7\n".to_owned());
 
         let mut file = fs::File::open("temp/frame-1.txt").expect("Error opening file.");
         let mut contents = String::new();
-        file.read_to_string(&mut contents);
+        let _ = file.read_to_string(&mut contents);
         assert_eq!(contents, "6.4,6.785\n".to_owned());
 
         // after

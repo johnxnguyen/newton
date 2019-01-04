@@ -2,11 +2,12 @@
 name = "newton"
 version = "0.1.0"
 authors = ["John Nguyen <johnxuannguyen@gmail.com>"]
-publish = false
+#publish = false
 
-[lib]
-name = "newton"
-crate-type = ["staticlib"]
+#[lib]
+#name = "newton"
+#crate-type = ["staticlib"]
 
 [dependencies]
 rand = "0.5"
+uuid = { version = "0.7", features = ["v4"] }

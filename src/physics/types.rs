@@ -1,6 +1,50 @@
-use geometry::types::{Point, Vector};
-use super::force::{Gravity, Attractor};
 use std::cmp::Eq;
+use std::fmt;
+
+use uuid::Uuid;
+
+use geometry::types::{Point, Vector};
+use geometry::types::Rect;
+use physics::barneshut::BHTree;
+use util::DataWriter;
+
+use super::force::{Attractor, Gravity};
+
+// Mass //////////////////////////////////////////////////////////////////////
+//
+// Simple wrapper type that can only hold a positive floating point value.
+
+#[derive(Copy, Clone)]
+pub struct Mass(f32);
+
+impl fmt::Display for Mass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{}", self.0)
+    }
+}
+
+impl fmt::Debug for Mass {
+    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
+        write!(f, "{:?}", self.0)
+    }
+}
+
+impl From<f32> for Mass {
+    fn from(m: f32) -> Self {
+        Mass::new(m)
+    }
+}
+
+impl Mass {
+    pub fn new(m: f32) -> Mass {
+        if m <= 0.0 { panic!("A mass must be greater than 0. Got {}", m); }
+        Mass(m)
+    }
+
+    pub fn value(&self) -> f32 {
+        self.0
+    }
+}
 
 // Environment ///////////////////////////////////////////////////////////////
 //
@@ -9,14 +53,16 @@ use std::cmp::Eq;
 pub struct Environment {
     pub bodies: Vec<Body>,
     pub fields: Vec<Box<Field>>,
+    writer: DataWriter,
 }
 
 impl Environment {
     pub fn new() -> Environment {
-        let field = BruteForceField::new();
+        let field = BHField::new();
         Environment {
             bodies: vec![],
             fields: vec![Box::from(field)],
+            writer: DataWriter::new("data"),
         }
     }
 
@@ -28,6 +74,13 @@ impl Environment {
                 body.apply_force(force);
             }
         }
+
+        for body in self.bodies.iter_mut() {
+            body.apply_velocity();
+        }
+
+        let points = self.bodies.iter().map(|b| b.position.clone()).collect();
+        self.writer.write(points);
     }
 }
 
@@ -37,34 +90,50 @@ impl Environment {
 
 #[derive(Debug)]
 pub struct Body {
-    pub mass: f32,
+    id: Uuid,
+    pub mass: Mass,
     pub position: Point,
     pub velocity: Vector,
+}
+
+impl Clone for Body {
+    fn clone(&self) -> Self {
+        Body:: new(self.mass.value(), self.position.clone(), self.velocity.clone())
+    }
+}
+
+impl fmt::Display for Body {
+    fn fmt(&self, f: &mut fmt::Formatter<>) -> Result<(), fmt::Error> {
+        write!(f, "M({}) P({}, {}) V({}, {})",
+               self.mass,
+               self.position.x, self.position.y,
+               self.velocity.dx, self.velocity.dy)
+    }
 }
 
 impl Eq for Body {}
 
 impl PartialEq for Body {
     fn eq(&self, other: &'_ Body) -> bool {
-        // Bodies are compared referentially.
-        self as *const _ == other as *const _
+        self.id == other.id
     }
 }
 
 impl Body {
     pub fn new(mass: f32, position: Point, velocity: Vector) -> Body {
-        if mass <= 0.0 {
-            panic!("A body's mass must be greater than 0. Got {}", mass);
-        }
         Body {
-            mass,
+            id: Uuid::new_v4(),
+            mass: Mass::from(mass),
             position,
             velocity,
         }
     }
 
     pub fn apply_force(&mut self, force: &Vector) {
-        self.velocity += force / self.mass;
+        self.velocity += force / self.mass.value();
+    }
+
+    pub fn apply_velocity(&mut self) {
         self.position.x += self.velocity.dx;
         self.position.y += self.velocity.dy;
     }
@@ -115,7 +184,47 @@ impl BruteForceField {
     pub fn new() -> BruteForceField {
         BruteForceField {
             force: Gravity::new(1.0, 4.0),
-            sun: Some(Attractor::new(10000.0, Point::origin(), 1.0, 4.0)),
+            sun: Some(Attractor::new(10000.0, Point::zero(), 1.0, 4.0)),
+        }
+    }
+}
+
+// BHField ///////////////////////////////////////////////////////////////////
+
+struct BHField {
+    space: Rect,
+    force: Gravity,
+    sun: Attractor,
+}
+
+impl Field for BHField {
+    fn forces(&self, bodies: &[Body]) -> Vec<Vector> {
+        let mut result: Vec<Vector> = vec![];
+        let mut tree = BHTree::new(self.space.clone());
+
+        for body in bodies {
+            tree.add(body.clone());
+        }
+
+        for body in bodies {
+            let mut f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
+                acc + self.force.between(body, &n.to_body())
+            });
+
+            f += self.sun.force(body);
+            result.push(f);
+        };
+
+        result
+    }
+}
+
+impl BHField {
+    pub fn new() -> BHField {
+        BHField {
+            space: Rect::new(-1920.0, -1080.0, 3840, 2160),
+            force: Gravity::new(1.0, 4.0),
+            sun: Attractor::new(10000.0, Point::zero(), 2.5, 4.0),
         }
     }
 }
@@ -124,37 +233,29 @@ impl BruteForceField {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use geometry::types::{Point, Vector};
 
+    use super::*;
+
     #[test]
-    #[should_panic(expected = "A body's mass must be greater than 0.")]
+    #[should_panic(expected = "A mass must be greater than 0.")]
     fn body_with_zero_mass() {
         // given
-        Body::new(0.0, Point::origin(), Vector::zero());
+        Body::new(0.0, Point::zero(), Vector::zero());
     }
 
     #[test]
-    #[should_panic(expected = "A body's mass must be greater than 0.")]
+    #[should_panic(expected = "A mass must be greater than 0.")]
     fn body_with_negative_mass() {
         // given
-        Body::new(-10.0, Point::origin(), Vector::zero());
+        Body::new(-10.0, Point::zero(), Vector::zero());
     }
 
     #[test]
     fn body_has_referential_equivalence() {
         // given
-        let b1 = Body {
-            mass: 1.0,
-            position: Point { x: 1.0, y: 2.0 },
-            velocity: Vector::zero(),
-        };
-
-        let b2 = Body {
-            mass: 1.0,
-            position: Point { x: 1.0, y: 2.0 },
-            velocity: Vector::zero(),
-        };
+        let b1 = Body::new(1.0, Point::new(1.0, 2.0), Vector::zero());
+        let b2 = b1.clone();
 
         // then
         assert_eq!(b1, b1);
@@ -164,19 +265,26 @@ mod tests {
     #[test]
     fn body_applies_force() {
         // given
-        let mut sut = Body {
-            mass: 2.0,
-            position: Point { x: 1.0, y: 2.0 },
-            velocity: Vector { dx: -2.0, dy: 5.0 },
-        };
-
+        let mut sut = Body::new(2.0, Point::new(1.0, 2.0), Vector::new(-2.0, 5.0));
         let force = Vector { dx: 3.0, dy: -3.0 };
 
         // when
         sut.apply_force(&force);
 
         // then
-        assert_eq!(sut.velocity, Vector { dx: -0.5, dy: 3.5 });
-        assert_eq!(sut.position, Point { x: 0.5, y: 5.5 });
+        assert_eq!(Vector::new(-0.5, 3.5), sut.velocity);
+        assert_eq!(Point::new(1.0, 2.0), sut.position);
+    }
+
+    #[test]
+    fn body_applies_velocity() {
+        // given
+        let mut sut = Body::new(2.0, Point::new(1.0, 2.0), Vector::new(-2.0, 5.0));
+
+        // when
+        sut.apply_velocity();
+
+        // then
+        assert_eq!(Point::new(-1.0, 7.0), sut.position);
     }
 }

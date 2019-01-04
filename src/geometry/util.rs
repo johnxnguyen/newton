@@ -28,7 +28,7 @@ impl Transformation {
 
 // Distributor ///////////////////////////////////////////////////////////////
 //
-// A helper object to distribute bodies in space with velcoity. The
+// A helper object to distribute bodies in space with velocity. The
 // distribution is uses parameterized randomization.
 
 pub struct Distributor {

@@ -30,13 +30,8 @@ impl Gravity {
 
         let difference = Vector::difference(&b2.position, &b1.position);
         let distance = difference.magnitude().max(self.min_dist);
-        let force = (self.g * b1.mass * b2.mass) / (distance * distance);
-
-        let direction = match difference.normalized() {
-            None => Vector::zero(),
-            Some(normalized) => normalized,
-        };
-
+        let force = (self.g * b1.mass.value() * b2.mass.value()) / (distance * distance);
+        let direction = difference.normalized().unwrap_or(Vector::zero());
         &direction * force
     }
 }
@@ -157,7 +152,7 @@ mod tests {
         // given
         let sut = Attractor::new(
             100.0,
-            Point::origin(),
+            Point::zero(),
             2.3,
             1.0
         );
