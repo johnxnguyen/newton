@@ -6,7 +6,7 @@ use uuid::Uuid;
 use geometry::types::{Point, Vector};
 use geometry::types::Rect;
 use physics::barneshut::BHTree;
-use util::DataWriter;
+use util::write::DataWriter;
 
 use super::force::{Attractor, Gravity};
 
