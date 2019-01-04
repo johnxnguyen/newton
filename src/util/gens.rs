@@ -1,3 +1,5 @@
+use std::f32::consts::PI;
+
 use rand::distributions::Uniform;
 use rand::Rng;
 use rand::thread_rng;
@@ -49,12 +51,56 @@ impl MassGen {
     }
 }
 
+// RotationGen ///////////////////////////////////////////////////////////////
+//
+// Uniformly generates random angles (in radians) within a closed range.
+
+struct RotationGen {
+    gen: UniformGen,
+}
+
+impl RotationGen {
+    fn new_radians(low: f32, high: f32) -> RotationGen {
+        let (low, high) = RotationGen::normalize(low, high);
+        RotationGen { gen: UniformGen::new(low, high) }
+    }
+
+    fn new_degrees(low: f32, high: f32) -> RotationGen {
+        let low = RotationGen::radians(low);
+        let high = RotationGen::radians(high);
+        RotationGen::new_radians(low, high)
+    }
+
+    fn radians(degrees: f32) -> f32 {
+        degrees * PI / 180.0
+    }
+
+    fn normalize(mut low: f32, mut high: f32) -> (f32, f32) {
+        let pi_2 = 2.0 * PI;
+
+        // add 2PI to low until it it exceeds 0
+        while low + pi_2 <= 0.0 { low += pi_2; }
+
+        // subtract 2PI from high until it is <= 0
+        while  high - pi_2 > 0.0 { high -= pi_2; }
+
+        (low, high)
+    }
+
+    fn next(&mut self) -> f32 {
+        self.gen.next()
+    }
+}
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {
+    use std::f32::consts::PI;
+
     use physics::types::Mass;
     use util::gens::MassGen;
+    use util::gens::RotationGen;
     use util::gens::UniformGen;
 
     #[test]
@@ -96,6 +142,55 @@ mod tests {
         // given
         let mut sut = MassGen::new(1.0, 2.0);
         let within_range = |n: Mass| n.value() >= 1.0 && n.value() <= 2.0;
+
+        // then
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+    }
+
+    #[test]
+    fn rotation_gen_radians() {
+        assert_eq!(0.0, RotationGen::radians(0.0));
+        assert_eq!(0.5 * PI, RotationGen::radians(90.0));
+        assert_eq!(PI, RotationGen::radians(180.0));
+        assert_eq!(1.5 * PI, RotationGen::radians(270.0));
+        assert_eq!(2.0 * PI, RotationGen::radians(360.0));
+    }
+
+    #[test]
+    fn rotation_gen_normalizes() {
+        // given
+        let low = -17.3 * PI;
+        let high = 44.8 * PI;
+
+        // when
+        let (low, high) = RotationGen::normalize(low, high);
+
+        // then
+        assert_eq!(-4.0840707, low);
+        assert_eq!(2.5132432, high);
+    }
+
+    #[test]
+    fn rotation_gen_generates() {
+        // given
+        let mut sut = RotationGen::new_radians(0.5 * PI, PI);
+        let within_range = |r| r >= 0.5 * PI && r <= PI;
+
+        // then
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+    }
+
+    #[test]
+    fn rotation_gen_from_degrees_generates() {
+        // given
+        let mut sut = RotationGen::new_degrees(90.0, 180.0);
+        let within_range = |r| r >= 0.5 * PI && r <= PI;
 
         // then
         assert!(within_range(sut.next()));
