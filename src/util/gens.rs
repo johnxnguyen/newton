@@ -5,6 +5,7 @@ use rand::Rng;
 use rand::thread_rng;
 use rand::ThreadRng;
 
+use geometry::types::Vector;
 use physics::types::Mass;
 
 // UniformGen ////////////////////////////////////////////////////////////////
@@ -92,16 +93,43 @@ impl RotationGen {
     }
 }
 
+// VelocityGen ///////////////////////////////////////////////////////////////
+//
+// Uniformly generates random velocities within closed ranges.
+
+struct VelocityGen {
+    dx: UniformGen,
+    dy: UniformGen,
+}
+
+impl VelocityGen {
+    fn new(dx_low: f32, dx_high: f32, dy_low: f32, dy_high: f32) -> VelocityGen {
+        VelocityGen {
+            dx: UniformGen::new(dx_low, dx_high),
+            dy: UniformGen::new(dy_low, dy_high),
+        }
+    }
+
+    fn next(&mut self) -> Vector {
+        Vector {
+            dx: self.dx.next(),
+            dy: self.dy.next(),
+        }
+    }
+}
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {
     use std::f32::consts::PI;
 
+    use geometry::types::Vector;
     use physics::types::Mass;
     use util::gens::MassGen;
     use util::gens::RotationGen;
     use util::gens::UniformGen;
+    use util::gens::VelocityGen;
 
     #[test]
     #[should_panic]
@@ -191,6 +219,21 @@ mod tests {
         // given
         let mut sut = RotationGen::new_degrees(90.0, 180.0);
         let within_range = |r| r >= 0.5 * PI && r <= PI;
+
+        // then
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+    }
+
+    #[test]
+    fn velocity_gen_generates() {
+        // given
+        let mut sut = VelocityGen::new(-1.0, 1.0, 2.0, 3.0);
+        let within_range = |v: Vector| {
+            v.dx >= -1.0 && v.dx <= 1.0 && v.dy >= 2.0 && v.dy <= 3.0
+        };
 
         // then
         assert!(within_range(sut.next()));
