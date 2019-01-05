@@ -59,6 +59,12 @@ impl<'a> Div<f32> for &'a Point {
     }
 }
 
+impl From<Vector> for Point {
+    fn from(v: Vector) -> Self {
+        Point::new(v.dx, v.dy)
+    }
+}
+
 impl Point {
     pub fn new(x: f32, y: f32) -> Point {
         Point { x, y }

@@ -5,7 +5,9 @@ use rand::Rng;
 use rand::thread_rng;
 use rand::ThreadRng;
 
+use geometry::types::Point;
 use geometry::types::Vector;
+use geometry::util::Transformation;
 use physics::types::Mass;
 
 // UniformGen ////////////////////////////////////////////////////////////////
@@ -118,18 +120,40 @@ impl VelocityGen {
     }
 }
 
+// RadialGen /////////////////////////////////////////////////////////////////
+//
+// Generates positions and velocities radially around the origin.
+
+struct RadialGen {
+    distance: UniformGen,
+    rotation: RotationGen,
+    velocity: VelocityGen,
+}
+
+impl RadialGen {
+    fn new(distance: UniformGen, rotation: RotationGen, velocity: VelocityGen) -> RadialGen {
+        RadialGen { distance, rotation, velocity }
+    }
+
+    fn next(&mut self) -> (Point, Vector) {
+        let t = Transformation::rotation(self.rotation.next());
+        let point = Point::from(&t * Vector::new(self.distance.next(), 0.0));
+        let velocity =  &t * self.velocity.next();;
+        (point, velocity)
+    }
+}
+
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
 mod tests {
     use std::f32::consts::PI;
 
+    use geometry::types::Point;
     use geometry::types::Vector;
     use physics::types::Mass;
-    use util::gens::MassGen;
-    use util::gens::RotationGen;
-    use util::gens::UniformGen;
-    use util::gens::VelocityGen;
+    use util::gens::*;
 
     #[test]
     #[should_panic]
@@ -240,5 +264,54 @@ mod tests {
         assert!(within_range(sut.next()));
         assert!(within_range(sut.next()));
         assert!(within_range(sut.next()));
+    }
+
+    #[test]
+    fn radial_gen_generates() {
+        // given
+        let distance = UniformGen::new(100.0, 200.0);
+        let rotation = RotationGen::new_radians(0.0, PI);
+        let velocity = VelocityGen::new(1.0, 2.0, 3.0, 4.0);
+        let mut sut = RadialGen::new(distance, rotation, velocity);
+
+        let within_range = |(p, v): (Point, Vector)| {
+            let dist_to_origin = p.distance_to(&Point::zero());
+            let dist_in_range = dist_to_origin >= 100.0 && dist_to_origin <= 200.0;
+            let y_is_positive = p.y >= 0.0;
+            let v_min = v.magnitude() >= Vector::new(1.0, 2.0).magnitude();
+            let v_max = v.magnitude() <= Vector::new(3.0, 4.0).magnitude();
+
+            dist_in_range && y_is_positive && v_min && v_max
+        };
+
+        // then
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+        assert!(within_range(sut.next()));
+    }
+
+    #[test]
+    fn radial_gen_rotates_velocity() {
+        // given
+        let distance = UniformGen::new(100.0, 200.0);
+        let rotation = RotationGen::new_radians(0.0, PI);
+        let velocity = VelocityGen::new(0.0, 0.0, 1.0, 2.0);
+        let mut sut = RadialGen::new(distance, rotation, velocity);
+
+        // then
+        for _ in 0..5 {
+            // since the distance extends only in the positive x axis before rotation
+            // and the velocity extends only in the positive y axis before rotation,
+            // they are orthogonal before rotation. Therefore, if they are rotated
+            // together, they must remain orthogonal.
+            let (p, v) = sut.next();
+            let p = Vector::new(p.x, p.y);
+            let dot_product = &p * &v;
+
+            // to account for floating point inaccuracies.
+            assert!(dot_product.abs() >= 0.0);
+            assert!(dot_product.abs() <= 0.0001);
+        }
     }
 }
