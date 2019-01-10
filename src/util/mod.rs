@@ -64,10 +64,12 @@ impl BodyWriter {
     }
 
     pub fn write_bodies(&self, bodies: Vec<Body> , path: String) -> std::io::Result<()> {
-        let path = format!("{}/{}.txt", self.directory, path);
-        let mut file = fs::File::create(path)?;
+    pub fn write_bodies(&self, bodies: Vec<Body> , file_name: String) -> std::io::Result<()> {
+        let file_name = format!("{}/{}.txt", self.directory, file_name);
+        let mut file = fs::File::create(file_name)?;
         for body in bodies {
             write!(file, "{}-{}-{}-{}-{}\n", body.mass, body.position.x, body.position.y,
+            write!(file, "{},{},{},{},{}\n", body.mass, body.position.x, body.position.y,
                    body.velocity.dx, body.velocity.dy)?;
         }
 
@@ -117,12 +119,13 @@ mod tests {
         body_writer.write_bodies(vec![Body::new(2.1, Point::new(1.1,2.2),
                                                 Vector::new(3.4, 4.5))], "bodies".to_owned());
 //        body_writer.write_bodies(vec![Body::new(3.0, Point::new(4.0,5.0),
-//                                                Vector::zero())], "bodies".to_owned());
 
         // then
         let mut file = fs::File::open("bodies_file/bodies.txt").expect("Error opening file.");
         let mut lines = String::new();
         file.read_to_string(&mut lines);
-        assert_eq!(lines, "2.1-1.1-2.2-3.4-4.5\n".to_owned());
+        assert_eq!(lines, "2.1,1.1,2.2,3.4,4.5\n".to_owned());
+
+        fs::remove_dir_all("bodies_file").expect("Error chealing up test")
     }
 }
