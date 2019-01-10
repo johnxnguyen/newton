@@ -116,7 +116,6 @@ mod tests {
         // when
         body_writer.write_bodies(vec![Body::new(2.1, Point::new(1.1,2.2),
                                                 Vector::new(3.4, 4.5))], "bodies".to_owned());
-//        body_writer.write_bodies(vec![Body::new(3.0, Point::new(4.0,5.0),
 
         // then
         let mut file = fs::File::open("bodies_file/bodies.txt").expect("Error opening file.");
