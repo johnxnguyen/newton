@@ -63,7 +63,6 @@ impl BodyWriter {
         }
     }
 
-    pub fn write_bodies(&self, bodies: Vec<Body> , path: String) -> std::io::Result<()> {
     pub fn write_bodies(&self, bodies: Vec<Body> , file_name: String) -> std::io::Result<()> {
         let file_name = format!("{}/{}.txt", self.directory, file_name);
         let mut file = fs::File::create(file_name)?;
