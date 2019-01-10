@@ -67,7 +67,6 @@ impl BodyWriter {
         let file_name = format!("{}/{}.txt", self.directory, file_name);
         let mut file = fs::File::create(file_name)?;
         for body in bodies {
-            write!(file, "{}-{}-{}-{}-{}\n", body.mass, body.position.x, body.position.y,
             write!(file, "{},{},{},{},{}\n", body.mass, body.position.x, body.position.y,
                    body.velocity.dx, body.velocity.dy)?;
         }
