@@ -123,6 +123,7 @@ mod tests {
         file.read_to_string(&mut lines);
         assert_eq!(lines, "2.1,1.1,2.2,3.4,4.5\n".to_owned());
 
+        // after
         fs::remove_dir_all("bodies_file").expect("Error chealing up test")
     }
 }
