@@ -2,7 +2,8 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use geometry::types::Point;
+use geometry::types::{Point, Vector};
+use physics::types::Body;
 
 // DataWriter ////////////////////////////////////////////////////////////////
 //
@@ -46,6 +47,34 @@ impl DataWriter {
     }
 }
 
+pub struct BodyWriter {
+    directory: String
+}
+
+impl BodyWriter {
+    /// creates a new directory in the current working path
+    pub fn new(directory: &str) -> BodyWriter {
+        if !Path::new(directory).exists() {
+            fs::create_dir(directory).expect("Could'nt create dir.");
+        }
+
+        BodyWriter {
+            directory: directory.to_owned()
+        }
+    }
+
+    pub fn write_bodies(&self, bodies: Vec<Body> , file_name: String) -> std::io::Result<()> {
+        let file_name = format!("{}/{}.txt", self.directory, file_name);
+        let mut file = fs::File::create(file_name)?;
+        for body in bodies {
+            write!(file, "{},{},{},{},{}\n", body.mass, body.position.x, body.position.y,
+                   body.velocity.dx, body.velocity.dy)?;
+        }
+
+        Ok(())
+    }
+}
+
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
@@ -74,7 +103,27 @@ mod tests {
         let _ = file.read_to_string(&mut contents);
         assert_eq!(contents, "6.4,6.785\n".to_owned());
 
+
         // after
         fs::remove_dir_all("temp").expect("Error cleaning up test.");
+    }
+
+    #[test]
+    fn body_writer() {
+        // given
+        let mut body_writer = BodyWriter::new("bodies_file");
+
+        // when
+        body_writer.write_bodies(vec![Body::new(2.1, Point::new(1.1,2.2),
+                                                Vector::new(3.4, 4.5))], "bodies".to_owned());
+
+        // then
+        let mut file = fs::File::open("bodies_file/bodies.txt").expect("Error opening file.");
+        let mut lines = String::new();
+        file.read_to_string(&mut lines);
+        assert_eq!(lines, "2.1,1.1,2.2,3.4,4.5\n".to_owned());
+
+        // after
+        fs::remove_dir_all("bodies_file").expect("Error chealing up test")
     }
 }
