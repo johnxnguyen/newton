@@ -10,24 +10,37 @@ use geometry::types::Vector;
 use geometry::util::Transformation;
 use physics::types::Mass;
 
+// Generator /////////////////////////////////////////////////////////////////
+//
+// A type conforming to Generator produces an infinite stream of objects.
+
+pub trait Generator {
+    type Output;
+    fn generate(&mut self) -> Self::Output;
+}
+
 // UniformGen ////////////////////////////////////////////////////////////////
 //
 // Uniformly generates random f32 within a closed range of values.
 
-struct UniformGen {
+#[derive(Debug)]
+pub struct UniformGen {
     distribution: Uniform<f32>,
     rand: ThreadRng,
 }
 
 impl UniformGen {
-    fn new(low: f32, high: f32) -> UniformGen {
+    pub fn new(low: f32, high: f32) -> UniformGen {
         UniformGen {
             distribution: Uniform::new_inclusive(low, high),
             rand: thread_rng(),
         }
     }
+}
 
-    fn next(&mut self) -> f32 {
+impl Generator for UniformGen {
+    type Output = f32;
+    fn generate(&mut self) -> Self::Output {
         self.rand.sample(self.distribution)
     }
 }
@@ -36,21 +49,25 @@ impl UniformGen {
 //
 // Uniformly generates random Mass within a closed range.
 
-struct MassGen {
+#[derive(Debug)]
+pub struct MassGen {
     gen: UniformGen,
 }
 
 impl MassGen {
-    fn new(low: f32, high: f32) -> MassGen {
+    pub fn new(low: f32, high: f32) -> MassGen {
         if low <= 0.0 || high <= 0.0 {
             panic!("MassGen requires positive range. Got [{}, {}]", low, high);
         }
 
         MassGen { gen: UniformGen::new(low, high) }
     }
+}
 
-    fn next(&mut self) -> Mass {
-        Mass::from(self.gen.next())
+impl Generator for MassGen {
+    type Output = Mass;
+    fn generate(&mut self) -> Self::Output {
+        Mass::from(self.gen.generate())
     }
 }
 
@@ -58,17 +75,18 @@ impl MassGen {
 //
 // Uniformly generates random angles (in radians) within a closed range.
 
-struct RotationGen {
+#[derive(Debug)]
+pub struct RotationGen {
     gen: UniformGen,
 }
 
 impl RotationGen {
-    fn new_radians(low: f32, high: f32) -> RotationGen {
+    pub fn new_radians(low: f32, high: f32) -> RotationGen {
         let (low, high) = RotationGen::normalize(low, high);
         RotationGen { gen: UniformGen::new(low, high) }
     }
 
-    fn new_degrees(low: f32, high: f32) -> RotationGen {
+    pub fn new_degrees(low: f32, high: f32) -> RotationGen {
         let low = RotationGen::radians(low);
         let high = RotationGen::radians(high);
         RotationGen::new_radians(low, high)
@@ -89,9 +107,12 @@ impl RotationGen {
 
         (low, high)
     }
+}
 
-    fn next(&mut self) -> f32 {
-        self.gen.next()
+impl Generator for RotationGen {
+    type Output = f32;
+    fn generate(&mut self) -> Self::Output {
+        self.gen.generate()
     }
 }
 
@@ -99,23 +120,28 @@ impl RotationGen {
 //
 // Uniformly generates random velocities within closed ranges.
 
-struct VelocityGen {
+#[derive(Debug)]
+pub struct VelocityGen {
     dx: UniformGen,
     dy: UniformGen,
 }
 
 impl VelocityGen {
-    fn new(dx_low: f32, dx_high: f32, dy_low: f32, dy_high: f32) -> VelocityGen {
+    pub fn new(dx_low: f32, dx_high: f32, dy_low: f32, dy_high: f32) -> VelocityGen {
         VelocityGen {
             dx: UniformGen::new(dx_low, dx_high),
             dy: UniformGen::new(dy_low, dy_high),
         }
     }
+}
 
-    fn next(&mut self) -> Vector {
+impl Generator for VelocityGen {
+    type Output = Vector;
+
+    fn generate(&mut self) -> Self::Output {
         Vector {
-            dx: self.dx.next(),
-            dy: self.dy.next(),
+            dx: self.dx.generate(),
+            dy: self.dy.generate(),
         }
     }
 }
@@ -124,25 +150,28 @@ impl VelocityGen {
 //
 // Generates positions and velocities radially around the origin.
 
-struct RadialGen {
+#[derive(Debug)]
+pub struct RadialGen {
     distance: UniformGen,
     rotation: RotationGen,
     velocity: VelocityGen,
 }
 
 impl RadialGen {
-    fn new(distance: UniformGen, rotation: RotationGen, velocity: VelocityGen) -> RadialGen {
+    pub fn new(distance: UniformGen, rotation: RotationGen, velocity: VelocityGen) -> RadialGen {
         RadialGen { distance, rotation, velocity }
-    }
-
-    fn next(&mut self) -> (Point, Vector) {
-        let t = Transformation::rotation(self.rotation.next());
-        let point = Point::from(&t * Vector::new(self.distance.next(), 0.0));
-        let velocity =  &t * self.velocity.next();;
-        (point, velocity)
     }
 }
 
+impl Generator for RadialGen {
+    type Output = (Point, Vector);
+    fn generate(&mut self) -> <Self as Generator>::Output {
+        let t = Transformation::rotation(self.rotation.generate());
+        let point = Point::from(&t * Vector::new(self.distance.generate(), 0.0));
+        let velocity =  &t * self.velocity.generate();
+        (point, velocity)
+    }
+}
 
 // Tests /////////////////////////////////////////////////////////////////////
 
@@ -169,10 +198,10 @@ mod tests {
         let within_range = |n: f32| n >= 1.0 && n <= 2.0;
 
         // then
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
     }
 
     #[test]
@@ -196,10 +225,10 @@ mod tests {
         let within_range = |n: Mass| n.value() >= 1.0 && n.value() <= 2.0;
 
         // then
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
     }
 
     #[test]
@@ -232,10 +261,10 @@ mod tests {
         let within_range = |r| r >= 0.5 * PI && r <= PI;
 
         // then
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
     }
 
     #[test]
@@ -245,10 +274,10 @@ mod tests {
         let within_range = |r| r >= 0.5 * PI && r <= PI;
 
         // then
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
     }
 
     #[test]
@@ -260,10 +289,10 @@ mod tests {
         };
 
         // then
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
     }
 
     #[test]
@@ -285,10 +314,10 @@ mod tests {
         };
 
         // then
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
-        assert!(within_range(sut.next()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
     }
 
     #[test]
@@ -305,7 +334,7 @@ mod tests {
             // and the velocity extends only in the positive y axis before rotation,
             // they are orthogonal before rotation. Therefore, if they are rotated
             // together, they must remain orthogonal.
-            let (p, v) = sut.next();
+            let (p, v) = sut.generate();
             let p = Vector::new(p.x, p.y);
             let dot_product = &p * &v;
 
