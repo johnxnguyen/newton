@@ -19,6 +19,27 @@ pub trait Generator {
     fn generate(&mut self) -> Self::Output;
 }
 
+// Repeater //////////////////////////////////////////////////////////////////
+//
+// A simple generator that generates a single output.
+
+pub struct Repeater<T> {
+    value: T,
+}
+
+impl<T> Repeater<T> {
+    pub fn new(value: T) -> Repeater<T> {
+        Repeater { value }
+    }
+}
+
+impl<T> Generator for Repeater<T> where T: Clone {
+    type Output = T;
+    fn generate(&mut self) -> Self::Output {
+        self.value.clone()
+    }
+}
+
 // UniformGen ////////////////////////////////////////////////////////////////
 //
 // Uniformly generates random f32 within a closed range of values.
@@ -185,6 +206,18 @@ mod tests {
     use util::gens::*;
 
     #[test]
+    fn repeater_generates() {
+        // given
+        let mut sut = Repeater::new(Point::new(1.0, 2.0));
+
+        // then
+        let expected = Point::new(1.0, 2.0);
+        assert_eq!(expected, sut.generate());
+        assert_eq!(expected, sut.generate());
+        assert_eq!(expected, sut.generate());
+        assert_eq!(expected, sut.generate());
+    }
+
     #[should_panic]
     fn uniform_gen_panics_on_invalid_range() {
         // when
