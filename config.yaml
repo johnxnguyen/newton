@@ -1,0 +1,71 @@
+gens:
+  -
+    name: main_system
+    type: radial
+    dist: {min: 100, max: 200}
+    vel:  {min: 1.0, max: 2.0}
+  -
+    name: main_mass
+    type: mass
+    low: 0.1
+    high: 0.3
+
+# Each element here is a kind of system generator. Each system has a name
+# and number of bodies. The properties can be given concrete values or
+# they can be generated using a predefined generator.
+bodies:
+  -
+    name: black_hole          # To uniquely identify this system. Required.
+    num: 1                    # How many bodies in this system. Optional, defaults to 1
+
+    mass: 100.0               # required
+    trans: {x: 10, y: 10}     # optional, defaults to (0, 0)
+    vel: {dx: 1.0, dy: -1.0}    # optional, defaults to (0.0, 0.0)
+    rot: 45.0                 # optional, defaults to 0.0
+  -
+    name: stars
+    num: 5000
+
+    mass: main_mass
+    radial: main_system       # this is a shortcut to encapsulate all properties together
+
+# all property keys are available here too
+systems:
+  -
+    name: black_hole
+  -
+    name: stars
+
+# transformations and velocities
+# should be defined on systems, including
+# bodies.
+
+# we should make sure that two bodies can't have the same
+# position
+
+# maybe it makes sense then to
+# have a mass key for all bodies,
+# and either provide a concrete
+# value or a gen name.
+
+# or do we also gen position and
+# velocity of bodies
+
+# the question is, what does radial gen generate?
+# A position and a velocity? Or a transformation
+# and a velocity? Remember, radial gen needs to
+# work for both systems and bodies. The system nodes
+# need to chain, so we can't give them concrete
+# positions.
+
+# But I'm a bit confused what kind of transformations
+# these would be. Translate, scale & rotate?
+
+# So radial gen needs to chain a rotate with a
+# translate. This will still be just a single
+# matrix.
+
+# this means then, that radial gens are only in
+# systems. Bodies can only use mass gens.
+
+# TODO: fully implement transformation matrices
