@@ -127,66 +127,81 @@ impl Loader {
         RadialGen::new(distance, rotation, velocity)
     }
 
+    // Body Parsing //////////////////////////////////////////////////////////
+
     // how to handle missing keys and default values?
     fn parse_bod(&self, bod: &Yaml) -> (String, Vec<Node>) {
         let name = bod["name"].as_str().unwrap();
         let num = bod["num"].as_i64().unwrap_or(1); // should be positive
 
         let mut nodes: Vec<Node> = vec![];
-
-        let mass: Box<dyn Generator<Output=Mass>> = match bod["mass"].as_str() {
-            Some(gen_name) => {
-                // copy the referred gen
-                let gen = self.mass_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
-            },
-            None => {
-                let raw = bod["mass"].as_f64().unwrap() as f32;
-                Box::new(Repeater::new(Mass::from(raw)))
-            },
-        };
-
-        let trans: Box<dyn Generator<Output=Point>> = match bod["trans"].as_str() {
-            Some(gen_name) => {
-                // lookup gen here
-                Box::new(Repeater::new(Point::new(0.0, 0.0)))
-            },
-            None => {
-                let x = bod["trans"]["x"].as_i64().unwrap() as f32;
-                let y  = bod["trans"]["y"].as_i64().unwrap() as f32;
-                Box::new(Repeater::new(Point::new(x, y)))
-            },
-        };
-
-        let vel: Box<dyn Generator<Output=Vector>> = match bod["vel"].as_str() {
-            Some(gen_name) => {
-                // copy the referred gen
-                let gen = self.velocity_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
-            },
-            None => {
-                let dx = bod["vel"]["dx"].as_f64().unwrap() as f32;
-                let dy = bod["vel"]["dy"].as_f64().unwrap() as f32;
-                Box::new(Repeater::new(Vector::new(dx, dy)))
-            },
-        };
-
-        let rot: Box<dyn Generator<Output=f32>> = match bod["rot"].as_str() {
-            Some(gen_name) => {
-                // copy the referred gen
-                let gen = self.rotation_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
-            },
-            None => {
-                let rotation = bod["rot"].as_f64().unwrap() as f32;
-                Box::from(Repeater::new(rotation))
-            },
-        };
+        let mass = self.parse_body_mass(bod);
+        let vel = self.parse_body_velocity(bod);
+        let trans = self.parse_body_translation(bod);
+        let rot = self.parse_body_rotation(bod);
 
         // radial gen?
 
         // make the nodes here
         (String::new(), vec![Node::Body(Point::zero(), Vector::zero(), 0.0)])
+    }
+
+    /// Returns the named mass gen if it exists, else creates one from concrete values.
+    fn parse_body_mass(&self, body: &Yaml) -> Box<dyn Generator<Output=Mass>> {
+        match body["mass"].as_str() {
+            Some(gen_name) => {
+                let gen = self.mass_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let raw = body["mass"].as_f64().unwrap() as f32;
+                Box::new(Repeater::new(Mass::from(raw)))
+            },
+        }
+    }
+
+    /// Returns the named velocity gen if it exists, else creates one from concrete values.
+    fn parse_body_velocity(&self, body: &Yaml) -> Box<dyn Generator<Output=Vector>> {
+        match body["vel"].as_str() {
+            Some(gen_name) => {
+                let gen = self.velocity_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let dx = body["vel"]["dx"].as_f64().unwrap() as f32;
+                let dy = body["vel"]["dy"].as_f64().unwrap() as f32;
+                Box::new(Repeater::new(Vector::new(dx, dy)))
+            },
+        }
+    }
+
+    /// Returns the named rotation gen if it exists, else creates one from concrete values.
+    fn parse_body_rotation(&self, body: &Yaml) -> Box<dyn Generator<Output=f32>> {
+        match body["rot"].as_str() {
+            Some(gen_name) => {
+                let gen = self.rotation_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let rotation = body["rot"].as_f64().unwrap() as f32;
+                Box::from(Repeater::new(rotation))
+            },
+        }
+    }
+
+    // Returns the named translation gen if it exists, else creates one from concrete values.
+    fn parse_body_translation(&self, body: &Yaml) -> Box<dyn Generator<Output=Point>> {
+        match body["trans"].as_str() {
+            Some(gen_name) => {
+                // TODO: look up translation gen
+                Box::new(Repeater::new(Point::new(0.0, 0.0)))
+            },
+            None => {
+                let x = body["trans"]["x"].as_i64().unwrap() as f32;
+                let y  = body["trans"]["y"].as_i64().unwrap() as f32;
+                Box::new(Repeater::new(Point::new(x, y)))
+            },
+        }
     }
 }
 
