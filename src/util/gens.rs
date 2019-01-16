@@ -10,6 +10,8 @@ use geometry::types::Vector;
 use geometry::util::Transformation;
 use physics::types::Mass;
 
+// TODO: We need a translation gen
+
 // Generator /////////////////////////////////////////////////////////////////
 //
 // A type conforming to Generator produces an infinite stream of objects.
@@ -44,7 +46,7 @@ impl<T> Generator for Repeater<T> where T: Clone {
 //
 // Uniformly generates random f32 within a closed range of values.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct UniformGen {
     distribution: Uniform<f32>,
     rand: ThreadRng,
@@ -70,7 +72,7 @@ impl Generator for UniformGen {
 //
 // Uniformly generates random Mass within a closed range.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct MassGen {
     gen: UniformGen,
 }
@@ -96,7 +98,7 @@ impl Generator for MassGen {
 //
 // Uniformly generates random angles (in radians) within a closed range.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RotationGen {
     gen: UniformGen,
 }
@@ -141,7 +143,7 @@ impl Generator for RotationGen {
 //
 // Uniformly generates random velocities within closed ranges.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct VelocityGen {
     dx: UniformGen,
     dy: UniformGen,
@@ -171,7 +173,7 @@ impl Generator for VelocityGen {
 //
 // Generates positions and velocities radially around the origin.
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 pub struct RadialGen {
     distance: UniformGen,
     rotation: RotationGen,
@@ -218,6 +220,7 @@ mod tests {
         assert_eq!(expected, sut.generate());
     }
 
+    #[test]
     #[should_panic]
     fn uniform_gen_panics_on_invalid_range() {
         // when
