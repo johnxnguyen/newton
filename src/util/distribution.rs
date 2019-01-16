@@ -55,19 +55,24 @@ impl Loader {
 
             match gen_type {
                 "mass" => {
-                    self.mass_gens.insert(name, Loader::parse_mass_gen(gen));
+                    let mass_gen = self.parse_mass_gen(gen);
+                    self.mass_gens.insert(name, mass_gen);
                 },
                 "distance" => {
-                    self.distance_gens.insert(name, Loader::parse_distance_gen(gen));
+                    let distance_gen = self.parse_distance_gen(gen);
+                    self.distance_gens.insert(name, distance_gen);
                 },
                 "velocity" => {
-                    self.velocity_gens.insert(name, Loader::parse_velocity_gen(gen));
+                    let velocity_gen = self.parse_velocity_gen(gen);
+                    self.velocity_gens.insert(name, velocity_gen);
                 },
                 "rotation" => {
-                    self.rotation_gens.insert(name, Loader::parse_rotation_gen(gen));
+                    let rotation_gen = self.parse_rotation_gen(gen);
+                    self.rotation_gens.insert(name, rotation_gen);
                 },
                 "radial" => {
-                    self.radials_gens.insert(name, Loader::parse_radial_gen(gen));
+                    let radial_gen = self.parse_radial_gen(gen);
+                    self.radials_gens.insert(name, radial_gen);
                 },
                 _ => panic!("Unknown generator type: {:?}", gen_type),
             };
@@ -96,34 +101,36 @@ impl Loader {
         YamlLoader::load_from_str(&contents).unwrap()
     }
 
-    fn parse_mass_gen(gen: &Yaml) -> MassGen {
+    // Gen Parsing ///////////////////////////////////////////////////////////
+
+    fn parse_mass_gen(&self, gen: &Yaml) -> MassGen {
         let low = gen["low"].as_f64().unwrap() as f32;
         let high = gen["high"].as_f64().unwrap() as f32;
         MassGen::new(low, high)
     }
 
-    fn parse_distance_gen(gen: &Yaml) -> UniformGen {
+    fn parse_distance_gen(&self, gen: &Yaml) -> UniformGen {
         let dist_min = gen["dist"]["min"].as_i64().unwrap() as f32;
         let dist_max = gen["dist"]["max"].as_i64().unwrap() as f32;
         UniformGen::new(dist_min, dist_max)
     }
 
-    fn parse_rotation_gen(gen: &Yaml) -> RotationGen {
+    fn parse_rotation_gen(&self, gen: &Yaml) -> RotationGen {
         let low = gen["low"].as_f64().unwrap() as f32;
         let high = gen["high"].as_f64().unwrap() as f32;
         RotationGen::new_degrees(low, high)
     }
 
-    fn parse_velocity_gen(gen: &Yaml) -> VelocityGen {
+    fn parse_velocity_gen(&self, gen: &Yaml) -> VelocityGen {
         let vel_min = gen["vel"]["min"].as_f64().unwrap() as f32;
         let vel_max = gen["vel"]["max"].as_f64().unwrap() as f32;
         VelocityGen::new(0.0, 0.0, vel_min, vel_max)
     }
 
-    fn parse_radial_gen(gen: &Yaml) -> RadialGen {
-        let distance = Loader::parse_distance_gen(gen);
+    fn parse_radial_gen(&self, gen: &Yaml) -> RadialGen {
+        let distance = self.parse_distance_gen(gen);
         let rotation = RotationGen::new_degrees(0.0, 360.0);
-        let velocity = Loader::parse_velocity_gen(gen);
+        let velocity = self.parse_velocity_gen(gen);
         RadialGen::new(distance, rotation, velocity)
     }
 
