@@ -8,18 +8,35 @@ use yaml_rust::YamlLoader;
 use geometry::types::Point;
 use geometry::types::Vector;
 use geometry::util::Transformation;
-
+use physics::types::Mass;
 use util::gens::Generator;
 use util::gens::MassGen;
 use util::gens::RadialGen;
+use util::gens::Repeater;
 use util::gens::RotationGen;
 use util::gens::UniformGen;
 use util::gens::VelocityGen;
 
-pub struct Loader { }
+pub struct Loader {
+    mass_gens:      HashMap<String, MassGen>,
+    distance_gens:  HashMap<String, UniformGen>,
+    velocity_gens:  HashMap<String, VelocityGen>,
+    rotation_gens:  HashMap<String, RotationGen>,
+    radials_gens:   HashMap<String, RadialGen>,
+}
 
 impl Loader {
-    pub fn load(path: &str) {
+    pub fn new() -> Loader {
+        Loader {
+            mass_gens:      HashMap::new(),
+            distance_gens:  HashMap::new(),
+            velocity_gens:  HashMap::new(),
+            rotation_gens:  HashMap::new(),
+            radials_gens:   HashMap::new(),
+        }
+    }
+
+    pub fn load(&mut self, path: &str) {
         let docs = Loader::docs(path);
         let doc = &docs[0];
 
@@ -30,41 +47,44 @@ impl Loader {
         // this could be refactored into a method
         let gens = doc["gens"].as_vec().unwrap();
 
-        let mut masses:     HashMap<String, MassGen> = HashMap::new();
-        let mut distances:  HashMap<String, UniformGen> = HashMap::new();
-        let mut velocities: HashMap<String, VelocityGen> = HashMap::new();
-        let mut rotations:  HashMap<String, RotationGen> = HashMap::new();
-        let mut radials:    HashMap<String, RadialGen> = HashMap::new();
-
         for gen in gens {
             let name = gen["name"].as_str().unwrap().to_owned();
             let gen_type = gen["type"].as_str().unwrap();
 
             match gen_type {
                 "mass" => {
-                    masses.insert(name, Loader::parse_mass_gen(gen));
+                    self.mass_gens.insert(name, Loader::parse_mass_gen(gen));
                 },
                 "distance" => {
-                    distances.insert(name, Loader::parse_distance_gen(gen));
+                    self.distance_gens.insert(name, Loader::parse_distance_gen(gen));
                 },
                 "velocity" => {
-                    velocities.insert(name, Loader::parse_velocity_gen(gen));
+                    self.velocity_gens.insert(name, Loader::parse_velocity_gen(gen));
                 },
                 "rotation" => {
-                    rotations.insert(name, Loader::parse_rotation_gen(gen));
+                    self.rotation_gens.insert(name, Loader::parse_rotation_gen(gen));
                 },
                 "radial" => {
-                    radials.insert(name, Loader::parse_radial_gen(gen));
+                    self.radials_gens.insert(name, Loader::parse_radial_gen(gen));
                 },
                 _ => panic!("Unknown generator type: {:?}", gen_type),
             };
         }
 
-        println!("mass gens: {:?}", masses.len());
-        println!("dist gens: {:?}", distances.len());
-        println!("vel gens: {:?}", velocities.len());
-        println!("rot gens: {:?}", rotations.len());
-        println!("radials gens: {:?}", radials.len());
+        println!("mass gens: {:?}", self.mass_gens.len());
+        println!("dist gens: {:?}", self.distance_gens.len());
+        println!("vel gens: {:?}", self.velocity_gens.len());
+        println!("rot gens: {:?}", self.rotation_gens.len());
+        println!("radials gens: {:?}", self.radials_gens.len());
+
+        // now we create body nodes
+        let bods = doc["bodies"].as_vec().unwrap();
+
+        for bod in bods {
+            let name = bod["name"].as_str().unwrap().to_owned();
+            // this should be positive
+            let num = bod["num"].as_i64().unwrap();
+        }
     }
 
     fn docs(path: &str) -> Vec<Yaml> {
