@@ -17,6 +17,8 @@ use util::gens::RotationGen;
 use util::gens::UniformGen;
 use util::gens::VelocityGen;
 
+// Question: If I clone the gens, do they produce the same sequence?
+// TODO: Replace distance_gens with translation_gens
 pub struct Loader {
     mass_gens:      HashMap<String, MassGen>,
     distance_gens:  HashMap<String, UniformGen>,
@@ -125,83 +127,86 @@ impl Loader {
         RadialGen::new(distance, rotation, velocity)
     }
 
-//    fn parse_bod(bod: &Yaml) -> (String, Vec<Node>) {
-//        let name = bod["name"].as_str().unwrap();
-//        let num = bod["num"].as_i64().unwrap_or(1);
-//
-//        let mut nodes: Vec<Node> = vec![];
-//
-//        // actually, it makes sense to make all of these gens, because
-//        // we don't want to parse this body over and over. If mass is a
-//        // hard value, make that a repetitive gen.
-//
-//        // I would need to make sure that I could use the gens on
-//        // separate threads.
-//
-//        // Also, how would the gen look like as a trait? It would be
-//        // generic surely, meaning it would have it's own associated
-//        // type. But the gen isn't a generic type.
-//
-//        // this can also be a gen
-//        let mass = bod["mass"].as_f64().unwrap();
-//
-//        // how to handle missing keys and default values?
-//
-//        let trans = match bod["trans"].as_str() {
-//            Some(gen_name) => {
-//                // lookup gen here
-//                Point::new(0.0, 0.0)
-//            },
-//            None => {
-//                let x = bod["trans"]["x"].as_i64().unwrap() as f32;
-//                let y  = bod["trans"]["y"].as_i64().unwrap() as f32;
-//                Point::new(x, y)
-//            },
-//        };
-//
-//        let vel = match bod["vel"].as_str() {
-//            Some(gen_name) => {
-//                // lookup gen here
-//                Vector::new(0.0, 0.0)
-//            },
-//            None => {
-//                let dx = bod["vel"]["dx"].as_f64().unwrap() as f32;
-//                let dy = bod["vel"]["dy"].as_f64().unwrap() as f32;
-//                Vector::new(dx, dy)
-//            },
-//        };
-//
-//        let rot = match bod["rot"].as_str() {
-//            Some(gen_name) => {
-//                // lookup gen here
-//                0.0
-//            },
-//            None => {
-//                bod["rot"].as_f64().unwrap()
-//            },
-//        };
-//
-//        // make the nodes here
-//    }
+    // how to handle missing keys and default values?
+    fn parse_bod(&self, bod: &Yaml) -> (String, Vec<Node>) {
+        let name = bod["name"].as_str().unwrap();
+        let num = bod["num"].as_i64().unwrap_or(1); // should be positive
+
+        let mut nodes: Vec<Node> = vec![];
+
+        let mass: Box<dyn Generator<Output=Mass>> = match bod["mass"].as_str() {
+            Some(gen_name) => {
+                // copy the referred gen
+                let gen = self.mass_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let raw = bod["mass"].as_f64().unwrap() as f32;
+                Box::new(Repeater::new(Mass::from(raw)))
+            },
+        };
+
+        let trans: Box<dyn Generator<Output=Point>> = match bod["trans"].as_str() {
+            Some(gen_name) => {
+                // lookup gen here
+                Box::new(Repeater::new(Point::new(0.0, 0.0)))
+            },
+            None => {
+                let x = bod["trans"]["x"].as_i64().unwrap() as f32;
+                let y  = bod["trans"]["y"].as_i64().unwrap() as f32;
+                Box::new(Repeater::new(Point::new(x, y)))
+            },
+        };
+
+        let vel: Box<dyn Generator<Output=Vector>> = match bod["vel"].as_str() {
+            Some(gen_name) => {
+                // copy the referred gen
+                let gen = self.velocity_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let dx = bod["vel"]["dx"].as_f64().unwrap() as f32;
+                let dy = bod["vel"]["dy"].as_f64().unwrap() as f32;
+                Box::new(Repeater::new(Vector::new(dx, dy)))
+            },
+        };
+
+        let rot: Box<dyn Generator<Output=f32>> = match bod["rot"].as_str() {
+            Some(gen_name) => {
+                // copy the referred gen
+                let gen = self.rotation_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let rotation = bod["rot"].as_f64().unwrap() as f32;
+                Box::from(Repeater::new(rotation))
+            },
+        };
+
+        // radial gen?
+
+        // make the nodes here
+        (String::new(), vec![Node::Body(Point::zero(), Vector::zero(), 0.0)])
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
-//enum Node {
-//    // translation, velocity, subsystems
-//    System(Point, Vector, Vec<Index>),
-//    // position, velocity, mass
-//    Body(Point, Vector, f32),
-//}
-//
-//type Index = u32;
-//
-//struct DistributionTree {
-//    nodes: Vec<Index>
-//}
-//
-//impl DistributionTree {
-//    fn new() -> DistributionTree {
-//        DistributionTree { nodes: vec![] }
-//    }
-//}
+enum Node {
+    // translation, velocity, subsystems
+    System(Point, Vector, Vec<Index>),
+    // position, velocity, mass
+    Body(Point, Vector, f32),
+}
+
+type Index = u32;
+
+struct DistributionTree {
+    nodes: Vec<Index>
+}
+
+impl DistributionTree {
+    fn new() -> DistributionTree {
+        DistributionTree { nodes: vec![] }
+    }
+}
