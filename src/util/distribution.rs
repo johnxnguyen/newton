@@ -16,25 +16,26 @@ use util::gens::Repeater;
 use util::gens::RotationGen;
 use util::gens::UniformGen;
 use util::gens::VelocityGen;
+use util::gens::TranslationGen;
 
 // Question: If I clone the gens, do they produce the same sequence?
 // TODO: Replace distance_gens with translation_gens
 pub struct Loader {
-    mass_gens:      HashMap<String, MassGen>,
-    distance_gens:  HashMap<String, UniformGen>,
-    velocity_gens:  HashMap<String, VelocityGen>,
-    rotation_gens:  HashMap<String, RotationGen>,
-    radials_gens:   HashMap<String, RadialGen>,
+    mass_gens:        HashMap<String, MassGen>,
+    translation_gens: HashMap<String, TranslationGen>,
+    velocity_gens:    HashMap<String, VelocityGen>,
+    rotation_gens:    HashMap<String, RotationGen>,
+    radials_gens:     HashMap<String, RadialGen>,
 }
 
 impl Loader {
     pub fn new() -> Loader {
         Loader {
-            mass_gens:      HashMap::new(),
-            distance_gens:  HashMap::new(),
-            velocity_gens:  HashMap::new(),
-            rotation_gens:  HashMap::new(),
-            radials_gens:   HashMap::new(),
+            mass_gens:        HashMap::new(),
+            translation_gens: HashMap::new(),
+            velocity_gens:    HashMap::new(),
+            rotation_gens:    HashMap::new(),
+            radials_gens:     HashMap::new(),
         }
     }
 
@@ -58,9 +59,9 @@ impl Loader {
                     let mass_gen = self.parse_mass_gen(gen);
                     self.mass_gens.insert(name, mass_gen);
                 },
-                "distance" => {
-                    let distance_gen = self.parse_distance_gen(gen);
-                    self.distance_gens.insert(name, distance_gen);
+                "translation" => {
+                    let translation_gen = self.parse_translation_gen(gen);
+                    self.translation_gens.insert(name, translation_gen);
                 },
                 "velocity" => {
                     let velocity_gen = self.parse_velocity_gen(gen);
@@ -79,7 +80,7 @@ impl Loader {
         }
 
         println!("mass gens: {:?}", self.mass_gens.len());
-        println!("dist gens: {:?}", self.distance_gens.len());
+        println!("trans gens: {:?}", self.translation_gens.len());
         println!("vel gens: {:?}", self.velocity_gens.len());
         println!("rot gens: {:?}", self.rotation_gens.len());
         println!("radials gens: {:?}", self.radials_gens.len());
@@ -109,10 +110,12 @@ impl Loader {
         MassGen::new(low, high)
     }
 
-    fn parse_distance_gen(&self, gen: &Yaml) -> UniformGen {
-        let dist_min = gen["dist"]["min"].as_i64().unwrap() as f32;
-        let dist_max = gen["dist"]["max"].as_i64().unwrap() as f32;
-        UniformGen::new(dist_min, dist_max)
+    fn parse_translation_gen(&self, gen: &Yaml) -> TranslationGen {
+        let x_min = gen["x"]["min"].as_i64().unwrap() as f32;
+        let x_max = gen["x"]["max"].as_i64().unwrap() as f32;
+        let y_min = gen["y"]["min"].as_i64().unwrap() as f32;
+        let y_max = gen["y"]["max"].as_i64().unwrap() as f32;
+        TranslationGen::new(x_min, x_max, y_min, y_max)
     }
 
     fn parse_rotation_gen(&self, gen: &Yaml) -> RotationGen {
@@ -128,10 +131,10 @@ impl Loader {
     }
 
     fn parse_radial_gen(&self, gen: &Yaml) -> RadialGen {
-        let distance = self.parse_distance_gen(gen);
+        let translation = self.parse_translation_gen(gen);
         let rotation = RotationGen::new_degrees(0.0, 360.0);
         let velocity = self.parse_velocity_gen(gen);
-        RadialGen::new(distance, rotation, velocity)
+        RadialGen::new(translation, rotation, velocity)
     }
 
     // Body Parsing //////////////////////////////////////////////////////////
@@ -148,6 +151,7 @@ impl Loader {
         let rot = self.parse_body_rotation(bod);
 
         // radial gen?
+        // might not even need radial gen anymore
 
         // make the nodes here
         (String::new(), vec![Node::Body(Point::zero(), Vector::zero(), 0.0)])
@@ -200,8 +204,8 @@ impl Loader {
     fn parse_body_translation(&self, body: &Yaml) -> Box<dyn Generator<Output=Point>> {
         match body["trans"].as_str() {
             Some(gen_name) => {
-                // TODO: look up translation gen
-                Box::new(Repeater::new(Point::new(0.0, 0.0)))
+                let gen = self.translation_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
             },
             None => {
                 let x = body["trans"]["x"].as_i64().unwrap() as f32;
