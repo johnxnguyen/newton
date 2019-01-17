@@ -51,9 +51,9 @@ pub struct UniformGen {
 }
 
 impl UniformGen {
-    pub fn new(low: f32, high: f32) -> UniformGen {
+    pub fn new(min: f32, max: f32) -> UniformGen {
         UniformGen {
-            distribution: Uniform::new_inclusive(low, high),
+            distribution: Uniform::new_inclusive(min, max),
             rand: thread_rng(),
         }
     }
@@ -103,12 +103,12 @@ pub struct MassGen {
 }
 
 impl MassGen {
-    pub fn new(low: f32, high: f32) -> MassGen {
-        if low <= 0.0 || high <= 0.0 {
-            panic!("MassGen requires positive range. Got [{}, {}]", low, high);
+    pub fn new(min: f32, max: f32) -> MassGen {
+        if min <= 0.0 || max <= 0.0 {
+            panic!("MassGen requires positive range. Got [{}, {}]", min, max);
         }
 
-        MassGen { gen: UniformGen::new(low, high) }
+        MassGen { gen: UniformGen::new(min, max) }
     }
 }
 
@@ -129,14 +129,14 @@ pub struct RotationGen {
 }
 
 impl RotationGen {
-    pub fn new_radians(low: f32, high: f32) -> RotationGen {
-        let (low, high) = RotationGen::normalize(low, high);
+    pub fn new_radians(min: f32, max: f32) -> RotationGen {
+        let (low, high) = RotationGen::normalize(min, max);
         RotationGen { gen: UniformGen::new(low, high) }
     }
 
-    pub fn new_degrees(low: f32, high: f32) -> RotationGen {
-        let low = RotationGen::radians(low);
-        let high = RotationGen::radians(high);
+    pub fn new_degrees(min: f32, max: f32) -> RotationGen {
+        let low = RotationGen::radians(min);
+        let high = RotationGen::radians(max);
         RotationGen::new_radians(low, high)
     }
 
@@ -144,16 +144,16 @@ impl RotationGen {
         degrees * PI / 180.0
     }
 
-    fn normalize(mut low: f32, mut high: f32) -> (f32, f32) {
+    fn normalize(mut min: f32, mut max: f32) -> (f32, f32) {
         let pi_2 = 2.0 * PI;
 
-        // add 2PI to low until it it exceeds 0
-        while low + pi_2 <= 0.0 { low += pi_2; }
+        // add 2PI to min until it it exceeds 0
+        while min + pi_2 <= 0.0 { min += pi_2; }
 
-        // subtract 2PI from high until it is <= 0
-        while  high - pi_2 > 0.0 { high -= pi_2; }
+        // subtract 2PI from max until it is <= 0
+        while  max - pi_2 > 0.0 { max -= pi_2; }
 
-        (low, high)
+        (min, max)
     }
 }
 
@@ -175,10 +175,10 @@ pub struct VelocityGen {
 }
 
 impl VelocityGen {
-    pub fn new(dx_low: f32, dx_high: f32, dy_low: f32, dy_high: f32) -> VelocityGen {
+    pub fn new(dx_min: f32, dx_max: f32, dy_min: f32, dy_max: f32) -> VelocityGen {
         VelocityGen {
-            dx: UniformGen::new(dx_low, dx_high),
-            dy: UniformGen::new(dy_low, dy_high),
+            dx: UniformGen::new(dx_min, dx_max),
+            dy: UniformGen::new(dy_min, dy_max),
         }
     }
 }
