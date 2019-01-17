@@ -10,8 +10,6 @@ use geometry::types::Vector;
 use geometry::util::Transformation;
 use physics::types::Mass;
 
-// TODO: We need a translation gen
-
 // Generator /////////////////////////////////////////////////////////////////
 //
 // A type conforming to Generator produces an infinite stream of objects.
@@ -65,6 +63,33 @@ impl Generator for UniformGen {
     type Output = f32;
     fn generate(&mut self) -> Self::Output {
         self.rand.sample(self.distribution)
+    }
+}
+
+// TranslationGen ////////////////////////////////////////////////////////////
+//
+// Uniformly generates random Points within closed ranges.
+
+#[derive(Clone, Debug)]
+pub struct TranslationGen {
+    x: UniformGen,
+    y: UniformGen,
+}
+
+impl TranslationGen {
+    pub fn new(x_min: f32, x_max: f32, y_min: f32, y_max: f32) -> TranslationGen {
+        TranslationGen {
+            x: UniformGen::new(x_min, x_max),
+            y: UniformGen::new(y_min, y_max),
+        }
+    }
+}
+
+impl Generator for TranslationGen {
+    type Output = Point;
+
+    fn generate(&mut self) -> Self::Output {
+        Point::new(self.x.generate(), self.y.generate())
     }
 }
 
@@ -232,6 +257,19 @@ mod tests {
         // given
         let mut sut = UniformGen::new(1.0, 2.0);
         let within_range = |n: f32| n >= 1.0 && n <= 2.0;
+
+        // then
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+        assert!(within_range(sut.generate()));
+    }
+
+    #[test]
+    fn translation_gen_generates() {
+        // given
+        let mut sut = TranslationGen::new(1.0, 2.0, 3.0, 4.0);
+        let within_range = |p: Point| p.x >= 1.0 && p.x <= 2.0 && p.y >= 3.0 && p.y <= 4.0;
 
         // then
         assert!(within_range(sut.generate()));
