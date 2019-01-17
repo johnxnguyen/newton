@@ -200,14 +200,14 @@ impl Generator for VelocityGen {
 
 #[derive(Clone, Debug)]
 pub struct RadialGen {
-    distance: UniformGen,
+    translation: TranslationGen,
     rotation: RotationGen,
     velocity: VelocityGen,
 }
 
 impl RadialGen {
-    pub fn new(distance: UniformGen, rotation: RotationGen, velocity: VelocityGen) -> RadialGen {
-        RadialGen { distance, rotation, velocity }
+    pub fn new(translation: TranslationGen, rotation: RotationGen, velocity: VelocityGen) -> RadialGen {
+        RadialGen { translation, rotation, velocity }
     }
 }
 
@@ -215,7 +215,9 @@ impl Generator for RadialGen {
     type Output = (Point, Vector);
     fn generate(&mut self) -> <Self as Generator>::Output {
         let t = Transformation::rotation(self.rotation.generate());
-        let point = Point::from(&t * Vector::new(self.distance.generate(), 0.0));
+        let point = self.translation.generate();
+        let point_as_vector = Vector::new(point.x, point.y);
+        let point = Point::from(&t * point_as_vector);
         let velocity =  &t * self.velocity.generate();
         (point, velocity)
     }
@@ -372,10 +374,10 @@ mod tests {
     #[test]
     fn radial_gen_generates() {
         // given
-        let distance = UniformGen::new(100.0, 200.0);
+        let translation = TranslationGen::new(100.0, 200.0, 0.0, 0.0);
         let rotation = RotationGen::new_radians(0.0, PI);
         let velocity = VelocityGen::new(1.0, 2.0, 3.0, 4.0);
-        let mut sut = RadialGen::new(distance, rotation, velocity);
+        let mut sut = RadialGen::new(translation, rotation, velocity);
 
         let within_range = |(p, v): (Point, Vector)| {
             let dist_to_origin = p.distance_to(&Point::zero());
@@ -397,14 +399,14 @@ mod tests {
     #[test]
     fn radial_gen_rotates_velocity() {
         // given
-        let distance = UniformGen::new(100.0, 200.0);
+        let translation = TranslationGen::new(100.0, 200.0, 0.0, 0.0);
         let rotation = RotationGen::new_radians(0.0, PI);
         let velocity = VelocityGen::new(0.0, 0.0, 1.0, 2.0);
-        let mut sut = RadialGen::new(distance, rotation, velocity);
+        let mut sut = RadialGen::new(translation, rotation, velocity);
 
         // then
         for _ in 0..5 {
-            // since the distance extends only in the positive x axis before rotation
+            // since the translation extends only in the positive x axis before rotation
             // and the velocity extends only in the positive y axis before rotation,
             // they are orthogonal before rotation. Therefore, if they are rotated
             // together, they must remain orthogonal.
