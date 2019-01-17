@@ -1,14 +1,19 @@
 gens:
   -
-    name: main_system
-    type: radial
-    dist: {min: 100, max: 200}
-    vel:  {min: 1.0, max: 2.0}
-  -
     name: main_mass
     type: mass
-    low: 0.1
-    high: 0.3
+    min: 0.1
+    max: 0.3
+  -
+    name: bob
+    type: translation
+    x: {min: -10.0, max: 10.0}
+    y: {min: -10.0, max: 10.0}
+  -
+    name: sally
+    type: velocity
+    dx: {min: -10.0, max: 10.0}
+    dy: {min: -10.0, max: 10.0}
 
 # Each element here is a kind of system generator. Each system has a name
 # and number of bodies. The properties can be given concrete values or

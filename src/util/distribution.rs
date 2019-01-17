@@ -25,7 +25,6 @@ pub struct Loader {
     translation_gens: HashMap<String, TranslationGen>,
     velocity_gens:    HashMap<String, VelocityGen>,
     rotation_gens:    HashMap<String, RotationGen>,
-    radials_gens:     HashMap<String, RadialGen>,
 }
 
 impl Loader {
@@ -35,7 +34,6 @@ impl Loader {
             translation_gens: HashMap::new(),
             velocity_gens:    HashMap::new(),
             rotation_gens:    HashMap::new(),
-            radials_gens:     HashMap::new(),
         }
     }
 
@@ -71,10 +69,6 @@ impl Loader {
                     let rotation_gen = self.parse_rotation_gen(gen);
                     self.rotation_gens.insert(name, rotation_gen);
                 },
-                "radial" => {
-                    let radial_gen = self.parse_radial_gen(gen);
-                    self.radials_gens.insert(name, radial_gen);
-                },
                 _ => panic!("Unknown generator type: {:?}", gen_type),
             };
         }
@@ -83,7 +77,6 @@ impl Loader {
         println!("trans gens: {:?}", self.translation_gens.len());
         println!("vel gens: {:?}", self.velocity_gens.len());
         println!("rot gens: {:?}", self.rotation_gens.len());
-        println!("radials gens: {:?}", self.radials_gens.len());
 
         // now we create body nodes
         let bods = doc["bodies"].as_vec().unwrap();
@@ -105,9 +98,9 @@ impl Loader {
     // Gen Parsing ///////////////////////////////////////////////////////////
 
     fn parse_mass_gen(&self, gen: &Yaml) -> MassGen {
-        let low = gen["low"].as_f64().unwrap() as f32;
-        let high = gen["high"].as_f64().unwrap() as f32;
-        MassGen::new(low, high)
+        let min = gen["min"].as_f64().unwrap() as f32;
+        let max = gen["max"].as_f64().unwrap() as f32;
+        MassGen::new(min, max)
     }
 
     fn parse_translation_gen(&self, gen: &Yaml) -> TranslationGen {
@@ -119,22 +112,17 @@ impl Loader {
     }
 
     fn parse_rotation_gen(&self, gen: &Yaml) -> RotationGen {
-        let low = gen["low"].as_f64().unwrap() as f32;
-        let high = gen["high"].as_f64().unwrap() as f32;
-        RotationGen::new_degrees(low, high)
+        let min = gen["min"].as_f64().unwrap() as f32;
+        let max = gen["max"].as_f64().unwrap() as f32;
+        RotationGen::new_degrees(min, max)
     }
 
     fn parse_velocity_gen(&self, gen: &Yaml) -> VelocityGen {
-        let vel_min = gen["vel"]["min"].as_f64().unwrap() as f32;
-        let vel_max = gen["vel"]["max"].as_f64().unwrap() as f32;
-        VelocityGen::new(0.0, 0.0, vel_min, vel_max)
-    }
-
-    fn parse_radial_gen(&self, gen: &Yaml) -> RadialGen {
-        let translation = self.parse_translation_gen(gen);
-        let rotation = RotationGen::new_degrees(0.0, 360.0);
-        let velocity = self.parse_velocity_gen(gen);
-        RadialGen::new(translation, rotation, velocity)
+        let dx_min = gen["dx"]["min"].as_f64().unwrap() as f32;
+        let dx_max = gen["dx"]["max"].as_f64().unwrap() as f32;
+        let dy_min = gen["dy"]["min"].as_f64().unwrap() as f32;
+        let dy_max = gen["dy"]["max"].as_f64().unwrap() as f32;
+        VelocityGen::new(dx_min, dx_max, dy_min, dy_max)
     }
 
     // Body Parsing //////////////////////////////////////////////////////////
