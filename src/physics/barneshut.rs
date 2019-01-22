@@ -7,6 +7,7 @@ use geometry::types::Quadrant;
 use geometry::types::Quadrant::*;
 use geometry::types::Rect;
 use geometry::types::Vector;
+use geometry::types::Size;
 
 use super::types::Body;
 
@@ -512,6 +513,7 @@ mod tests {
     use geometry::types::Point;
     use geometry::types::Rect;
     use geometry::types::Vector;
+    use geometry::types::Size;
     use physics::barneshut::BHTree;
     use physics::barneshut::Index;
     use physics::types::Body;
@@ -541,7 +543,7 @@ mod tests {
     ///                         [A]  [C]  X    X
     ///
     fn small_tree() -> BHTree {
-        let space = Rect::new(0.0, 0.0, 10, 10);
+        let space = Rect::new(0.0, 0.0, Size::new_wh(10, 10));
 
         let mut tree = BHTree::new(space);
         tree.add(body(1.0, 1.0, 2.0));  // A
@@ -565,7 +567,7 @@ mod tests {
     ///                   [D] [E]   X   X
     ///
     fn medium_tree() -> BHTree {
-        let space = Rect::new(0.0, 0.0, 32, 32);
+        let space = Rect::new(0.0, 0.0, Size::new(5));
 
         let mut tree = BHTree::new(space);
         tree.add(body(2.0, 10.0, 25.0));    // A
@@ -581,7 +583,7 @@ mod tests {
 
     #[test]
     fn tree_adds_bodies() {
-        let space = Rect::new(0.0, 0.0, 10, 10);
+        let space = Rect::new(0.0, 0.0, Size::new_wh(10, 10));
         let mut tree = BHTree::new(space);
 
         tree.add(body(2.0, 1.0, 2.0));
@@ -610,7 +612,7 @@ mod tests {
     #[should_panic]
     fn tree_panics_if_body_out_of_bounds() {
         // given
-        let mut tree = BHTree::new(Rect::new(0.0, 0.0, 5, 5));
+        let mut tree = BHTree::new(Rect::new(0.0, 0.0, Size::new_wh(5, 5)));
         let body = Body::new(1.0, Point::new(0.0, 5.5), Vector::zero());
 
         // when, then
@@ -692,7 +694,7 @@ mod tests {
     #[test]
     fn tree_virtual_body() {
         // given
-        let space = Rect::new(0.0, 0.0, 10, 10);
+        let space = Rect::new(0.0, 0.0, Size::new_wh(10, 10));
         let mut tree = BHTree::new(space);
         tree.add(body(2.0, 1.0, 2.0)); // A
         tree.add(body(4.1, 6.0, 8.0)); // B
@@ -797,7 +799,7 @@ mod tests {
     #[test]
     fn tree_virtual_bodies_does_not_include_given_body() {
         // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 4, 4));
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, Size::new(2)));
         let body = body(1.0, 2.0, 2.0);
         sut.add(body.clone());
 
@@ -808,7 +810,7 @@ mod tests {
     #[test]
     fn tree_virtual_body_subtracts_given_body_from_leaf() {
         // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, Size::new(1)));
 
         // two bodies within same unit
         sut.add(body(0.5, 0.5, 2.0));
@@ -825,7 +827,7 @@ mod tests {
     #[test]
     fn tree_has_maximum_depth() {
         // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2, 2));
+        let mut sut = BHTree::new(Rect::new(0.0, 0.0, Size::new(1)));
 
         // when two bodies within same unit
         sut.add(body(0.5, 0.5, 2.0));

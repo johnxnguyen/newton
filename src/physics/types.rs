@@ -7,6 +7,7 @@ use geometry::types::{Point, Vector};
 use geometry::types::Rect;
 use physics::barneshut::BHTree;
 use util::DataWriter;
+use geometry::types::Size;
 
 use super::force::{Attractor, Gravity};
 
@@ -222,7 +223,7 @@ impl Field for BHField {
 impl BHField {
     pub fn new() -> BHField {
         BHField {
-            space: Rect::new(-1920.0, -1080.0, 3840, 2160),
+            space: Rect::new(-1920.0, -1080.0, Size::new(20)),
             force: Gravity::new(1.0, 4.0),
             sun: Attractor::new(10000.0, Point::zero(), 2.5, 4.0),
         }

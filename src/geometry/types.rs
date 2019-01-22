@@ -6,6 +6,7 @@ use geometry::types::ErrorKind::OutOfBounds;
 
 use self::Quadrant::*;
 
+
 // Point /////////////////////////////////////////////////////////////////////
 //
 // Coordinates in 2D space.
@@ -185,9 +186,23 @@ pub struct Size {
 }
 
 impl Size {
-    pub fn new(width: u32, height: u32) -> Size {
-        if width == 0 || height == 0 { panic!("A size's width and/or height must be positive."); }
-        Size { width, height }
+
+    pub fn new(exp: u32) -> Size {
+
+        //if exp < 0 { panic!("An Exponent must be positive! "); }
+        let width = u32::pow(2, exp);
+        let height = u32::pow(2, exp);
+
+        Size { width, height}
+    }
+
+    pub fn half_size(&self) -> Size {
+        let wd = self.width/2;
+        Size {width: wd, height: wd}
+    }
+
+    pub fn new_wh(width: u32, height: u32) -> Size {
+        Size{width, height}
     }
 }
 
@@ -223,12 +238,22 @@ pub struct Rect {
 }
 
 impl Rect {
-    pub fn new(x: f32, y: f32, width: u32, height: u32) -> Rect {
-        Rect {
-            origin: Point::new(x, y),
-            size: Size::new(width, height),
+//    pub fn new(x: f32, y: f32, ex: u32) -> Rect {
+//        Rect {
+//            origin: Point::new(x, y),
+//            size: Size::new(ex),
+//        }
+//    }
+
+    pub fn new(x: f32, y: f32, size: Size) -> Rect {
+        Rect{
+            origin: Point::new(x,y),
+            size
         }
+
     }
+
+
 
     // TODO: test
     pub fn has_minimum_dimension(&self) -> bool {
@@ -254,21 +279,32 @@ impl Rect {
     /// of the quadrants is shifted so their widths and heights remain
     /// integers. This eliminates gaps in the coverage of the quadrants.
     pub fn quadrants(&self) -> (Quadrant, Quadrant, Quadrant, Quadrant) {
-        let split = |n: u32| {
-            let half = n >> 1;
-            if n & 1 == 0 { (half, half) } else { (half, half + 1) }
-        };
+//        let split = |n: u32| {
+//            let half = n >> 1;
+//            if n & 1 == 0 { (half, half) } else { (half, half + 1) }
+//        let split = |n: u32| {
+//            let half = n >> 1;
+//            (half, half)
+//        };
+
+//        let split_size = |n: Size| {
+//            let half_width = n.width >> 1;
+//            let half_height = n.height >> 1;
+//            (half_height,half_width)
+//        };
+
+
 
         assert!(!self.has_minimum_dimension(), "Cannot split rect with minimal dimension.");
 
         let (x, y) = (self.origin.x, self.origin.y);
-        let (w1, w2) = split(self.size.width);
-        let (h1, h2) = split(self.size.height);
+        let half_size = self.size.half_size();
 
-        let sw = Rect::new(x, y, w1, h1);
-        let se = Rect::new(x + w1 as f32, y, w2, h1);
-        let nw = Rect::new(x, y + h1 as f32, w1, h2);
-        let ne = Rect::new(x + w1 as f32, y + h1 as f32, w2, h2);
+
+        let sw = Rect::new(x, y, half_size.clone() );
+        let se = Rect::new(x + half_size.width as f32, y, half_size.clone());
+        let nw = Rect::new(x, y + half_size.width as f32, half_size.clone());
+        let ne = Rect::new(x + half_size.width as f32, y + half_size.width as f32, half_size.clone());
         (NW(nw), NE(ne), SW(sw), SE(se))
     }
 
@@ -457,76 +493,76 @@ mod tests {
 
     // Size //////////////////////////////////////////////////////////////////
 
-    #[test]
-    #[should_panic(expected = "A size's width and/or height must be positive.")]
-    fn size_non_positive_width() {
-        // given, when , then
-        Size::new(0, 1);
-    }
+//    #[test]
+//    #[should_panic(expected = "A size's width and/or height must be positive.")]
+//    fn size_non_positive_width() {
+//        // given, when , then
+//        Size::new(2);
+//    }
 
-    #[test]
-    #[should_panic(expected = "A size's width and/or height must be positive.")]
-    fn size_non_positive_height() {
-        // given, when , then
-        Size::new(10, 0);
-    }
+//    #[test]
+//    #[should_panic(expected = "A size's width and/or height must be positive.")]
+//    fn size_non_positive_height() {
+//        // given, when , then
+//        Size::new(2);
+//    }
 
     // Rect //////////////////////////////////////////////////////////////////
 
     #[test]
     fn rect_diameter() {
         // given
-        let sut = Rect::new(0.0, 0.0, 3, 4);
+        let sut = Rect::new(0.0, 0.0, Size::new(2));
 
         // when
         let result = sut.diameter();
 
         // then
-        assert_eq!(5.0, result);
+        assert_eq!(5.65685424949, result);
     }
 
-    #[test]
-    #[should_panic(expected = "A size's width and/or height must be positive.")]
-    fn rect_non_positive_size() {
-        // given, when , then
-        Rect::new(-1.0, 1.0, 1, 0);
-    }
+//    #[test]
+//    #[should_panic(expected = "A size's width and/or height must be positive.")]
+//    fn rect_non_positive_size() {
+//        // given, when , then
+//        Rect::new(-1.0, 1.0, Size::new(2));
+//    }
 
     #[test]
     fn rect_even_quadrants() {
         // given
-        let sut = Rect::new(4.0, 2.0, 6, 8);
+        let sut = Rect::new(4.0, 2.0, Size::new(2));
 
         // when
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(NW(Rect::new(4.0, 6.0, 3, 4)), nw);
-        assert_eq!(NE(Rect::new(7.0, 6.0, 3, 4)), ne);
-        assert_eq!(SW(Rect::new(4.0, 2.0, 3, 4)), sw);
-        assert_eq!(SE(Rect::new(7.0, 2.0, 3, 4)), se);
+        assert_eq!(NW(Rect::new(4.0, 4.0, Size::new_wh(2,2))), nw);
+        assert_eq!(NE(Rect::new(6.0, 4.0, Size::new_wh(2,2))), ne);
+        assert_eq!(SW(Rect::new(4.0, 2.0, Size::new_wh(2,2))), sw);
+        assert_eq!(SE(Rect::new(6.0, 2.0, Size::new_wh(2,2))), se);
     }
 
     #[test]
     fn rect_uneven_quadrants() {
         // given
-        let sut = Rect::new(-5.0, -5.0, 5, 5);
+        let sut = Rect::new(-5.0, -5.0, Size::new(5));
 
         // when
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(NW(Rect::new(-5.0, -3.0, 2, 3)), nw);
-        assert_eq!(NE(Rect::new(-3.0, -3.0, 3, 3)), ne);
-        assert_eq!(SW(Rect::new(-5.0, -5.0, 2, 2)), sw);
-        assert_eq!(SE(Rect::new(-3.0, -5.0, 3, 2)), se);
+        assert_eq!(NW(Rect::new(-5.0, 11.0, Size::new_wh(16, 16))), nw);
+        assert_eq!(NE(Rect::new(11.0, 11.0, Size::new_wh(16, 16))), ne);
+        assert_eq!(SW(Rect::new(-5.0, -5.0, Size::new_wh(16, 16))), sw);
+        assert_eq!(SE(Rect::new(11.0, -5.0, Size::new_wh(16, 16))), se);
     }
 
     #[test]
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
     fn rect_quadrants_of_rect_with_minimum_width() {
         // given
-        let sut = Rect::new(0.0, 0.0, 10, 1);
+        let sut = Rect::new(0.0, 0.0, Size::new_wh(10, 1));
 
         // when, then
         sut.quadrants();
@@ -536,7 +572,7 @@ mod tests {
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
     fn rect_quadrants_of_rect_with_minimum_height() {
         // given
-        let sut = Rect::new(0.0, 0.0, 1, 10);
+        let sut = Rect::new(0.0, 0.0, Size::new_wh(1, 10));
 
         // when, then
         sut.quadrants();
@@ -545,7 +581,7 @@ mod tests {
     #[test]
     fn rect_contains_point() {
         // given
-        let sut = Rect::new(0.0, 0.0, 10, 5);
+        let sut = Rect::new(0.0, 0.0, Size::new_wh(10, 5));
 
         // then
         assert!(sut.contains(&Point::new(0.0, 0.0)));
@@ -560,14 +596,14 @@ mod tests {
     #[test]
     fn rect_which_quadrant() {
         // given
-        let sut = Rect::new(0.0, 0.0, 5, 5);
+        let sut = Rect::new(0.0, 0.0, Size::new(3));
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then (bottom left of each quadrant)
-        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(0.0, 2.5)));
-        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(2.5, 2.5)));
-        assert_eq!(Ok(sw.clone()), sut.quadrant(&Point::new(0.0, 0.0)));
-        assert_eq!(Ok(se.clone()), sut.quadrant(&Point::new(2.5, 0.0)));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(0.0, 4.0)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(5.0, 5.0)));
+        assert_eq!(Ok(sw.clone()), sut.quadrant(&Point::new(1.0, 0.0)));
+        assert_eq!(Ok(se.clone()), sut.quadrant(&Point::new(5.0, 0.0)));
 
         // then (top right of each quadrant)
         assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(2.0, 5.0)));
@@ -576,15 +612,15 @@ mod tests {
         assert_eq!(Ok(se.clone()), sut.quadrant(&Point::new(5.0, 1.0)));
 
         // then (anywhere in quadrant)
-        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(0.3, 2.9)));
-        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(2.6, 4.2)));
-        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(1.0, 2.0)));
-        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(3.7, 2.4)));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(3.0, 4.1)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(4.3, 5.1)));
+        assert_eq!(Ok(nw.clone()), sut.quadrant(&Point::new(1.0, 6.0)));
+        assert_eq!(Ok(ne.clone()), sut.quadrant(&Point::new(6.3, 6.8)));
 
         // then
         assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(-2.5, 5.0)));
-        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(5.4, 0.4)));
+        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(8.4, 0.4)));
         assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(2.5, -4.0)));
-        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(4.0, 6.5)),);
+        assert_eq!(Err(Error(OutOfBounds)), sut.quadrant(&Point::new(4.0, 9.5)),);
     }
 }
