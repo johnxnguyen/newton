@@ -274,3 +274,111 @@ impl DistributionTree {
         (self.nodes.len() - 1) as u32
     }
 }
+
+// Tests /////////////////////////////////////////////////////////////////////
+
+#[cfg(test)]
+mod tests {
+    use util::distribution::Loader;
+    use yaml_rust::Yaml;
+    use yaml_rust::YamlLoader;
+    use util::gens::MassGen;
+    use util::gens::Generator;
+    use std::f32::consts::PI;
+
+    fn yaml(raw: &str) -> Yaml {
+        match YamlLoader::load_from_str(raw) {
+            Ok(_) => {
+                // all good here
+            },
+            Err(_) => {
+                // oh no!
+                panic!("OH NO!")
+            },
+        }
+
+        let mut docs = YamlLoader::load_from_str(raw).unwrap();
+        docs.remove(0)
+    }
+
+    // TODO: Should test panic cases too. And defaults!
+
+    #[test]
+    fn loader_parse_mass_gen() {
+        // given
+        let sut = Loader::new();
+        let input = "
+        name: MASSATRON 1000
+        type: mass
+        min: 0.1
+        max: 0.3";
+
+        // when
+        let mut result = sut.parse_mass_gen(&yaml(input));
+
+        // then
+        assert!(result.generate().value() > 0.1);
+        assert!(result.generate().value() < 0.3);
+    }
+
+    #[test]
+    fn loader_parse_translation_gen() {
+        // given
+        let sut = Loader::new();
+        let input = "
+        name: THE TRANSLATOR
+        type: translation
+        x: {min: -10.0, max: 10.0}
+        y: {min:  10.0, max: 20.0}";
+
+        // when
+        let mut result = sut.parse_translation_gen(&yaml(input));
+
+        // then
+        let point = result.generate();
+        assert!(point.x >= -10.0);
+        assert!(point.x <= 10.0);
+        assert!(point.y >= 10.0);
+        assert!(point.y <= 20.0);
+    }
+
+    #[test]
+    fn loader_parse_velocity_gen() {
+        // given
+        let sut = Loader::new();
+        let input = "
+        name: VELOCIRAPTOR
+        type: velocity
+        dx: {min: -10.0, max: 5.0}
+        dy: {min:  5.0, max: 10.0}";
+
+        // when
+        let mut result = sut.parse_velocity_gen(&yaml(input));
+
+        // then
+        let velocity = result.generate();
+        assert!(velocity.dx >= -10.0);
+        assert!(velocity.dx <= 5.0);
+        assert!(velocity.dy >= 5.0);
+        assert!(velocity.dy <= 10.0);
+    }
+
+    #[test]
+    fn loader_parse_rotation_gen() {
+        // given
+        let sut = Loader::new();
+        let input = "
+        name: ROLY POLY
+        type: rotation
+        min: 90.0
+        max: 180.0";
+
+        // when
+        let mut result = sut.parse_rotation_gen(&yaml(input));
+
+        // then
+        let rotation = result.generate();
+        assert!(rotation >= PI / 2.0);
+        assert!(rotation <= PI);
+    }
+}
