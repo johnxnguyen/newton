@@ -1,76 +1,67 @@
 gens:
   -
-    name: main_mass
+    name: p_mass
     type: mass
     min: 0.1
     max: 0.3
   -
-    name: bob
+    name: p_trans
     type: translation
     x: {min: -10.0, max: 10.0}
     y: {min: -10.0, max: 10.0}
   -
-    name: sally
+    name: p_vel
     type: velocity
     dx: {min: -10.0, max: 10.0}
     dy: {min: -10.0, max: 10.0}
+  -
+    name: p_rot
+    type: rotation
+    min: 0.1
+    max: 0.3
 
 # Each element here is a kind of system generator. Each system has a name
 # and number of bodies. The properties can be given concrete values or
 # they can be generated using a predefined generator.
+
+#An example of a system:
+#  name: string              # Required. Uniquely identify this system.
+#  num: int                  # Optional, defaults to 1. Indicates number of bodies in this system.
+#  m: string/float           # Required. Gen name or value
+#  t: string/(int, int)      # Optional, defaults to (0, 0).
+#  v: string/(float, float)  # -----"------
+#  r: string/float           # -----"------
+
 bodies:
   -
-    name: black_hole          # To uniquely identify this system. Required.
-    num: 1                    # How many bodies in this system. Optional, defaults to 1
-
-    mass: 100.0               # required
-    trans: {x: 10, y: 10}     # optional, defaults to (0, 0)
-    vel: {dx: 1.0, dy: -1.0}    # optional, defaults to (0.0, 0.0)
-    rot: 45.0                 # optional, defaults to 0.0
+    name: sun
+    m: 100.0
   -
-    name: stars
-    num: 5000
+    name: planets
+    num: 7
 
-    mass: main_mass
-    radial: main_system       # this is a shortcut to encapsulate all properties together
+    m: p_mass
+    t: p_trans
+    v: p_vel
+    r: p_rot
+  -
+    name: earth
+    m: 20.0
+  -
+    name: moon
+    m: 3.0
+    t: {x: 10.0, y: 0.0}
+    v: {dx: 0.0, dy: 2.0}
+
 
 # all property keys are available here too
 systems:
-  -
-    name: black_hole
-  -
-    name: stars
-
-# transformations and velocities
-# should be defined on systems, including
-# bodies.
-
-# we should make sure that two bodies can't have the same
-# position
-
-# maybe it makes sense then to
-# have a mass key for all bodies,
-# and either provide a concrete
-# value or a gen name.
-
-# or do we also gen position and
-# velocity of bodies
-
-# the question is, what does radial gen generate?
-# A position and a velocity? Or a transformation
-# and a velocity? Remember, radial gen needs to
-# work for both systems and bodies. The system nodes
-# need to chain, so we can't give them concrete
-# positions.
-
-# But I'm a bit confused what kind of transformations
-# these would be. Translate, scale & rotate?
-
-# So radial gen needs to chain a rotate with a
-# translate. This will still be just a single
-# matrix.
-
-# this means then, that radial gens are only in
-# systems. Bodies can only use mass gens.
-
-# TODO: fully implement transformation matrices
+  - name: sun
+  - name: planets
+  - # earth system
+    t: p_trans
+    v: p_vel
+    r: p_rot
+    systems:
+      - name: earth
+      - name: moon

@@ -19,12 +19,13 @@ use util::gens::VelocityGen;
 use util::gens::TranslationGen;
 
 // Question: If I clone the gens, do they produce the same sequence?
-// TODO: Replace distance_gens with translation_gens
 pub struct Loader {
     mass_gens:        HashMap<String, MassGen>,
     translation_gens: HashMap<String, TranslationGen>,
     velocity_gens:    HashMap<String, VelocityGen>,
     rotation_gens:    HashMap<String, RotationGen>,
+    bodies:           HashMap<String, Vec<Node>>,
+    tree: DistributionTree,
 }
 
 impl Loader {
@@ -34,6 +35,8 @@ impl Loader {
             translation_gens: HashMap::new(),
             velocity_gens:    HashMap::new(),
             rotation_gens:    HashMap::new(),
+            bodies:           HashMap::new(),
+            tree:             DistributionTree::new(),
         }
     }
 
@@ -44,6 +47,8 @@ impl Loader {
         // should define error type for useful feedback
 
         // need to give back errors instead of unwrapping
+
+        // need to provide default values
 
         // this could be refactored into a method
         let gens = doc["gens"].as_vec().unwrap();
@@ -78,14 +83,13 @@ impl Loader {
         println!("vel gens: {:?}", self.velocity_gens.len());
         println!("rot gens: {:?}", self.rotation_gens.len());
 
-        // now we create body nodes
-        let bods = doc["bodies"].as_vec().unwrap();
-
-        for bod in bods {
-            let name = bod["name"].as_str().unwrap().to_owned();
-            // this should be positive
-            let num = bod["num"].as_i64().unwrap();
+        for bod in doc["bodies"].as_vec().unwrap() {
+            let (name, nodes) = self.parse_bod(bod);
+            self.bodies.insert(name, nodes);
         }
+
+        // this should only have one element
+        let root_idx = self.parse_system(doc);
     }
 
     fn docs(path: &str) -> Vec<Yaml> {
@@ -133,16 +137,20 @@ impl Loader {
         let num = bod["num"].as_i64().unwrap_or(1); // should be positive
 
         let mut nodes: Vec<Node> = vec![];
-        let mass = self.parse_body_mass(bod);
-        let vel = self.parse_body_velocity(bod);
-        let trans = self.parse_body_translation(bod);
-        let rot = self.parse_body_rotation(bod);
+        let mut mass = self.parse_body_mass(bod);
+        let mut vel = self.parse_body_velocity(bod);
+        let mut trans = self.parse_body_translation(bod);
+        let mut rot = self.parse_body_rotation(bod);
 
-        // radial gen?
-        // might not even need radial gen anymore
+        let mut nodes: Vec<Node> = Vec::new();
 
-        // make the nodes here
-        (String::new(), vec![Node::Body(Point::zero(), Vector::zero(), 0.0)])
+        for _ in 1..=num {
+            let tvr = TVR(trans.generate(), vel.generate(), rot.generate());
+            let node = Node::Body(tvr, mass.generate());
+            nodes.push(node);
+        }
+
+        (String::from(name), nodes)
     }
 
     /// Returns the named mass gen if it exists, else creates one from concrete values.
@@ -202,25 +210,67 @@ impl Loader {
             },
         }
     }
+
+    // System Parsing ////////////////////////////////////////////////////////////
+
+    fn parse_system(&mut self, system: &Yaml) -> Vec<Index> {
+        // check for reference to bodies
+        match system["name"].as_str() {
+            None => (),
+            Some(name) => {
+                let mut indices = vec![];
+                for body in self.bodies.remove(name).unwrap() {
+                    indices.push(self.tree.add_node(body));
+                }
+
+                return indices
+            },
+        }
+
+        // transformation for the system
+        let tvr: TVR;
+        {
+            let t = self.parse_body_translation(system).generate();
+            let v = self.parse_body_velocity(system).generate();
+            let r = self.parse_body_rotation(system).generate();
+            tvr = TVR(t, v, r);
+        }
+
+        // parse the subsystems
+        let mut subsystems: Vec<Index> = vec![];
+        for subsystem in system["systems"].as_vec().unwrap() {
+            let mut indices = self.parse_system(subsystem);
+            subsystems.append(&mut indices);
+        }
+
+        // finally build the node & return its index
+        let idx = self.tree.add_node(Node::System(tvr, subsystems));
+        vec![idx]
+    }
 }
 
 //////////////////////////////////////////////////////////////////////////////
 
+struct TVR(Point, Vector, f32);
+
 enum Node {
-    // translation, velocity, subsystems
-    System(Point, Vector, Vec<Index>),
-    // position, velocity, mass
-    Body(Point, Vector, f32),
+    System(TVR, Vec<Index>),
+    Body(TVR, Mass),
 }
 
 type Index = u32;
 
 struct DistributionTree {
-    nodes: Vec<Index>
+    nodes: Vec<Node>
 }
 
 impl DistributionTree {
     fn new() -> DistributionTree {
         DistributionTree { nodes: vec![] }
+    }
+
+    fn add_node(&mut self, node: Node) -> Index {
+        self.nodes.push(node);
+        (self.nodes.len() - 1) as u32
     }
 }
