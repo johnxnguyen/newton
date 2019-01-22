@@ -108,10 +108,10 @@ impl Loader {
     }
 
     fn parse_translation_gen(&self, gen: &Yaml) -> TranslationGen {
-        let x_min = gen["x"]["min"].as_i64().unwrap() as f32;
-        let x_max = gen["x"]["max"].as_i64().unwrap() as f32;
-        let y_min = gen["y"]["min"].as_i64().unwrap() as f32;
-        let y_max = gen["y"]["max"].as_i64().unwrap() as f32;
+        let x_min = gen["x"]["min"].as_f64().unwrap() as f32;
+        let x_max = gen["x"]["max"].as_f64().unwrap() as f32;
+        let y_min = gen["y"]["min"].as_f64().unwrap() as f32;
+        let y_max = gen["y"]["max"].as_f64().unwrap() as f32;
         TranslationGen::new(x_min, x_max, y_min, y_max)
     }
 
