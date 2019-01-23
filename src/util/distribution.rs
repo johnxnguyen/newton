@@ -311,6 +311,19 @@ mod tests {
     // TODO: Should test panic cases too. And defaults!
 
     #[test]
+    fn loader_parse_gens() {
+        // yaml of gens
+        // check number of entries, then check entries exist for names.
+        unimplemented!();
+    }
+
+    #[test]
+    #[should_panic]
+    fn loader_parse_gens_unknown_type() {
+        // give unknown type
+    }
+
+    #[test]
     fn loader_parse_mass_gen() {
         // given
         let sut = Loader::new();
@@ -326,6 +339,12 @@ mod tests {
         // then
         assert!(result.generate().value() > 0.1);
         assert!(result.generate().value() < 0.3);
+    }
+
+    #[test]
+    #[should_panic]
+    fn loader_parse_mass_gen_invalid() {
+        // malformed description
     }
 
     #[test]
@@ -350,6 +369,12 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn loader_parse_translation_gen_invalid() {
+        // malformed description
+    }
+
+    #[test]
     fn loader_parse_velocity_gen() {
         // given
         let sut = Loader::new();
@@ -371,6 +396,12 @@ mod tests {
     }
 
     #[test]
+    #[should_panic]
+    fn loader_parse_velocity_gen_invalid() {
+        // malformed description
+    }
+
+    #[test]
     fn loader_parse_rotation_gen() {
         // given
         let sut = Loader::new();
@@ -387,5 +418,11 @@ mod tests {
         let rotation = result.generate();
         assert!(rotation >= PI / 2.0);
         assert!(rotation <= PI);
+    }
+
+    #[test]
+    #[should_panic]
+    fn loader_parse_rotation_gen_invalid() {
+        // malformed description
     }
 }
