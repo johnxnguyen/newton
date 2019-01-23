@@ -137,10 +137,10 @@ impl Loader {
         let num = bod["num"].as_i64().unwrap_or(1); // should be positive
 
         let mut nodes: Vec<Node> = vec![];
-        let mut mass = self.parse_body_mass(bod);
-        let mut vel = self.parse_body_velocity(bod);
-        let mut trans = self.parse_body_translation(bod);
-        let mut rot = self.parse_body_rotation(bod);
+        let mut mass = self.parse_mass(bod);
+        let mut vel = self.parse_velocity(bod);
+        let mut trans = self.parse_translation(bod);
+        let mut rot = self.parse_rotation(bod);
 
         let mut nodes: Vec<Node> = Vec::new();
 
@@ -154,59 +154,59 @@ impl Loader {
     }
 
     /// Returns the named mass gen if it exists, else creates one from concrete values.
-    fn parse_body_mass(&self, body: &Yaml) -> Box<dyn Generator<Output=Mass>> {
-        match body["mass"].as_str() {
+    fn parse_mass(&self, object: &Yaml) -> Box<dyn Generator<Output=Mass>> {
+        match object["mass"].as_str() {
             Some(gen_name) => {
                 let gen = self.mass_gens.get(gen_name).unwrap().clone();
                 Box::new(gen)
             },
             None => {
-                let raw = body["mass"].as_f64().unwrap() as f32;
+                let raw = object["mass"].as_f64().unwrap() as f32;
                 Box::new(Repeater::new(Mass::from(raw)))
             },
         }
     }
 
+    // Returns the named translation gen if it exists, else creates one from concrete values.
+    fn parse_translation(&self, object: &Yaml) -> Box<dyn Generator<Output=Point>> {
+        match object["trans"].as_str() {
+            Some(gen_name) => {
+                let gen = self.translation_gens.get(gen_name).unwrap().clone();
+                Box::new(gen)
+            },
+            None => {
+                let x = object["trans"]["x"].as_i64().unwrap() as f32;
+                let y = object["trans"]["y"].as_i64().unwrap() as f32;
+                Box::new(Repeater::new(Point::new(x, y)))
+            },
+        }
+    }
+
     /// Returns the named velocity gen if it exists, else creates one from concrete values.
-    fn parse_body_velocity(&self, body: &Yaml) -> Box<dyn Generator<Output=Vector>> {
-        match body["vel"].as_str() {
+    fn parse_velocity(&self, object: &Yaml) -> Box<dyn Generator<Output=Vector>> {
+        match object["vel"].as_str() {
             Some(gen_name) => {
                 let gen = self.velocity_gens.get(gen_name).unwrap().clone();
                 Box::new(gen)
             },
             None => {
-                let dx = body["vel"]["dx"].as_f64().unwrap() as f32;
-                let dy = body["vel"]["dy"].as_f64().unwrap() as f32;
+                let dx = object["vel"]["dx"].as_f64().unwrap() as f32;
+                let dy = object["vel"]["dy"].as_f64().unwrap() as f32;
                 Box::new(Repeater::new(Vector::new(dx, dy)))
             },
         }
     }
 
     /// Returns the named rotation gen if it exists, else creates one from concrete values.
-    fn parse_body_rotation(&self, body: &Yaml) -> Box<dyn Generator<Output=f32>> {
-        match body["rot"].as_str() {
+    fn parse_rotation(&self, object: &Yaml) -> Box<dyn Generator<Output=f32>> {
+        match object["rot"].as_str() {
             Some(gen_name) => {
                 let gen = self.rotation_gens.get(gen_name).unwrap().clone();
                 Box::new(gen)
             },
             None => {
-                let rotation = body["rot"].as_f64().unwrap() as f32;
+                let rotation = object["rot"].as_f64().unwrap() as f32;
                 Box::from(Repeater::new(rotation))
-            },
-        }
-    }
-
-    // Returns the named translation gen if it exists, else creates one from concrete values.
-    fn parse_body_translation(&self, body: &Yaml) -> Box<dyn Generator<Output=Point>> {
-        match body["trans"].as_str() {
-            Some(gen_name) => {
-                let gen = self.translation_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
-            },
-            None => {
-                let x = body["trans"]["x"].as_i64().unwrap() as f32;
-                let y  = body["trans"]["y"].as_i64().unwrap() as f32;
-                Box::new(Repeater::new(Point::new(x, y)))
             },
         }
     }
@@ -230,9 +230,9 @@ impl Loader {
         // transformation for the system
         let tvr: TVR;
         {
-            let t = self.parse_body_translation(system).generate();
-            let v = self.parse_body_velocity(system).generate();
-            let r = self.parse_body_rotation(system).generate();
+            let t = self.parse_translation(system).generate();
+            let v = self.parse_velocity(system).generate();
+            let r = self.parse_rotation(system).generate();
             tvr = TVR(t, v, r);
         }
 
