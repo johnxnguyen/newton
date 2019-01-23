@@ -191,7 +191,6 @@ impl Size {
 
         //if exp < 0 { panic!("An Exponent must be positive! "); }
         let width = u32::pow(2, exp);
-        let height = u32::pow(2, exp);
         let height = width;
 
         Size { width, height}
