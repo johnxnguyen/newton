@@ -40,6 +40,13 @@ impl Loader {
         }
     }
 
+    fn docs(path: &str) -> Vec<Yaml> {
+        let mut file = File::open(path).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        YamlLoader::load_from_str(&contents).unwrap()
+    }
+
     pub fn load(&mut self, path: &str) {
         let docs = Loader::docs(path);
         let doc = &docs[0];
@@ -52,13 +59,6 @@ impl Loader {
 
         // this should only have one element
         let root_idx = self.parse_system(doc);
-    }
-
-    fn docs(path: &str) -> Vec<Yaml> {
-        let mut file = File::open(path).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-        YamlLoader::load_from_str(&contents).unwrap()
     }
 
     // Gen Parsing ///////////////////////////////////////////////////////////
@@ -88,11 +88,6 @@ impl Loader {
                 _ => panic!("Unknown generator type: {:?}", gen_type),
             };
         }
-
-        println!("mass gens: {:?}", self.mass_gens.len());
-        println!("trans gens: {:?}", self.translation_gens.len());
-        println!("vel gens: {:?}", self.velocity_gens.len());
-        println!("rot gens: {:?}", self.rotation_gens.len());
     }
 
     fn parse_mass_gen(&self, gen: &Yaml) -> MassGen {
@@ -252,14 +247,13 @@ impl Loader {
 
 //////////////////////////////////////////////////////////////////////////////
 
+type Index = u32;
 struct TVR(Point, Vector, f32);
 
 enum Node {
     System(TVR, Vec<Index>),
     Body(TVR, Mass),
 }
-
-type Index = u32;
 
 struct DistributionTree {
     nodes: Vec<Node>
