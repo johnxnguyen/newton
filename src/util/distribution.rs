@@ -63,6 +63,8 @@ impl Loader {
 
     // Gen Parsing ///////////////////////////////////////////////////////////
 
+    /// Parses each generate description in the given list and stores them
+    /// in the corresponding hash map of self.
     fn parse_gens(&mut self, gens: &Vec<Yaml>) {
         for gen in gens {
             let name = gen["name"].as_str().unwrap().to_owned();
@@ -90,12 +92,14 @@ impl Loader {
         }
     }
 
+    /// Parses the mass generator description.
     fn parse_mass_gen(&self, gen: &Yaml) -> MassGen {
         let min = gen["min"].as_f64().unwrap() as f32;
         let max = gen["max"].as_f64().unwrap() as f32;
         MassGen::new(min, max)
     }
 
+    /// Parses the translation generator description.
     fn parse_translation_gen(&self, gen: &Yaml) -> TranslationGen {
         let x_min = gen["x"]["min"].as_f64().unwrap() as f32;
         let x_max = gen["x"]["max"].as_f64().unwrap() as f32;
@@ -104,12 +108,7 @@ impl Loader {
         TranslationGen::new(x_min, x_max, y_min, y_max)
     }
 
-    fn parse_rotation_gen(&self, gen: &Yaml) -> RotationGen {
-        let min = gen["min"].as_f64().unwrap() as f32;
-        let max = gen["max"].as_f64().unwrap() as f32;
-        RotationGen::new_degrees(min, max)
-    }
-
+    /// Parses the velocity generator description.
     fn parse_velocity_gen(&self, gen: &Yaml) -> VelocityGen {
         let dx_min = gen["dx"]["min"].as_f64().unwrap() as f32;
         let dx_max = gen["dx"]["max"].as_f64().unwrap() as f32;
@@ -118,8 +117,17 @@ impl Loader {
         VelocityGen::new(dx_min, dx_max, dy_min, dy_max)
     }
 
+    /// Parses the rotation generator description.
+    fn parse_rotation_gen(&self, gen: &Yaml) -> RotationGen {
+        let min = gen["min"].as_f64().unwrap() as f32;
+        let max = gen["max"].as_f64().unwrap() as f32;
+        RotationGen::new_degrees(min, max)
+    }
+
     // Body Parsing //////////////////////////////////////////////////////////
 
+    /// Parses each body description in the given list and stores them in
+    /// the bodies hash map of self.
     fn parse_bodies(&mut self, bodies: &Vec<Yaml>) {
         for body in bodies {
             let (name, nodes) = self.parse_body(body);
@@ -127,8 +135,9 @@ impl Loader {
         };
     }
 
-    // how to handle missing keys and default values?
+    /// Parses the given body description.
     fn parse_body(&self, body: &Yaml) -> (String, Vec<Node>) {
+        // TODO: handle missing keys and default values?
         let name = body["name"].as_str().unwrap();
         let num = body["num"].as_i64().unwrap_or(1); // should be positive
 
@@ -163,7 +172,7 @@ impl Loader {
         }
     }
 
-    // Returns the named translation gen if it exists, else creates one from concrete values.
+    /// Returns the named translation gen if it exists, else creates one from concrete values.
     fn parse_translation(&self, object: &Yaml) -> Box<dyn Generator<Output=Point>> {
         match object["trans"].as_str() {
             Some(gen_name) => {
@@ -209,6 +218,7 @@ impl Loader {
 
     // System Parsing ////////////////////////////////////////////////////////////
 
+    /// Parses the given system description.
     fn parse_system(&mut self, system: &Yaml) -> Vec<Index> {
         // check for reference to bodies
         match system["name"].as_str() {
