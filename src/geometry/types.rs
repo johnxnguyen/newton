@@ -192,6 +192,7 @@ impl Size {
         //if exp < 0 { panic!("An Exponent must be positive! "); }
         let width = u32::pow(2, exp);
         let height = u32::pow(2, exp);
+        let height = width;
 
         Size { width, height}
     }
@@ -201,9 +202,6 @@ impl Size {
         Size {width: wd, height: wd}
     }
 
-    pub fn new_wh(width: u32, height: u32) -> Size {
-        Size{width, height}
-    }
 }
 
 // Quadrant //////////////////////////////////////////////////////////////////
@@ -238,13 +236,6 @@ pub struct Rect {
 }
 
 impl Rect {
-//    pub fn new(x: f32, y: f32, ex: u32) -> Rect {
-//        Rect {
-//            origin: Point::new(x, y),
-//            size: Size::new(ex),
-//        }
-//    }
-
     pub fn new(x: f32, y: f32, size: Size) -> Rect {
         Rect{
             origin: Point::new(x,y),
@@ -279,21 +270,6 @@ impl Rect {
     /// of the quadrants is shifted so their widths and heights remain
     /// integers. This eliminates gaps in the coverage of the quadrants.
     pub fn quadrants(&self) -> (Quadrant, Quadrant, Quadrant, Quadrant) {
-//        let split = |n: u32| {
-//            let half = n >> 1;
-//            if n & 1 == 0 { (half, half) } else { (half, half + 1) }
-//        let split = |n: u32| {
-//            let half = n >> 1;
-//            (half, half)
-//        };
-
-//        let split_size = |n: Size| {
-//            let half_width = n.width >> 1;
-//            let half_height = n.height >> 1;
-//            (half_height,half_width)
-//        };
-
-
 
         assert!(!self.has_minimum_dimension(), "Cannot split rect with minimal dimension.");
 
@@ -491,22 +467,6 @@ mod tests {
         assert_eq!(None, Vector::zero().normalized())
     }
 
-    // Size //////////////////////////////////////////////////////////////////
-
-//    #[test]
-//    #[should_panic(expected = "A size's width and/or height must be positive.")]
-//    fn size_non_positive_width() {
-//        // given, when , then
-//        Size::new(2);
-//    }
-
-//    #[test]
-//    #[should_panic(expected = "A size's width and/or height must be positive.")]
-//    fn size_non_positive_height() {
-//        // given, when , then
-//        Size::new(2);
-//    }
-
     // Rect //////////////////////////////////////////////////////////////////
 
     #[test]
@@ -521,15 +481,8 @@ mod tests {
         assert_eq!(5.65685424949, result);
     }
 
-//    #[test]
-//    #[should_panic(expected = "A size's width and/or height must be positive.")]
-//    fn rect_non_positive_size() {
-//        // given, when , then
-//        Rect::new(-1.0, 1.0, Size::new(2));
-//    }
-
     #[test]
-    fn rect_even_quadrants() {
+    fn rect_quadrants() {
         // given
         let sut = Rect::new(4.0, 2.0, Size::new(2));
 
@@ -537,25 +490,10 @@ mod tests {
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(NW(Rect::new(4.0, 4.0, Size::new_wh(2,2))), nw);
-        assert_eq!(NE(Rect::new(6.0, 4.0, Size::new_wh(2,2))), ne);
-        assert_eq!(SW(Rect::new(4.0, 2.0, Size::new_wh(2,2))), sw);
-        assert_eq!(SE(Rect::new(6.0, 2.0, Size::new_wh(2,2))), se);
-    }
-
-    #[test]
-    fn rect_uneven_quadrants() {
-        // given
-        let sut = Rect::new(-5.0, -5.0, Size::new(5));
-
-        // when
-        let (nw, ne, sw, se) = sut.quadrants();
-
-        // then
-        assert_eq!(NW(Rect::new(-5.0, 11.0, Size::new_wh(16, 16))), nw);
-        assert_eq!(NE(Rect::new(11.0, 11.0, Size::new_wh(16, 16))), ne);
-        assert_eq!(SW(Rect::new(-5.0, -5.0, Size::new_wh(16, 16))), sw);
-        assert_eq!(SE(Rect::new(11.0, -5.0, Size::new_wh(16, 16))), se);
+        assert_eq!(NW(Rect::new(4.0, 4.0, Size::new(1))), nw);
+        assert_eq!(NE(Rect::new(6.0, 4.0, Size::new(1))), ne);
+        assert_eq!(SW(Rect::new(4.0, 2.0, Size::new(1))), sw);
+        assert_eq!(SE(Rect::new(6.0, 2.0, Size::new(1))), se);
     }
 
     #[test]
