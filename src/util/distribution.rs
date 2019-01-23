@@ -9,34 +9,34 @@ use geometry::types::Point;
 use geometry::types::Vector;
 use geometry::util::Transformation;
 use physics::types::Mass;
-use util::gens::Generator;
-use util::gens::MassGen;
-use util::gens::RadialGen;
-use util::gens::Repeater;
-use util::gens::RotationGen;
-use util::gens::UniformGen;
-use util::gens::VelocityGen;
-use util::gens::TranslationGen;
+use util::gens::*;
 
 // Question: If I clone the gens, do they produce the same sequence?
+
+// should define error type for useful feedback
+
+// need to give back errors instead of unwrapping
+
+// need to provide default values
+
 pub struct Loader {
-    mass_gens:        HashMap<String, MassGen>,
+    mass_gens: HashMap<String, MassGen>,
     translation_gens: HashMap<String, TranslationGen>,
-    velocity_gens:    HashMap<String, VelocityGen>,
-    rotation_gens:    HashMap<String, RotationGen>,
-    bodies:           HashMap<String, Vec<Node>>,
+    velocity_gens: HashMap<String, VelocityGen>,
+    rotation_gens: HashMap<String, RotationGen>,
+    bodies: HashMap<String, Vec<Node>>,
     tree: DistributionTree,
 }
 
 impl Loader {
     pub fn new() -> Loader {
         Loader {
-            mass_gens:        HashMap::new(),
+            mass_gens: HashMap::new(),
             translation_gens: HashMap::new(),
-            velocity_gens:    HashMap::new(),
-            rotation_gens:    HashMap::new(),
-            bodies:           HashMap::new(),
-            tree:             DistributionTree::new(),
+            velocity_gens: HashMap::new(),
+            rotation_gens: HashMap::new(),
+            bodies: HashMap::new(),
+            tree: DistributionTree::new(),
         }
     }
 
@@ -44,15 +44,26 @@ impl Loader {
         let docs = Loader::docs(path);
         let doc = &docs[0];
 
-        // should define error type for useful feedback
-
-        // need to give back errors instead of unwrapping
-
-        // need to provide default values
-
-        // this could be refactored into a method
         let gens = doc["gens"].as_vec().unwrap();
+        self.parse_gens(gens);
 
+        let bodies = doc["bodies"].as_vec().unwrap();
+        self.parse_bodies(bodies);
+
+        // this should only have one element
+        let root_idx = self.parse_system(doc);
+    }
+
+    fn docs(path: &str) -> Vec<Yaml> {
+        let mut file = File::open(path).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        YamlLoader::load_from_str(&contents).unwrap()
+    }
+
+    // Gen Parsing ///////////////////////////////////////////////////////////
+
+    fn parse_gens(&mut self, gens: &Vec<Yaml>) {
         for gen in gens {
             let name = gen["name"].as_str().unwrap().to_owned();
             let gen_type = gen["type"].as_str().unwrap();
@@ -82,24 +93,7 @@ impl Loader {
         println!("trans gens: {:?}", self.translation_gens.len());
         println!("vel gens: {:?}", self.velocity_gens.len());
         println!("rot gens: {:?}", self.rotation_gens.len());
-
-        for bod in doc["bodies"].as_vec().unwrap() {
-            let (name, nodes) = self.parse_bod(bod);
-            self.bodies.insert(name, nodes);
-        }
-
-        // this should only have one element
-        let root_idx = self.parse_system(doc);
     }
-
-    fn docs(path: &str) -> Vec<Yaml> {
-        let mut file = File::open(path).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-        YamlLoader::load_from_str(&contents).unwrap()
-    }
-
-    // Gen Parsing ///////////////////////////////////////////////////////////
 
     fn parse_mass_gen(&self, gen: &Yaml) -> MassGen {
         let min = gen["min"].as_f64().unwrap() as f32;
@@ -131,16 +125,23 @@ impl Loader {
 
     // Body Parsing //////////////////////////////////////////////////////////
 
+    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) {
+        for body in bodies {
+            let (name, nodes) = self.parse_body(body);
+            self.bodies.insert(name, nodes);
+        };
+    }
+
     // how to handle missing keys and default values?
-    fn parse_bod(&self, bod: &Yaml) -> (String, Vec<Node>) {
-        let name = bod["name"].as_str().unwrap();
-        let num = bod["num"].as_i64().unwrap_or(1); // should be positive
+    fn parse_body(&self, body: &Yaml) -> (String, Vec<Node>) {
+        let name = body["name"].as_str().unwrap();
+        let num = body["num"].as_i64().unwrap_or(1); // should be positive
 
         let mut nodes: Vec<Node> = vec![];
-        let mut mass = self.parse_mass(bod);
-        let mut vel = self.parse_velocity(bod);
-        let mut trans = self.parse_translation(bod);
-        let mut rot = self.parse_rotation(bod);
+        let mut mass = self.parse_mass(body);
+        let mut vel = self.parse_velocity(body);
+        let mut trans = self.parse_translation(body);
+        let mut rot = self.parse_rotation(body);
 
         let mut nodes: Vec<Node> = Vec::new();
 
@@ -279,12 +280,14 @@ impl DistributionTree {
 
 #[cfg(test)]
 mod tests {
-    use util::distribution::Loader;
+    use std::f32::consts::PI;
+
     use yaml_rust::Yaml;
     use yaml_rust::YamlLoader;
-    use util::gens::MassGen;
+
+    use util::distribution::Loader;
     use util::gens::Generator;
-    use std::f32::consts::PI;
+    use util::gens::MassGen;
 
     fn yaml(raw: &str) -> Yaml {
         match YamlLoader::load_from_str(raw) {
