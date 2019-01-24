@@ -276,7 +276,7 @@ impl Loader {
     /// Returns the named mass gen if it exists, else creates one from concrete values.
     fn parse_mass(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Mass>>, Error> {
         // check for gen reference
-        match self.get_string(object, "mass") {
+        match self.get_string(object, "m") {
             Ok(gen_name) => {
                 // look it up
                 return match self.mass_gens.get(gen_name.as_str()) {
@@ -288,7 +288,7 @@ impl Loader {
         }
 
         // get concrete value
-        let mass = self.get_real(object, "mass")?;
+        let mass = self.get_real(object, "m")?;
         Ok(Box::new(Repeater::new(Mass::from(mass))))
     }
 
@@ -296,7 +296,7 @@ impl Loader {
     /// else provides default value of (0.0, 0.0).
     fn parse_translation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Point>>, Error> {
         // check for gen reference
-        match self.get_string(object, "trans") {
+        match self.get_string(object, "t") {
             Ok(gen_name) => {
                 // look it up
                 return match self.translation_gens.get(gen_name.as_str()) {
@@ -308,7 +308,7 @@ impl Loader {
         }
 
         // get concrete values
-        let translation = match self.get_value(object, "trans") {
+        let translation = match self.get_value(object, "t") {
             Err(error) => match error {
                 // provide default
                 MissingKey(_) => Point::zero(),
@@ -328,7 +328,7 @@ impl Loader {
     /// else provides default value of (0.0, 0.0).
     fn parse_velocity(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Vector>>, Error> {
         // check for gen reference
-        match self.get_string(object, "vel") {
+        match self.get_string(object, "v") {
             Ok(gen_name) => {
                 // look it up
                 return match self.velocity_gens.get(gen_name.as_str()) {
@@ -340,7 +340,7 @@ impl Loader {
         }
 
         // get concrete values
-        let velocity = match self.get_value(object, "vel") {
+        let velocity = match self.get_value(object, "v") {
             Err(error) => match error {
                 // provide default
                 MissingKey(_) => Vector::zero(),
@@ -360,7 +360,7 @@ impl Loader {
     /// else provides default value of 0.0.
     fn parse_rotation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=f32>>, Error> {
         // check for gen reference
-        match self.get_string(object, "rot") {
+        match self.get_string(object, "r") {
             Ok(gen_name) => {
                 // look it up
                 return match self.rotation_gens.get(gen_name.as_str()) {
@@ -372,7 +372,7 @@ impl Loader {
         }
 
         // get concrete values
-        let rotation = self.get_real_or(object, "rot", 0.0)?;
+        let rotation = self.get_real_or(object, "r", 0.0)?;
         Ok(Box::new(Repeater::new(rotation)))
     }
 
