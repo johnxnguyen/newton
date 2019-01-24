@@ -13,6 +13,7 @@ use util::gens::*;
 use std::fmt;
 use util::distribution::Error::MissingKey;
 use util::distribution::Error::ExpectedType;
+use util::distribution::Error::UnknownReference;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -35,7 +36,8 @@ impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
             MissingKey(key) => write!(f, "Missing required key: {}.", key),
-            _ => write!(f, "default"),
+            ExpectedType(which) => write!(f, "Expected type {}", which),
+            UnknownReference(name) => write!(f, "Unknown reference: {}", name),
         }
     }
 }
@@ -75,7 +77,7 @@ impl Loader {
         let value = self.get_value(object, key)?;
         match value.as_vec() {
             Some(result) => Ok(result),
-            None => Err(ExpectedType(String::from("Array"))),
+            None => Err(ExpectedType(key.to_owned() + ": Array")),
         }
     }
 
@@ -84,7 +86,7 @@ impl Loader {
         let value = self.get_value(object, key)?;
         match value.as_f64() {
             Some(result) => Ok(result as f32),
-            None => Err(ExpectedType(String::from("Real"))),
+            None => Err(ExpectedType(key.to_owned() + ": Real")),
         }
     }
 
