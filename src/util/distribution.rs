@@ -259,7 +259,7 @@ impl Loader {
         let mut nodes: Vec<Node> = vec![];
         let mut mass = self.parse_mass(body)?;
         let mut trans = self.parse_translation(body)?;
-        let mut vel = self.parse_velocity(body);
+        let mut vel = self.parse_velocity(body)?;
         let mut rot = self.parse_rotation(body);
 
         let mut nodes: Vec<Node> = Vec::new();
@@ -324,19 +324,36 @@ impl Loader {
         Ok(Box::new(Repeater::new(translation)))
     }
 
-    /// Returns the named velocity gen if it exists, else creates one from concrete values.
-    fn parse_velocity(&self, object: &Yaml) -> Box<dyn Generator<Output=Vector>> {
-        match object["vel"].as_str() {
-            Some(gen_name) => {
-                let gen = self.velocity_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
+    /// Returns the named velocity gen if it exists, else creates one from concrete values,
+    /// /// /// else provides default value of (0.0, 0.0).
+    fn parse_velocity(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Vector>>, Error> {
+        // check for gen reference
+        match self.get_string(object, "vel") {
+            Ok(gen_name) => {
+                // look it up
+                return match self.velocity_gens.get(gen_name.as_str()) {
+                    None => Err(UnknownReference(gen_name)),
+                    Some(gen) => Ok(Box::new(gen.clone())),
+                }
             },
-            None => {
-                let dx = object["vel"]["dx"].as_f64().unwrap() as f32;
-                let dy = object["vel"]["dy"].as_f64().unwrap() as f32;
-                Box::new(Repeater::new(Vector::new(dx, dy)))
-            },
+            _ => (),
         }
+
+        // get concrete values
+        let velocity = match self.get_value(object, "vel") {
+            Err(error) => match error {
+                // provide default
+                MissingKey(_) => Vector::zero(),
+                _ => return Err(error),
+            },
+            Ok(value) => {
+                let dx = self.get_real(value, "dx")?;
+                let dy = self.get_real(value, "dy")?;
+                Vector::new(dx, dy)
+            },
+        };
+
+        Ok(Box::new(Repeater::new(velocity)))
     }
 
     /// Returns the named rotation gen if it exists, else creates one from concrete values.
@@ -374,7 +391,7 @@ impl Loader {
         let tvr: TVR;
         {
             let t = self.parse_translation(system).unwrap().generate();
-            let v = self.parse_velocity(system).generate();
+            let v = self.parse_velocity(system).unwrap().generate();
             let r = self.parse_rotation(system).generate();
             tvr = TVR(t, v, r);
         }
