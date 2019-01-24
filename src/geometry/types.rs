@@ -497,19 +497,9 @@ mod tests {
 
     #[test]
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
-    fn rect_quadrants_of_rect_with_minimum_width() {
+    fn rect_quadrants_of_unit_rect() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new(3));
-
-        // when, then
-        sut.quadrants();
-    }
-
-    #[test]
-    #[should_panic(expected = "Cannot split rect with minimal dimension.")]
-    fn rect_quadrants_of_rect_with_minimum_height() {
-        // given
-        let sut = Rect::new(0.0, 0.0, Size::new(3));
+        let sut = Rect::new(0.0, 0.0, Size::new(0));
 
         // when, then
         sut.quadrants();
