@@ -499,7 +499,7 @@ mod tests {
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
     fn rect_quadrants_of_rect_with_minimum_width() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new_wh(10, 1));
+        let sut = Rect::new(0.0, 0.0, Size::new(3));
 
         // when, then
         sut.quadrants();
@@ -509,7 +509,7 @@ mod tests {
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
     fn rect_quadrants_of_rect_with_minimum_height() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new_wh(1, 10));
+        let sut = Rect::new(0.0, 0.0, Size::new(3));
 
         // when, then
         sut.quadrants();
@@ -518,7 +518,7 @@ mod tests {
     #[test]
     fn rect_contains_point() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new_wh(10, 5));
+        let sut = Rect::new(0.0, 0.0, Size::new(5));
 
         // then
         assert!(sut.contains(&Point::new(0.0, 0.0)));
@@ -526,8 +526,8 @@ mod tests {
         assert!(sut.contains(&Point::new(10.0, 5.0)));
 
         assert!(!sut.contains(&Point::new(-0.0001, 0.0)));
-        assert!(!sut.contains(&Point::new(10.0000, 5.00001)));
-        assert!(!sut.contains(&Point::new(14.0, 5.01)));
+        assert!(!sut.contains(&Point::new(33.0000, 5.00001)));
+        assert!(!sut.contains(&Point::new(1.0, 40.01)));
     }
 
     #[test]
