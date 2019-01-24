@@ -257,7 +257,7 @@ impl Loader {
         }
 
         let mut nodes: Vec<Node> = vec![];
-        let mut mass = self.parse_mass(body);
+        let mut mass = self.parse_mass(body)?;
         let mut vel = self.parse_velocity(body);
         let mut trans = self.parse_translation(body);
         let mut rot = self.parse_rotation(body);
@@ -274,17 +274,22 @@ impl Loader {
     }
 
     /// Returns the named mass gen if it exists, else creates one from concrete values.
-    fn parse_mass(&self, object: &Yaml) -> Box<dyn Generator<Output=Mass>> {
-        match object["mass"].as_str() {
-            Some(gen_name) => {
-                let gen = self.mass_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
+    fn parse_mass(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Mass>>, Error> {
+        // check for gen reference
+        match self.get_string(object, "mass") {
+            Ok(gen_name) => {
+                // look it up
+                return match self.mass_gens.get(gen_name.as_str()) {
+                    None => Err(UnknownReference(gen_name)),
+                    Some(gen) => Ok(Box::new(gen.clone())),
+                }
             },
-            None => {
-                let raw = object["mass"].as_f64().unwrap() as f32;
-                Box::new(Repeater::new(Mass::from(raw)))
-            },
+            _ => (),
         }
+
+        // get concrete value
+        let mass = self.get_real(object, "mass")?;
+        Ok(Box::new(Repeater::new(Mass::from(mass))))
     }
 
     /// Returns the named translation gen if it exists, else creates one from concrete values.
