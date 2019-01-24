@@ -91,7 +91,6 @@ impl Loader {
     /// Attempts to extract the value for the given key.
     fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
         let value = &object[key];
-
         if value.is_badvalue() {
             Err(MissingKey(String::from(key)))
         } else {
@@ -126,19 +125,19 @@ impl Loader {
 
             match gen_type {
                 "mass" => {
-                    let mass_gen = self.parse_mass_gen(gen);
+                    let mass_gen = self.parse_mass_gen(gen)?;
                     self.mass_gens.insert(name, mass_gen);
                 },
                 "translation" => {
-                    let translation_gen = self.parse_translation_gen(gen);
+                    let translation_gen = self.parse_translation_gen(gen)?;
                     self.translation_gens.insert(name, translation_gen);
                 },
                 "velocity" => {
-                    let velocity_gen = self.parse_velocity_gen(gen);
+                    let velocity_gen = self.parse_velocity_gen(gen)?;
                     self.velocity_gens.insert(name, velocity_gen);
                 },
                 "rotation" => {
-                    let rotation_gen = self.parse_rotation_gen(gen);
+                    let rotation_gen = self.parse_rotation_gen(gen)?;
                     self.rotation_gens.insert(name, rotation_gen);
                 },
                 _ => panic!("Unknown generator type: {:?}", gen_type),
@@ -148,35 +147,39 @@ impl Loader {
     }
 
     /// Parses the mass generator description.
-    fn parse_mass_gen(&self, gen: &Yaml) -> MassGen {
-        let min = gen["min"].as_f64().unwrap() as f32;
-        let max = gen["max"].as_f64().unwrap() as f32;
-        MassGen::new(min, max)
+    fn parse_mass_gen(&self, gen: &Yaml) -> Result<MassGen, Error> {
+        let min = self.get_real(gen, "min")?;
+        let max = self.get_real(gen, "max")?;
+        Ok(MassGen::new(min, max))
     }
 
     /// Parses the translation generator description.
-    fn parse_translation_gen(&self, gen: &Yaml) -> TranslationGen {
-        let x_min = gen["x"]["min"].as_f64().unwrap() as f32;
-        let x_max = gen["x"]["max"].as_f64().unwrap() as f32;
-        let y_min = gen["y"]["min"].as_f64().unwrap() as f32;
-        let y_max = gen["y"]["max"].as_f64().unwrap() as f32;
-        TranslationGen::new(x_min, x_max, y_min, y_max)
+    fn parse_translation_gen(&self, gen: &Yaml) -> Result<TranslationGen, Error> {
+        let x = self.get_value(gen, "x")?;
+        let y = self.get_value(gen, "y")?;
+        let x_min = self.get_real(x, "min")?;
+        let x_max = self.get_real(x, "max")?;
+        let y_min = self.get_real(y, "min")?;
+        let y_max = self.get_real(y, "max")?;
+        Ok(TranslationGen::new(x_min, x_max, y_min, y_max))
     }
 
     /// Parses the velocity generator description.
-    fn parse_velocity_gen(&self, gen: &Yaml) -> VelocityGen {
-        let dx_min = gen["dx"]["min"].as_f64().unwrap() as f32;
-        let dx_max = gen["dx"]["max"].as_f64().unwrap() as f32;
-        let dy_min = gen["dy"]["min"].as_f64().unwrap() as f32;
-        let dy_max = gen["dy"]["max"].as_f64().unwrap() as f32;
-        VelocityGen::new(dx_min, dx_max, dy_min, dy_max)
+    fn parse_velocity_gen(&self, gen: &Yaml) -> Result<VelocityGen, Error> {
+        let dx = self.get_value(gen, "dx")?;
+        let dy = self.get_value(gen, "dy")?;
+        let dx_min = self.get_real(dx, "min")?;
+        let dx_max = self.get_real(dx, "max")?;
+        let dy_min = self.get_real(dy, "min")?;
+        let dy_max = self.get_real(dy, "max")?;
+        Ok(VelocityGen::new(dx_min, dx_max, dy_min, dy_max))
     }
 
     /// Parses the rotation generator description.
-    fn parse_rotation_gen(&self, gen: &Yaml) -> RotationGen {
-        let min = gen["min"].as_f64().unwrap() as f32;
-        let max = gen["max"].as_f64().unwrap() as f32;
-        RotationGen::new_degrees(min, max)
+    fn parse_rotation_gen(&self, gen: &Yaml) -> Result<RotationGen, Error> {
+        let min = self.get_real(gen, "min")?;
+        let max = self.get_real(gen, "max")?;
+        Ok(RotationGen::new_degrees(min, max))
     }
 
     // Body Parsing //////////////////////////////////////////////////////////
@@ -389,7 +392,7 @@ mod tests {
         max: 0.3";
 
         // when
-        let mut result = sut.parse_mass_gen(&yaml(input));
+        let mut result = sut.parse_mass_gen(&yaml(input)).unwrap();
 
         // then
         assert!(result.generate().value() > 0.1);
@@ -413,7 +416,7 @@ mod tests {
         y: {min:  10.0, max: 20.0}";
 
         // when
-        let mut result = sut.parse_translation_gen(&yaml(input));
+        let mut result = sut.parse_translation_gen(&yaml(input)).unwrap();
 
         // then
         let point = result.generate();
@@ -440,7 +443,7 @@ mod tests {
         dy: {min:  5.0, max: 10.0}";
 
         // when
-        let mut result = sut.parse_velocity_gen(&yaml(input));
+        let mut result = sut.parse_velocity_gen(&yaml(input)).unwrap();
 
         // then
         let velocity = result.generate();
@@ -467,7 +470,7 @@ mod tests {
         max: 180.0";
 
         // when
-        let mut result = sut.parse_rotation_gen(&yaml(input));
+        let mut result = sut.parse_rotation_gen(&yaml(input)).unwrap();
 
         // then
         let rotation = result.generate();
