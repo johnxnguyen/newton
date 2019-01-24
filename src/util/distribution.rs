@@ -94,9 +94,35 @@ impl Loader {
         }
     }
 
+    /// Returns either the real number at the given key for the given object, or the
+    /// default value provide if they key is not found.
+    fn get_real_or(&self, object: &Yaml, key: &str, default: f32) -> Result<f32, Error> {
+        let value = match self.get_value(object, key) {
+            Ok(value) => value,
+            Err(_) => return Ok(default),
+        };
+        match value.as_f64() {
+            Some(result) => Ok(result as f32),
+            None => Err(ExpectedType(key.to_owned() + ": Real")),
+        }
+    }
+
     /// Attempts to get the integer number at the given key for the given object.
     fn get_int(&self, object: &Yaml, key: &str) -> Result<i32, Error> {
         let value = self.get_value(object, key)?;
+        match value.as_i64() {
+            Some(result) => Ok(result as i32),
+            None => Err(ExpectedType(key.to_owned() + ": Integer")),
+        }
+    }
+
+    /// Returns either the integer number at the given key for the given object, or the
+    /// default value provide if they key is not found.
+    fn get_int_or(&self, object: &Yaml, key: &str, default: i32) -> Result<i32, Error> {
+        let value = match self.get_value(object, key) {
+            Ok(value) => value,
+            Err(_) => return Ok(default),
+        };
         match value.as_i64() {
             Some(result) => Ok(result as i32),
             None => Err(ExpectedType(key.to_owned() + ": Integer")),
