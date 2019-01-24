@@ -14,6 +14,7 @@ use std::fmt;
 use util::distribution::Error::MissingKey;
 use util::distribution::Error::ExpectedType;
 use util::distribution::Error::UnknownReference;
+use util::distribution::Error::UndefinedValue;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -30,6 +31,7 @@ pub enum Error {
     MissingKey(String),
     ExpectedType(String),
     UnknownReference(String),
+    UndefinedValue(String),
 }
 
 impl fmt::Display for Error {
@@ -38,6 +40,7 @@ impl fmt::Display for Error {
             MissingKey(key) => write!(f, "Missing required key: {}.", key),
             ExpectedType(which) => write!(f, "Expected type {}", which),
             UnknownReference(name) => write!(f, "Unknown reference: {}", name),
+            UndefinedValue(which) => write!(f, "Undefined value: {}", which),
         }
     }
 }
@@ -131,10 +134,10 @@ impl Loader {
     /// in the corresponding hash map of self.
     fn parse_gens(&mut self, gens: &Vec<Yaml>) -> Result<(), Error> {
         for gen in gens {
-            let name = gen["name"].as_str().unwrap().to_owned();
-            let gen_type = gen["type"].as_str().unwrap();
+            let name = self.get_string(gen, "name")?;
+            let gen_type = self.get_string(gen, "type")?;
 
-            match gen_type {
+            match gen_type.as_str() {
                 "mass" => {
                     let mass_gen = self.parse_mass_gen(gen)?;
                     self.mass_gens.insert(name, mass_gen);
@@ -151,7 +154,7 @@ impl Loader {
                     let rotation_gen = self.parse_rotation_gen(gen)?;
                     self.rotation_gens.insert(name, rotation_gen);
                 },
-                _ => panic!("Unknown generator type: {:?}", gen_type),
+                _ => return Err(UndefinedValue(gen_type)),
             };
         }
         Ok(())
