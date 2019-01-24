@@ -28,7 +28,7 @@ gens:
 #  name: string              # Required. Uniquely identify this system.
 #  num: int                  # Optional, defaults to 1. Indicates number of bodies in this system.
 #  m: string/float           # Required. Gen name or value
-#  t: string/(int, int)      # Optional, defaults to (0, 0).
+#  t: string/(float, float)  # Optional, defaults to (0.0, 0.0).
 #  v: string/(float, float)  # -----"------
 #  r: string/float           # -----"------
 
