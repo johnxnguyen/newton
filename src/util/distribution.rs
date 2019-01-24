@@ -260,7 +260,7 @@ impl Loader {
         let mut mass = self.parse_mass(body)?;
         let mut trans = self.parse_translation(body)?;
         let mut vel = self.parse_velocity(body)?;
-        let mut rot = self.parse_rotation(body);
+        let mut rot = self.parse_rotation(body)?;
 
         let mut nodes: Vec<Node> = Vec::new();
 
@@ -325,7 +325,7 @@ impl Loader {
     }
 
     /// Returns the named velocity gen if it exists, else creates one from concrete values,
-    /// /// /// else provides default value of (0.0, 0.0).
+    /// else provides default value of (0.0, 0.0).
     fn parse_velocity(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Vector>>, Error> {
         // check for gen reference
         match self.get_string(object, "vel") {
@@ -356,18 +356,24 @@ impl Loader {
         Ok(Box::new(Repeater::new(velocity)))
     }
 
-    /// Returns the named rotation gen if it exists, else creates one from concrete values.
-    fn parse_rotation(&self, object: &Yaml) -> Box<dyn Generator<Output=f32>> {
-        match object["rot"].as_str() {
-            Some(gen_name) => {
-                let gen = self.rotation_gens.get(gen_name).unwrap().clone();
-                Box::new(gen)
+    /// Returns the named rotation gen if it exists, else creates one from concrete values
+    /// else provides default value of 0.0.
+    fn parse_rotation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=f32>>, Error> {
+        // check for gen reference
+        match self.get_string(object, "rot") {
+            Ok(gen_name) => {
+                // look it up
+                return match self.rotation_gens.get(gen_name.as_str()) {
+                    None => Err(UnknownReference(gen_name)),
+                    Some(gen) => Ok(Box::new(gen.clone())),
+                }
             },
-            None => {
-                let rotation = object["rot"].as_f64().unwrap() as f32;
-                Box::from(Repeater::new(rotation))
-            },
+            _ => (),
         }
+
+        // get concrete values
+        let rotation = self.get_real_or(object, "rot", 0.0)?;
+        Ok(Box::new(Repeater::new(rotation)))
     }
 
     // System Parsing ////////////////////////////////////////////////////////////
@@ -392,7 +398,7 @@ impl Loader {
         {
             let t = self.parse_translation(system).unwrap().generate();
             let v = self.parse_velocity(system).unwrap().generate();
-            let r = self.parse_rotation(system).generate();
+            let r = self.parse_rotation(system).unwrap().generate();
             tvr = TVR(t, v, r);
         }
 
