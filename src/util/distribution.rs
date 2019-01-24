@@ -10,6 +10,9 @@ use geometry::types::Vector;
 use geometry::util::Transformation;
 use physics::types::Mass;
 use util::gens::*;
+use std::fmt;
+use util::distribution::Error::MissingKey;
+use util::distribution::Error::ExpectedType;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -18,6 +21,26 @@ use util::gens::*;
 // need to give back errors instead of unwrapping
 
 // need to provide default values
+
+// Error /////////////////////////////////////////////////////////////////////
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Error {
+    MissingKey(String),
+    ExpectedType(String),
+    UnknownReference(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MissingKey(key) => write!(f, "Missing required key: {}.", key),
+            _ => write!(f, "default"),
+        }
+    }
+}
+
+// Loader ////////////////////////////////////////////////////////////////////
 
 pub struct Loader {
     mass_gens: HashMap<String, MassGen>,
@@ -47,6 +70,37 @@ impl Loader {
         YamlLoader::load_from_str(&contents).unwrap()
     }
 
+    /// Attempts to get the vector at the given key for the given object.
+    fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>, Error> {
+        let value = self.get_value(object, key)?;
+        match value.as_vec() {
+            Some(result) => Ok(result),
+            None => Err(ExpectedType(String::from("Array"))),
+        }
+    }
+
+    /// Attempts to get the real number at the given key for the given object.
+    fn get_real(&self, object: &Yaml, key: &str) -> Result<f32, Error> {
+        let value = self.get_value(object, key)?;
+        match value.as_f64() {
+            Some(result) => Ok(result as f32),
+            None => Err(ExpectedType(String::from("Real"))),
+        }
+    }
+
+    /// Attempts to extract the value for the given key.
+    fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
+        let value = &object[key];
+
+        if value.is_badvalue() {
+            Err(MissingKey(String::from(key)))
+        } else {
+            Ok(value)
+        }
+    }
+
+    // need to be able to check if accessing a key produces a bad value.
+    // then need to check if casting to type fails.
     pub fn load(&mut self, path: &str) {
         let docs = Loader::docs(path);
         let doc = &docs[0];
@@ -65,7 +119,7 @@ impl Loader {
 
     /// Parses each generate description in the given list and stores them
     /// in the corresponding hash map of self.
-    fn parse_gens(&mut self, gens: &Vec<Yaml>) {
+    fn parse_gens(&mut self, gens: &Vec<Yaml>) -> Result<(), Error> {
         for gen in gens {
             let name = gen["name"].as_str().unwrap().to_owned();
             let gen_type = gen["type"].as_str().unwrap();
@@ -90,6 +144,7 @@ impl Loader {
                 _ => panic!("Unknown generator type: {:?}", gen_type),
             };
         }
+        Ok(())
     }
 
     /// Parses the mass generator description.
