@@ -14,7 +14,7 @@ use std::fmt;
 use util::distribution::Error::MissingKey;
 use util::distribution::Error::ExpectedType;
 use util::distribution::Error::UnknownReference;
-use util::distribution::Error::UndefinedValue;
+use util::distribution::Error::InvalidValue;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -31,7 +31,7 @@ pub enum Error {
     MissingKey(String),
     ExpectedType(String),
     UnknownReference(String),
-    UndefinedValue(String),
+    InvalidValue(String),
 }
 
 impl fmt::Display for Error {
@@ -40,7 +40,7 @@ impl fmt::Display for Error {
             MissingKey(key) => write!(f, "Missing required key: {}.", key),
             ExpectedType(which) => write!(f, "Expected type {}", which),
             UnknownReference(name) => write!(f, "Unknown reference: {}", name),
-            UndefinedValue(which) => write!(f, "Undefined value: {}", which),
+            InvalidValue(which) => write!(f, "Invalid value: {}", which),
         }
     }
 }
@@ -193,7 +193,7 @@ impl Loader {
                     let rotation_gen = self.parse_rotation_gen(gen)?;
                     self.rotation_gens.insert(name, rotation_gen);
                 },
-                _ => return Err(UndefinedValue(gen_type)),
+                _ => return Err(InvalidValue(gen_type)),
             };
         }
         Ok(())
@@ -239,18 +239,22 @@ impl Loader {
 
     /// Parses each body description in the given list and stores them in
     /// the bodies hash map of self.
-    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) {
+    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<(), Error> {
         for body in bodies {
-            let (name, nodes) = self.parse_body(body);
+            let (name, nodes) = self.parse_body(body)?;
             self.bodies.insert(name, nodes);
         };
+        Ok(())
     }
 
     /// Parses the given body description.
-    fn parse_body(&self, body: &Yaml) -> (String, Vec<Node>) {
-        // TODO: handle missing keys and default values?
-        let name = body["name"].as_str().unwrap();
-        let num = body["num"].as_i64().unwrap_or(1); // should be positive
+    fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>), Error> {
+        let name = self.get_string(body, "name")?;
+        let num = self.get_int_or(body, "num", 1)?;
+
+        if num < 1 {
+            return Err(InvalidValue(String::from("num must be greater than 1")));
+        }
 
         let mut nodes: Vec<Node> = vec![];
         let mut mass = self.parse_mass(body);
@@ -266,7 +270,7 @@ impl Loader {
             nodes.push(node);
         }
 
-        (String::from(name), nodes)
+        Ok((String::from(name), nodes))
     }
 
     /// Returns the named mass gen if it exists, else creates one from concrete values.
