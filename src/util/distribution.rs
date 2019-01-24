@@ -161,9 +161,8 @@ impl Loader {
         let bodies = self.get_vec(doc, "bodies")?;
         self.parse_bodies(bodies)?;
 
-        // TODO: Don't forget to propagate error
-        // this should only have one element
-        let root_idx = self.parse_system(doc);
+        // TODO: Check this should only have one element
+        let root_idx = self.parse_system(doc)?;
         Ok(())
     }
 
@@ -379,39 +378,44 @@ impl Loader {
     // System Parsing ////////////////////////////////////////////////////////////
 
     /// Parses the given system description.
-    fn parse_system(&mut self, system: &Yaml) -> Vec<Index> {
+    fn parse_system(&mut self, system: &Yaml) -> Result<Vec<Index>, Error> {
         // check for reference to bodies
-        match system["name"].as_str() {
-            None => (),
-            Some(name) => {
-                let mut indices = vec![];
-                for body in self.bodies.remove(name).unwrap() {
-                    indices.push(self.tree.add_node(body));
+        match self.get_string(system, "name") {
+            Ok(name) => {
+                // look it up
+                return match self.bodies.remove(name.as_str()) {
+                    None => Err(UnknownReference(name)),
+                    Some(bodies) => {
+                        let mut indices = vec![];
+                        for body in bodies {
+                            indices.push(self.tree.add_node(body));
+                        }
+                        return Ok(indices)
+                    },
                 }
-
-                return indices
             },
+            Err(_) => {},
         }
 
         // transformation for the system
         let tvr: TVR;
         {
-            let t = self.parse_translation(system).unwrap().generate();
-            let v = self.parse_velocity(system).unwrap().generate();
-            let r = self.parse_rotation(system).unwrap().generate();
+            let t = self.parse_translation(system)?.generate();
+            let v = self.parse_velocity(system)?.generate();
+            let r = self.parse_rotation(system)?.generate();
             tvr = TVR(t, v, r);
         }
 
         // parse the subsystems
         let mut subsystems: Vec<Index> = vec![];
-        for subsystem in system["systems"].as_vec().unwrap() {
-            let mut indices = self.parse_system(subsystem);
+        for subsystem in self.get_vec(system, "systems")? {
+            let mut indices = self.parse_system(subsystem)?;
             subsystems.append(&mut indices);
         }
 
         // finally build the node & return its index
         let idx = self.tree.add_node(Node::System(tvr, subsystems));
-        vec![idx]
+        Ok(vec![idx])
     }
 }
 
