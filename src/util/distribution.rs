@@ -90,6 +90,15 @@ impl Loader {
         }
     }
 
+    /// Attempts to get the string at the given key for the given object.
+    fn get_string(&self, object: &Yaml, key: &str) -> Result<String, Error> {
+        let value = self.get_value(object, key)?;
+        match value.as_str() {
+            Some(result) => Ok(result.to_owned()),
+            None => Err(ExpectedType(key.to_owned() + ": String")),
+        }
+    }
+
     /// Attempts to extract the value for the given key.
     fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
         let value = &object[key];
