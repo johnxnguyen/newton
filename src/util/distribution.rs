@@ -94,6 +94,15 @@ impl Loader {
         }
     }
 
+    /// Attempts to get the integer number at the given key for the given object.
+    fn get_int(&self, object: &Yaml, key: &str) -> Result<i32, Error> {
+        let value = self.get_value(object, key)?;
+        match value.as_i64() {
+            Some(result) => Ok(result as i32),
+            None => Err(ExpectedType(key.to_owned() + ": Integer")),
+        }
+    }
+
     /// Attempts to get the string at the given key for the given object.
     fn get_string(&self, object: &Yaml, key: &str) -> Result<String, Error> {
         let value = self.get_value(object, key)?;
