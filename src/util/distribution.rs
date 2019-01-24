@@ -73,6 +73,7 @@ impl Loader {
         YamlLoader::load_from_str(&contents).unwrap()
     }
 
+    // TODO: These all need testing.
     /// Attempts to get the vector at the given key for the given object.
     fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>, Error> {
         let value = self.get_value(object, key)?;
@@ -457,6 +458,8 @@ mod tests {
     use util::gens::Generator;
     use util::gens::MassGen;
 
+    use super::Error::*;
+
     fn yaml(raw: &str) -> Yaml {
         match YamlLoader::load_from_str(raw) {
             Ok(_) => {
@@ -505,10 +508,21 @@ mod tests {
         assert!(result.generate().value() < 0.3);
     }
 
+    // TODO: Test more ways to get invalid yaml
     #[test]
-    #[should_panic]
     fn loader_parse_mass_gen_invalid() {
-        // malformed description
+        // given
+        let sut = Loader::new();
+        let input = "
+        name: La Massa
+        type: mass
+        min: 1
+        max: two";
+
+        // when
+        let result = sut.parse_mass_gen(&yaml(input)).err().unwrap();
+        // then
+        assert_eq!(ExpectedType(String::from("min: Real")), result);
     }
 
     #[test]
