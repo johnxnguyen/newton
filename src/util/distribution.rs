@@ -68,6 +68,7 @@ impl Loader {
         }
     }
 
+    // TODO: error handling here
     fn docs(path: &str) -> Vec<Yaml> {
         let mut file = File::open(path).unwrap();
         let mut contents = String::new();
@@ -114,18 +115,21 @@ impl Loader {
 
     // need to be able to check if accessing a key produces a bad value.
     // then need to check if casting to type fails.
-    pub fn load(&mut self, path: &str) {
+    pub fn load(&mut self, path: &str) -> Result<(), Error> {
+        // TODO: propagate errors here
         let docs = Loader::docs(path);
         let doc = &docs[0];
 
-        let gens = doc["gens"].as_vec().unwrap();
-        self.parse_gens(gens);
+        let gens = self.get_vec(doc, "gens")?;
+        self.parse_gens(gens)?;
 
-        let bodies = doc["bodies"].as_vec().unwrap();
-        self.parse_bodies(bodies);
+        let bodies = self.get_vec(doc, "bodies")?;
+        self.parse_bodies(bodies)?;
 
+        // TODO: Don't forget to propagate error
         // this should only have one element
         let root_idx = self.parse_system(doc);
+        Ok(())
     }
 
     // Gen Parsing ///////////////////////////////////////////////////////////
