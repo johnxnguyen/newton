@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::fs::File;
 use std::io::Read;
 
@@ -9,12 +10,8 @@ use geometry::types::Point;
 use geometry::types::Vector;
 use geometry::util::Transformation;
 use physics::types::Mass;
+use util::distribution::Error::*;
 use util::gens::*;
-use std::fmt;
-use util::distribution::Error::MissingKey;
-use util::distribution::Error::ExpectedType;
-use util::distribution::Error::UnknownReference;
-use util::distribution::Error::InvalidValue;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -271,6 +268,9 @@ impl Loader {
 
         Ok((String::from(name), nodes))
     }
+
+    // TODO: Refactor duplicate logic
+    // TODO: Could check for key existence?
 
     /// Returns the named mass gen if it exists, else creates one from concrete values.
     fn parse_mass(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Mass>>, Error> {
