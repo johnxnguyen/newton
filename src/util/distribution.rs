@@ -469,21 +469,21 @@ mod tests {
     use yaml_rust::Yaml;
     use yaml_rust::YamlLoader;
 
-    use util::distribution::Loader;
-    use util::gens::Generator;
-    use util::gens::MassGen;
-
-    use super::Error::*;
-    use physics::types::Mass;
     use geometry::types::Point;
-    use util::gens::TranslationGen;
     use geometry::types::Vector;
-    use util::gens::VelocityGen;
-    use util::gens::RotationGen;
+    use physics::types::Mass;
+    use util::distribution::Loader;
     use util::distribution::Node;
-    use util::distribution::TVR;
     use util::distribution::Node::Body;
     use util::distribution::Node::System;
+    use util::distribution::TVR;
+    use util::gens::Generator;
+    use util::gens::MassGen;
+    use util::gens::RotationGen;
+    use util::gens::TranslationGen;
+    use util::gens::VelocityGen;
+
+    use super::Error::*;
 
     fn yaml(raw: &str) -> Yaml {
         match YamlLoader::load_from_str(raw) {
