@@ -23,6 +23,7 @@ pub trait Generator {
 //
 // A simple generator that generates a single output.
 
+#[derive(Debug)]
 pub struct Repeater<T> {
     value: T,
 }

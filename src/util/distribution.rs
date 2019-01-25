@@ -460,6 +460,12 @@ mod tests {
     use util::gens::MassGen;
 
     use super::Error::*;
+    use physics::types::Mass;
+    use geometry::types::Point;
+    use util::gens::TranslationGen;
+    use geometry::types::Vector;
+    use util::gens::VelocityGen;
+    use util::gens::RotationGen;
 
     fn yaml(raw: &str) -> Yaml {
         match YamlLoader::load_from_str(raw) {
@@ -475,7 +481,7 @@ mod tests {
         let mut docs = YamlLoader::load_from_str(raw).unwrap();
         docs.remove(0)
     }
-    
+
     // GET VALUES ////////////////////////////////////////////////////////////
 
     #[test]
@@ -791,37 +797,222 @@ mod tests {
 
     // Property Parsing //////////////////////////////////////////////////////
 
-    // parse mass concrete value
+    #[test]
+    fn loader_parse_mass_concrete_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("m: 1.0");
 
-    // parse mass missing value
+        // when
+        let mut result = sut.parse_mass(&object).unwrap();
 
-    // parse mass referring to gen
+        // then
+        assert_eq!(1.0, result.generate().value());
+    }
 
-    // parse mass unknown reference
+    #[test]
+    fn loader_parse_mass_missing_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("foo: bar");
 
-    // parse translation concrete value
+        // when
+        let mut result = sut.parse_mass(&object).err().unwrap();
 
-    // parse translation default
+        // then
+        assert_eq!(MissingKey(String::from("m")), result);
+    }
 
-    // parse translation reference
+    #[test]
+    fn loader_parse_mass_gen_reference() {
+        // given
+        let mut sut = Loader::new();
+        sut.mass_gens.insert(String::from("massa"), MassGen::new(6.0, 6.3));
+        let object = yaml("m: massa");
 
-    // parse translation unknown reference
+        // when
+        let mut result = sut.parse_mass(&object).unwrap();
 
-    // parse velocity concrete value
+        // then
+        let mass = result.generate().value();
+        assert!(mass >= 6.0 && mass <= 6.3);
+    }
 
-    // parse velocity default value
+    #[test]
+    fn loader_parse_mass_unknown_reference() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("m: massa");
 
-    // parse velocity reference
+        // when
+        let result = sut.parse_mass(&object).err().unwrap();
 
-    // parse velocity unknown reference
+        // then
+        assert_eq!(UnknownReference(String::from("massa")), result);
+    }
 
-    // parse rotation concrete
+    #[test]
+    fn loader_parse_translation_concrete_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("t: {x: 1.2, y: 3.4}");
 
-    // parse rotation default
+        // when
+        let mut result = sut.parse_translation(&object).unwrap();
 
-    // parse rotation reference
+        // then
+        assert_eq!(Point::new(1.2, 3.4), result.generate());
+    }
 
-    // parse rotation unknown reference
+    #[test]
+    fn loader_parse_translation_default_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("m: 0.2");
+
+        // when
+        let mut result = sut.parse_translation(&object).unwrap();
+
+        // then
+        assert_eq!(Point::zero(), result.generate());
+    }
+
+    #[test]
+    fn loader_parse_translation_gen_reference() {
+        // given
+        let mut sut = Loader::new();
+        let gen = TranslationGen::new(1.0, 1.0, 2.0, 2.0);
+        sut.translation_gens.insert(String::from("trans"), gen);
+        let object = yaml("t: trans");
+
+        // when
+        let mut result = sut.parse_translation(&object).unwrap();
+
+        // then
+        assert_eq!(Point::new(1.0, 2.0), result.generate());
+    }
+
+    #[test]
+    fn loader_parse_translation_unknown_reference() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("t: trans");
+
+        // when
+        let result = sut.parse_translation(&object).err().unwrap();
+
+        // then
+        assert_eq!(UnknownReference(String::from("trans")), result);
+    }
+
+    #[test]
+    fn loader_parse_velocity_concrete_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("v: {dx: 1.2, dy: 3.4}");
+
+        // when
+        let mut result = sut.parse_velocity(&object).unwrap();
+
+        // then
+        assert_eq!(Vector::new(1.2, 3.4), result.generate());
+    }
+
+    #[test]
+    fn loader_parse_velocity_default_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("m: 0.2");
+
+        // when
+        let mut result = sut.parse_velocity(&object).unwrap();
+
+        // then
+        assert_eq!(Vector::zero(), result.generate());
+    }
+
+    #[test]
+    fn loader_parse_velocity_gen_reference() {
+        // given
+        let mut sut = Loader::new();
+        let gen = VelocityGen::new(1.0, 1.0, 2.0, 2.0);
+        sut.velocity_gens.insert(String::from("vel"), gen);
+        let object = yaml("v: vel");
+
+        // when
+        let mut result = sut.parse_velocity(&object).unwrap();
+
+        // then
+        assert_eq!(Vector::new(1.0, 2.0), result.generate());
+    }
+
+    #[test]
+    fn loader_parse_velocity_unknown_reference() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("v: vel");
+
+        // when
+        let result = sut.parse_velocity(&object).err().unwrap();
+
+        // then
+        assert_eq!(UnknownReference(String::from("vel")), result);
+    }
+
+    #[test]
+    fn loader_parse_rotation_concrete_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("r: 123.4");
+
+        // when
+        let mut result = sut.parse_rotation(&object).unwrap();
+
+        // then
+        assert_eq!(123.4, result.generate());
+    }
+
+    #[test]
+    fn loader_parse_rotation_default_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("m: 0.2");
+
+        // when
+        let mut result = sut.parse_rotation(&object).unwrap();
+
+        // then
+        assert_eq!(0.0, result.generate());
+    }
+
+    #[test]
+    fn loader_parse_rotation_gen_reference() {
+        // given
+        let mut sut = Loader::new();
+        let gen = RotationGen::new_radians(1.0, 2.0);
+        sut.rotation_gens.insert(String::from("rot"), gen);
+        let object = yaml("r: rot");
+
+        // when
+        let mut result = sut.parse_rotation(&object).unwrap();
+
+        // then
+        let rotation = result.generate();
+        assert!(rotation >= 1.0 && rotation <= 2.0);
+    }
+
+    #[test]
+    fn loader_parse_rotation_unknown_reference() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("r: rot");
+
+        // when
+        let result = sut.parse_rotation(&object).err().unwrap();
+
+        // then
+        assert_eq!(UnknownReference(String::from("rot")), result);
+    }
 
     // Body Parsing //////////////////////////////////////////////////////////
 
