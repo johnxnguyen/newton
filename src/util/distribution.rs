@@ -72,7 +72,7 @@ impl Loader {
         file.read_to_string(&mut contents).unwrap();
         YamlLoader::load_from_str(&contents).unwrap()
     }
-    
+
     /// Attempts to extract the value for the given key.
     fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
         let value = &object[key];
@@ -637,18 +637,76 @@ mod tests {
         assert_eq!(Err(ExpectedType(String::from("nums: Array"))), result);
     }
 
-//    #[test]
-//    fn loader_parse_gens() {
-//        // yaml of gens
-//        // check number of entries, then check entries exist for names.
-//        unimplemented!();
-//    }
+    // Gen Parsing ///////////////////////////////////////////////////////////
 
-//    #[test]
-//    #[should_panic]
-//    fn loader_parse_gens_unknown_type() {
-//        // give unknown type
-//    }
+    #[test]
+    fn loader_parse_gens() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        gens:
+          -
+            name: m
+            type: mass
+            min: 0.1
+            max: 0.3
+          -
+            name: t
+            type: translation
+            x: {min: -10.0, max: 10.0}
+            y: {min: -10.0, max: 10.0}
+          -
+            name: v
+            type: velocity
+            dx: {min: -10.0, max: 10.0}
+            dy: {min: -10.0, max: 10.0}
+          -
+            name: r
+            type: rotation
+            min: 0.1
+            max: 0.3";
+
+        let object = yaml(input);
+        let gens = sut.get_vec(&object, "gens").unwrap();
+
+        // when
+        let result = sut.parse_gens(gens).unwrap();
+
+        // then
+        assert_eq!(1, sut.mass_gens.len());
+        assert!(sut.mass_gens.get("m").is_some());
+
+        assert_eq!(1, sut.translation_gens.len());
+        assert!(sut.translation_gens.get("t").is_some());
+
+        assert_eq!(1, sut.velocity_gens.len());
+        assert!(sut.velocity_gens.get("v").is_some());
+
+        assert_eq!(1, sut.rotation_gens.len());
+        assert!(sut.rotation_gens.get("r").is_some());
+    }
+
+    #[test]
+    fn loader_parse_gens_invalid_value() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        gens:
+          -
+            name: m
+            type: unexpected
+            min: 0.1
+            max: 0.3";
+
+        let object = yaml(input);
+        let gens = sut.get_vec(&object, "gens").unwrap();
+
+        // when
+        let result = sut.parse_gens(gens);
+
+        // then
+        assert_eq!(Err(InvalidValue(String::from("unexpected"))), result);
+    }
 
     #[test]
     fn loader_parse_mass_gen() {
@@ -666,23 +724,6 @@ mod tests {
         // then
         assert!(result.generate().value() > 0.1);
         assert!(result.generate().value() < 0.3);
-    }
-
-    // TODO: Test more ways to get invalid yaml
-    #[test]
-    fn loader_parse_mass_gen_invalid() {
-        // given
-        let sut = Loader::new();
-        let input = "
-        name: La Massa
-        type: mass
-        min: 1
-        max: two";
-
-        // when
-        let result = sut.parse_mass_gen(&yaml(input)).err().unwrap();
-        // then
-        assert_eq!(ExpectedType(String::from("min: Real")), result);
     }
 
     #[test]
@@ -706,12 +747,6 @@ mod tests {
         assert!(point.y <= 20.0);
     }
 
-//    #[test]
-//    #[should_panic]
-//    fn loader_parse_translation_gen_invalid() {
-//        // malformed description
-//    }
-
     #[test]
     fn loader_parse_velocity_gen() {
         // given
@@ -733,12 +768,6 @@ mod tests {
         assert!(velocity.dy <= 10.0);
     }
 
-//    #[test]
-//    #[should_panic]
-//    fn loader_parse_velocity_gen_invalid() {
-//        // malformed description
-//    }
-
     #[test]
     fn loader_parse_rotation_gen() {
         // given
@@ -758,9 +787,4 @@ mod tests {
         assert!(rotation <= PI);
     }
 
-//    #[test]
-//    #[should_panic]
-//    fn loader_parse_rotation_gen_invalid() {
-//        // malformed description
-//    }
 }
