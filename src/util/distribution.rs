@@ -231,43 +231,7 @@ impl Loader {
         Ok(RotationGen::new_degrees(min, max))
     }
 
-    // Body Parsing //////////////////////////////////////////////////////////
-
-    /// Parses each body description in the given list and stores them in
-    /// the bodies hash map of self.
-    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<(), Error> {
-        for body in bodies {
-            let (name, nodes) = self.parse_body(body)?;
-            self.bodies.insert(name, nodes);
-        };
-        Ok(())
-    }
-
-    /// Parses the given body description.
-    fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>), Error> {
-        let name = self.get_string(body, "name")?;
-        let num = self.get_int_or(body, "num", 1)?;
-
-        if num < 1 {
-            return Err(InvalidValue(String::from("num must be greater than 1")));
-        }
-
-        let mut nodes: Vec<Node> = vec![];
-        let mut mass = self.parse_mass(body)?;
-        let mut trans = self.parse_translation(body)?;
-        let mut vel = self.parse_velocity(body)?;
-        let mut rot = self.parse_rotation(body)?;
-
-        let mut nodes: Vec<Node> = Vec::new();
-
-        for _ in 1..=num {
-            let tvr = TVR(trans.generate(), vel.generate(), rot.generate());
-            let node = Node::Body(tvr, mass.generate());
-            nodes.push(node);
-        }
-
-        Ok((String::from(name), nodes))
-    }
+    // Property Parsing //////////////////////////////////////////////////////
 
     // TODO: Refactor duplicate logic
     // TODO: Could check for key existence?
@@ -373,6 +337,44 @@ impl Loader {
         // get concrete values
         let rotation = self.get_real_or(object, "r", 0.0)?;
         Ok(Box::new(Repeater::new(rotation)))
+    }
+
+    // Body Parsing //////////////////////////////////////////////////////////
+
+    /// Parses each body description in the given list and stores them in
+    /// the bodies hash map of self.
+    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<(), Error> {
+        for body in bodies {
+            let (name, nodes) = self.parse_body(body)?;
+            self.bodies.insert(name, nodes);
+        };
+        Ok(())
+    }
+
+    /// Parses the given body description.
+    fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>), Error> {
+        let name = self.get_string(body, "name")?;
+        let num = self.get_int_or(body, "num", 1)?;
+
+        if num < 1 {
+            return Err(InvalidValue(String::from("num must be greater than 1")));
+        }
+
+        let mut nodes: Vec<Node> = vec![];
+        let mut mass = self.parse_mass(body)?;
+        let mut trans = self.parse_translation(body)?;
+        let mut vel = self.parse_velocity(body)?;
+        let mut rot = self.parse_rotation(body)?;
+
+        let mut nodes: Vec<Node> = Vec::new();
+
+        for _ in 1..=num {
+            let tvr = TVR(trans.generate(), vel.generate(), rot.generate());
+            let node = Node::Body(tvr, mass.generate());
+            nodes.push(node);
+        }
+
+        Ok((String::from(name), nodes))
     }
 
     // System Parsing ////////////////////////////////////////////////////////////
@@ -787,4 +789,8 @@ mod tests {
         assert!(rotation <= PI);
     }
 
+    // Property Parsing //////////////////////////////////////////////////////
+    
+
+    // Body Parsing //////////////////////////////////////////////////////////
 }
