@@ -475,7 +475,7 @@ mod tests {
         let mut docs = YamlLoader::load_from_str(raw).unwrap();
         docs.remove(0)
     }
-
+    
     // GET VALUES ////////////////////////////////////////////////////////////
 
     #[test]
@@ -790,7 +790,46 @@ mod tests {
     }
 
     // Property Parsing //////////////////////////////////////////////////////
-    
+
+    // parse mass concrete value
+
+    // parse mass missing value
+
+    // parse mass referring to gen
+
+    // parse mass unknown reference
+
+    // parse translation concrete value
+
+    // parse translation default
+
+    // parse translation reference
+
+    // parse translation unknown reference
+
+    // parse velocity concrete value
+
+    // parse velocity default value
+
+    // parse velocity reference
+
+    // parse velocity unknown reference
+
+    // parse rotation concrete
+
+    // parse rotation default
+
+    // parse rotation reference
+
+    // parse rotation unknown reference
 
     // Body Parsing //////////////////////////////////////////////////////////
+
+    // parse bodies
+
+    // parse body
+
+    // System Parsing ////////////////////////////////////////////////////////
+
+    // parse system
 }
