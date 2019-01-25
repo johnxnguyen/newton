@@ -411,8 +411,8 @@ impl Loader {
         // parse the subsystems
         let mut subsystems: Vec<Index> = vec![];
         for subsystem in self.get_vec(system, "systems")? {
-            let mut indices = self.parse_system(subsystem)?;
-            subsystems.append(&mut indices);
+                let mut indices = self.parse_system(subsystem)?;
+                subsystems.append(&mut indices);
         }
 
         // finally build the node & return its index
@@ -427,6 +427,12 @@ type Index = u32;
 
 #[derive(Clone, PartialEq, Debug)]
 struct TVR(Point, Vector, f32);
+
+impl Default for TVR {
+    fn default() -> Self {
+        TVR(Point::zero(), Vector::zero(), 0.0)
+    }
+}
 
 #[derive(Clone, PartialEq, Debug)]
 enum Node {
@@ -473,6 +479,7 @@ mod tests {
     use util::distribution::Node;
     use util::distribution::TVR;
     use util::distribution::Node::Body;
+    use util::distribution::Node::System;
 
     fn yaml(raw: &str) -> Yaml {
         match YamlLoader::load_from_str(raw) {
@@ -1112,17 +1119,94 @@ mod tests {
         assert_eq!(2, sut.bodies.len());
 
         let earths = sut.bodies.remove("earth").unwrap();
-        let expected = Body(TVR(Point::zero(), Vector::zero(), 0.0), Mass::new(10.0));
+        let expected = Body(TVR::default(), Mass::new(10.0));
         assert_eq!(1, earths.len());
         assert_eq!(expected, earths[0]);
 
         let moons = sut.bodies.remove("moon").unwrap();
-        let expected = Body(TVR(Point::zero(), Vector::zero(), 0.0), Mass::new(1.0));
+        let expected = Body(TVR::default(), Mass::new(1.0));
         assert_eq!(1, moons.len());
         assert_eq!(expected, moons[0]);
     }
 
     // System Parsing ////////////////////////////////////////////////////////
 
-    // parse system
+    #[test]
+    fn loader_parse_system_body_reference() {
+        // given
+        let mut sut = Loader::new();
+        let sun = Body(TVR::default(), Mass::new(100.0));
+        sut.bodies.insert(String::from("sun"), vec![sun.clone()]);
+
+        let object = yaml("name: sun");
+
+        // when
+        let root = sut.parse_system(&object).unwrap();
+
+        // then
+        // root node
+        assert_eq!(1, root.len());
+        // is only node, so first index
+        assert_eq!(0, root[0]);
+        // only one node in the tree
+        assert_eq!(1, sut.tree.nodes.len());
+        // this node is the sun
+        assert_eq!(sun, sut.tree.nodes[0]);
+    }
+
+    #[test]
+    fn loader_parse_system_body_unknown_reference() {
+        // given
+        let mut sut = Loader::new();
+        let object = yaml("name: sun");
+
+        // when
+        let result = sut.parse_system(&object).err().unwrap();
+
+        // then
+        assert_eq!(UnknownReference(String::from("sun")), result);
+    }
+
+    #[test]
+    fn loader_parse_system_with_subsystems() {
+        // given
+        let mut sut = Loader::new();
+        let sun = Body(TVR::default(), Mass::new(100.0));
+        let earth = Body(TVR::default(), Mass::new(10.0));
+        let moon = Body(TVR::default(), Mass::new(1.0));
+        sut.bodies.insert(String::from("sun"), vec![sun.clone()]);
+        sut.bodies.insert(String::from("earth"), vec![earth.clone()]);
+        sut.bodies.insert(String::from("moon"), vec![moon.clone()]);
+
+        let input = "
+        systems:
+          - name: sun
+          - systems:
+            - name: earth
+            - name: moon
+        ";
+
+        let object = yaml(input);
+
+        // when
+        let root = sut.parse_system(&object).unwrap();
+
+        // then
+        // 5 nodes in total: 3 for sun, earth, moon. 1 for earth system. 1 for solar system
+        assert_eq!(5, sut.tree.nodes.len());
+        // root node returned
+        assert_eq!(1, root.len());
+        // root is last node added, so index is 4
+        assert_eq!(4, root[0]);
+        // sun added first
+        assert_eq!(sun, sut.tree.nodes[0]);
+        // then earth
+        assert_eq!(earth, sut.tree.nodes[1]);
+        // then moon
+        assert_eq!(moon, sut.tree.nodes[2]);
+        // then earth system
+        assert_eq!(System(TVR::default(), vec![1, 2]), sut.tree.nodes[3]);
+        // then solar system (root)
+        assert_eq!(System(TVR::default(), vec![0, 3]), sut.tree.nodes[4]);
+    }
 }
