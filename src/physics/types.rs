@@ -14,7 +14,7 @@ use super::force::{Attractor, Gravity};
 //
 // Simple wrapper type that can only hold a positive floating point value.
 
-#[derive(Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct Mass(f32);
 
 impl fmt::Display for Mass {

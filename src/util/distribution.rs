@@ -341,16 +341,6 @@ impl Loader {
 
     // Body Parsing //////////////////////////////////////////////////////////
 
-    /// Parses each body description in the given list and stores them in
-    /// the bodies hash map of self.
-    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<(), Error> {
-        for body in bodies {
-            let (name, nodes) = self.parse_body(body)?;
-            self.bodies.insert(name, nodes);
-        };
-        Ok(())
-    }
-
     /// Parses the given body description.
     fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>), Error> {
         let name = self.get_string(body, "name")?;
@@ -375,6 +365,16 @@ impl Loader {
         }
 
         Ok((String::from(name), nodes))
+    }
+
+    /// Parses each body description in the given list and stores them in
+    /// the bodies hash map of self.
+    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<(), Error> {
+        for body in bodies {
+            let (name, nodes) = self.parse_body(body)?;
+            self.bodies.insert(name, nodes);
+        };
+        Ok(())
     }
 
     // System Parsing ////////////////////////////////////////////////////////////
@@ -424,13 +424,17 @@ impl Loader {
 //////////////////////////////////////////////////////////////////////////////
 
 type Index = u32;
+
+#[derive(Clone, PartialEq, Debug)]
 struct TVR(Point, Vector, f32);
 
+#[derive(Clone, PartialEq, Debug)]
 enum Node {
     System(TVR, Vec<Index>),
     Body(TVR, Mass),
 }
 
+#[derive(Debug)]
 struct DistributionTree {
     nodes: Vec<Node>
 }
@@ -466,6 +470,9 @@ mod tests {
     use geometry::types::Vector;
     use util::gens::VelocityGen;
     use util::gens::RotationGen;
+    use util::distribution::Node;
+    use util::distribution::TVR;
+    use util::distribution::Node::Body;
 
     fn yaml(raw: &str) -> Yaml {
         match YamlLoader::load_from_str(raw) {
@@ -1016,9 +1023,104 @@ mod tests {
 
     // Body Parsing //////////////////////////////////////////////////////////
 
-    // parse bodies
-
     // parse body
+    #[test]
+    fn loader_parse_body() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        name: earth
+        m: 10.0";
+
+        let object = yaml(input);
+
+        // when
+        let result = sut.parse_body(&object).unwrap();
+
+        // then
+        assert_eq!(String::from("earth"), result.0);
+        assert_eq!(1, result.1.len());
+
+        let expected = Body(TVR(Point::zero(), Vector::zero(), 0.0), Mass::new(10.0));
+        let actual = result.1[0].clone();
+        assert_eq!(expected, actual);
+    }
+
+    #[test]
+    fn loader_parse_body_num() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        name: earth
+        num: 3
+        m: 10.0";
+
+        let object = yaml(input);
+
+        // when
+        let result = sut.parse_body(&object).unwrap();
+
+        // then
+        assert_eq!(String::from("earth"), result.0);
+        assert_eq!(3, result.1.len());
+
+        let expected = Body(TVR(Point::zero(), Vector::zero(), 0.0), Mass::new(10.0));
+        assert_eq!(expected, result.1[0].clone());
+        assert_eq!(expected, result.1[1].clone());
+        assert_eq!(expected, result.1[2].clone());
+    }
+
+    #[test]
+    fn loader_parse_body_invalid_num() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        name: earth
+        num: -4
+        m: 10.0";
+
+        let object = yaml(input);
+
+        // when
+        let result = sut.parse_body(&object).err().unwrap();
+
+        // then
+        assert_eq!(InvalidValue(String::from("num must be greater than 1")), result);
+    }
+
+    #[test]
+    fn loader_parse_bodies() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        bodies:
+          -
+            name: earth
+            m: 10.0
+          -
+            name: moon
+            m: 1.0";
+
+        let object = yaml(input);
+        let bodies = sut.get_vec(&object, "bodies").unwrap();
+
+        // when
+        let result = sut.parse_bodies(bodies);
+
+        // then
+        assert_eq!(Ok(()), result);
+        assert_eq!(2, sut.bodies.len());
+
+        let earths = sut.bodies.remove("earth").unwrap();
+        let expected = Body(TVR(Point::zero(), Vector::zero(), 0.0), Mass::new(10.0));
+        assert_eq!(1, earths.len());
+        assert_eq!(expected, earths[0]);
+
+        let moons = sut.bodies.remove("moon").unwrap();
+        let expected = Body(TVR(Point::zero(), Vector::zero(), 0.0), Mass::new(1.0));
+        assert_eq!(1, moons.len());
+        assert_eq!(expected, moons[0]);
+    }
 
     // System Parsing ////////////////////////////////////////////////////////
 
