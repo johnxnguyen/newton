@@ -1061,10 +1061,7 @@ mod tests {
     fn loader_parse_body_num() {
         // given
         let mut sut = Loader::new();
-        let input = "
-        name: earth
-        num: 3
-        m: 10.0";
+        let input = "{name: earth, num: 3, m: 10.0}";
 
         let object = yaml(input);
 
@@ -1085,10 +1082,7 @@ mod tests {
     fn loader_parse_body_invalid_num() {
         // given
         let mut sut = Loader::new();
-        let input = "
-        name: earth
-        num: -4
-        m: 10.0";
+        let input = "{name: earth, num: -4, m: 10.0}";
 
         let object = yaml(input);
 
@@ -1104,13 +1098,7 @@ mod tests {
         // given
         let mut sut = Loader::new();
         let input = "
-        bodies:
-          -
-            name: earth
-            m: 10.0
-          -
-            name: moon
-            m: 1.0";
+        bodies: [{name: earth, m: 10.0}, {name: moon, m: 1.0}]";
 
         let object = yaml(input);
         let bodies = sut.get_vec(&object, "bodies").unwrap();
