@@ -74,6 +74,17 @@ impl Loader {
     }
 
     // TODO: These all need testing.
+
+    /// Attempts to extract the value for the given key.
+    fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
+        let value = &object[key];
+        if value.is_badvalue() {
+            Err(MissingKey(String::from(key)))
+        } else {
+            Ok(value)
+        }
+    }
+
     /// Attempts to get the vector at the given key for the given object.
     fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>, Error> {
         let value = self.get_value(object, key)?;
@@ -133,16 +144,6 @@ impl Loader {
         match value.as_str() {
             Some(result) => Ok(result.to_owned()),
             None => Err(ExpectedType(key.to_owned() + ": String")),
-        }
-    }
-
-    /// Attempts to extract the value for the given key.
-    fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
-        let value = &object[key];
-        if value.is_badvalue() {
-            Err(MissingKey(String::from(key)))
-        } else {
-            Ok(value)
         }
     }
 
@@ -476,6 +477,71 @@ mod tests {
     }
 
     // TODO: Should test panic cases too. And defaults!
+
+    #[test]
+    fn loader_get_value() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("key: value");
+
+        // when
+        let result = sut.get_value(&object, "key");
+
+        // then
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn loader_get_value_missing_key() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("bar: value");
+
+        // when
+        let result = sut.get_value(&object, "foo");
+
+        // then
+        assert_eq!(Err(MissingKey(String::from("foo"))), result);
+    }
+
+    #[test]
+    fn loader_get_int() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("num: 42");
+
+        // when
+        let result = sut.get_int(&object, "num").unwrap();
+
+        // then
+        assert_eq!(42, result);
+    }
+
+    #[test]
+    fn loader_get_int_invalid_type() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("num: 42.3");
+
+        // when
+        let result = sut.get_int(&object, "num");
+
+        // then
+        assert_eq!(Err(ExpectedType(String::from("num: Integer"))), result);
+    }
+
+    #[test]
+    fn loader_get_real_or() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("foo: 2.17");
+
+        // when
+        let result = sut.get_real_or(&object, "bar", 3.14).unwrap();
+
+        // then
+        assert_eq!(3.14, result);
+    }
 
     #[test]
     fn loader_parse_gens() {
