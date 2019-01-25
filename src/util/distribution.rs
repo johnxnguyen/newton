@@ -65,14 +65,6 @@ impl Loader {
         }
     }
 
-    // TODO: error handling here
-    fn docs(path: &str) -> Vec<Yaml> {
-        let mut file = File::open(path).unwrap();
-        let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
-        YamlLoader::load_from_str(&contents).unwrap()
-    }
-
     /// Attempts to extract the value for the given key.
     fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
         let value = &object[key];
@@ -145,15 +137,27 @@ impl Loader {
         }
     }
 
-    // need to be able to check if accessing a key produces a bad value.
-    // then need to check if casting to type fails.
-    pub fn load(&mut self, path: &str) -> Result<(), Error> {
-        // TODO: propagate errors here
-        let docs = Loader::docs(path);
+    pub fn load_path(&mut self, path: &str) -> Result<(), Error> {
+        // TODO: error handling
+        let mut file = File::open(path).unwrap();
+        let mut contents = String::new();
+        file.read_to_string(&mut contents).unwrap();
+        self.load(contents)
+    }
+
+    pub fn load(&mut self, config: String) -> Result<(), Error> {
+        // TODO: error handling
+        let docs = YamlLoader::load_from_str(&config).unwrap();
         let doc = &docs[0];
 
-        let gens = self.get_vec(doc, "gens")?;
-        self.parse_gens(gens)?;
+        // parse gens if defined
+        match self.get_vec(doc, "gens") {
+            Ok(gens) => self.parse_gens(gens)?,
+            Err(error) => match error {
+                Error::MissingKey(_) => (),
+                _ => return Err(error),
+            },
+        };
 
         let bodies = self.get_vec(doc, "bodies")?;
         self.parse_bodies(bodies)?;
@@ -1209,4 +1213,155 @@ mod tests {
         // then solar system (root)
         assert_eq!(System(TVR::default(), vec![0, 3]), sut.tree.nodes[4]);
     }
+
+    // Load //////////////////////////////////////////////////////////////////
+
+    #[test]
+    fn loader_load() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        gens:
+          -
+            name: p_mass
+            type: mass
+            min: 0.1
+            max: 0.1
+          -
+            name: p_trans
+            type: translation
+            x: {min: 2.0, max: 2.0}
+            y: {min: 3.0, max: 3.0}
+          -
+            name: p_vel
+            type: velocity
+            dx: {min: 4.0, max: 4.0}
+            dy: {min: 5.0, max: 5.0}
+          -
+            name: p_rot
+            type: rotation
+            min: 0.0
+            max: 0.0
+
+        bodies:
+          -
+            name: sun
+            m: 100.0
+          -
+            name: planets
+            num: 7
+
+            m: p_mass
+            t: p_trans
+            v: p_vel
+            r: p_rot
+          -
+            name: earth
+            m: 20.0
+          -
+            name: moon
+            m: 3.0
+            t: {x: 10.0, y: 0.0}
+            v: {dx: 0.0, dy: 2.0}
+
+        systems:
+          - name: sun
+          - name: planets
+          - # earth system
+            t: p_trans
+            v: p_vel
+            r: p_rot
+            systems:
+              - name: earth
+              - name: moon
+        ";
+
+        // when
+        let result = sut.load(String::from(input));
+
+        // then
+        assert_eq!(Ok(()), result);
+
+        // these are the generated values
+        let tvr = TVR(Point::new(2.0, 3.0), Vector::new(4.0, 5.0), 0.0);
+
+        // there should be 10 body nodes & 2 system nodes
+        assert_eq!(12, sut.tree.nodes.len());
+
+        // first is the sun
+        let sun = Body(TVR::default(), Mass::from(100.0));
+        assert_eq!(sun, sut.tree.nodes[0]);
+
+        // then 7 planets
+        let planet = Body(tvr.clone(), Mass::from(0.1));
+        assert_eq!(planet, sut.tree.nodes[1]);
+        assert_eq!(planet, sut.tree.nodes[2]);
+        assert_eq!(planet, sut.tree.nodes[3]);
+        assert_eq!(planet, sut.tree.nodes[4]);
+        assert_eq!(planet, sut.tree.nodes[5]);
+        assert_eq!(planet, sut.tree.nodes[6]);
+        assert_eq!(planet, sut.tree.nodes[7]);
+
+        // next is earth
+        let earth = Body(TVR::default(), Mass::from(20.0));
+        assert_eq!(earth, sut.tree.nodes[8]);
+
+        // then moon
+        let moon_tvr = TVR(Point::new(10.0, 0.0), Vector::new(0.0, 2.0), 0.0);
+        let earth = Body(moon_tvr, Mass::from(3.0));
+        assert_eq!(earth, sut.tree.nodes[9]);
+
+        // then earth system
+        let earth_system = System(tvr.clone(), vec![8, 9]);
+        assert_eq!(earth_system, sut.tree.nodes[10]);
+
+        // lastly solar system (root)
+        let solar_system = System(TVR::default(), vec![0, 1, 2, 3, 4, 5, 6, 7, 10]);
+        assert_eq!(solar_system, sut.tree.nodes[11]);
+    }
+
+    #[test]
+    fn loader_load_no_gens() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        bodies: [{name: sun, m: 100.0}]
+        systems: [{name: sun}]";
+
+        // when
+        let result = sut.load(String::from(input));
+
+        // then
+        assert_eq!(Ok(()), result);
+    }
+
+    #[test]
+    fn loader_load_no_bodies() {
+        // given
+        let mut sut = Loader::new();
+        let input = "systems: [{name: sun}]";
+
+        // when
+        let result = sut.load(String::from(input)).err().unwrap();
+
+        // then
+        assert_eq!(MissingKey(String::from("bodies")), result);
+    }
+
+    #[test]
+    fn loader_load_no_systems() {
+        // given
+        let mut sut = Loader::new();
+        let input = "bodies: [{name: sun, m: 100.0}]";
+
+        // when
+        let result = sut.load(String::from(input)).err().unwrap();
+
+        // then
+        assert_eq!(MissingKey(String::from("systems")), result);
+    }
+
+    // TODO: load invalid yaml
+
+    // TODO: load no file at path
 }

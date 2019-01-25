@@ -6,7 +6,7 @@ use newton::util::distribution::Loader;
 
 fn main() {
     let mut loader = Loader::new();
-    loader.load("config.yaml");
+    loader.load_path("config.yaml");
 //    let mut env = Environment::new();
 //    let distributor = Distributor {
 //        num_bodies: 5000,
