@@ -72,9 +72,7 @@ impl Loader {
         file.read_to_string(&mut contents).unwrap();
         YamlLoader::load_from_str(&contents).unwrap()
     }
-
-    // TODO: These all need testing.
-
+    
     /// Attempts to extract the value for the given key.
     fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
         let value = &object[key];
@@ -82,37 +80,6 @@ impl Loader {
             Err(MissingKey(String::from(key)))
         } else {
             Ok(value)
-        }
-    }
-
-    /// Attempts to get the vector at the given key for the given object.
-    fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>, Error> {
-        let value = self.get_value(object, key)?;
-        match value.as_vec() {
-            Some(result) => Ok(result),
-            None => Err(ExpectedType(key.to_owned() + ": Array")),
-        }
-    }
-
-    /// Attempts to get the real number at the given key for the given object.
-    fn get_real(&self, object: &Yaml, key: &str) -> Result<f32, Error> {
-        let value = self.get_value(object, key)?;
-        match value.as_f64() {
-            Some(result) => Ok(result as f32),
-            None => Err(ExpectedType(key.to_owned() + ": Real")),
-        }
-    }
-
-    /// Returns either the real number at the given key for the given object, or the
-    /// default value provide if they key is not found.
-    fn get_real_or(&self, object: &Yaml, key: &str, default: f32) -> Result<f32, Error> {
-        let value = match self.get_value(object, key) {
-            Ok(value) => value,
-            Err(_) => return Ok(default),
-        };
-        match value.as_f64() {
-            Some(result) => Ok(result as f32),
-            None => Err(ExpectedType(key.to_owned() + ": Real")),
         }
     }
 
@@ -138,12 +105,43 @@ impl Loader {
         }
     }
 
+    /// Attempts to get the real number at the given key for the given object.
+    fn get_real(&self, object: &Yaml, key: &str) -> Result<f32, Error> {
+        let value = self.get_value(object, key)?;
+        match value.as_f64() {
+            Some(result) => Ok(result as f32),
+            None => Err(ExpectedType(key.to_owned() + ": Real")),
+        }
+    }
+
+    /// Returns either the real number at the given key for the given object, or the
+    /// default value provide if they key is not found.
+    fn get_real_or(&self, object: &Yaml, key: &str, default: f32) -> Result<f32, Error> {
+        let value = match self.get_value(object, key) {
+            Ok(value) => value,
+            Err(_) => return Ok(default),
+        };
+        match value.as_f64() {
+            Some(result) => Ok(result as f32),
+            None => Err(ExpectedType(key.to_owned() + ": Real")),
+        }
+    }
+
     /// Attempts to get the string at the given key for the given object.
     fn get_string(&self, object: &Yaml, key: &str) -> Result<String, Error> {
         let value = self.get_value(object, key)?;
         match value.as_str() {
             Some(result) => Ok(result.to_owned()),
             None => Err(ExpectedType(key.to_owned() + ": String")),
+        }
+    }
+
+    /// Attempts to get the vector at the given key for the given object.
+    fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>, Error> {
+        let value = self.get_value(object, key)?;
+        match value.as_vec() {
+            Some(result) => Ok(result),
+            None => Err(ExpectedType(key.to_owned() + ": Array")),
         }
     }
 
@@ -476,7 +474,7 @@ mod tests {
         docs.remove(0)
     }
 
-    // TODO: Should test panic cases too. And defaults!
+    // GET VALUES ////////////////////////////////////////////////////////////
 
     #[test]
     fn loader_get_value() {
@@ -531,6 +529,45 @@ mod tests {
     }
 
     #[test]
+    fn loader_get_int_or() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("foo: 23");
+
+        // when
+        let result = sut.get_int_or(&object, "bar", 42).unwrap();
+
+        // then
+        assert_eq!(42, result);
+    }
+
+    #[test]
+    fn loader_get_real() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("num: 3.14");
+
+        // when
+        let result = sut.get_real(&object, "num").unwrap();
+
+        // then
+        assert_eq!(3.14, result);
+    }
+
+    #[test]
+    fn loader_get_real_invalid_type() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("num: 42");
+
+        // when
+        let result = sut.get_real(&object, "num");
+
+        // then
+        assert_eq!(Err(ExpectedType(String::from("num: Real"))), result);
+    }
+
+    #[test]
     fn loader_get_real_or() {
         // given
         let sut = Loader::new();
@@ -544,17 +581,74 @@ mod tests {
     }
 
     #[test]
-    fn loader_parse_gens() {
-        // yaml of gens
-        // check number of entries, then check entries exist for names.
-        unimplemented!();
+    fn loader_get_string() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("name: bob");
+
+        // when
+        let result = sut.get_string(&object, "name").unwrap();
+
+        // then
+        assert_eq!(String::from("bob"), result);
     }
 
     #[test]
-    #[should_panic]
-    fn loader_parse_gens_unknown_type() {
-        // give unknown type
+    fn loader_get_string_invalid_type() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("name: 42");
+
+        // when
+        let result = sut.get_string(&object, "name");
+
+        // then
+        assert_eq!(Err(ExpectedType(String::from("name: String"))), result);
     }
+
+    #[test]
+    fn loader_get_vec() {
+        // given
+        let sut = Loader::new();
+        let input = "
+        nums:
+          - 1
+          - 2";
+
+        let object = yaml(input);
+
+        // when
+        let result = sut.get_vec(&object, "nums").unwrap();
+
+        // then
+        assert_eq!(2, result.len());
+    }
+
+    #[test]
+    fn loader_get_vec_invalid_type() {
+        // given
+        let sut = Loader::new();
+        let object = yaml("nums: 42");
+
+        // when
+        let result = sut.get_vec(&object, "nums");
+
+        // then
+        assert_eq!(Err(ExpectedType(String::from("nums: Array"))), result);
+    }
+
+//    #[test]
+//    fn loader_parse_gens() {
+//        // yaml of gens
+//        // check number of entries, then check entries exist for names.
+//        unimplemented!();
+//    }
+
+//    #[test]
+//    #[should_panic]
+//    fn loader_parse_gens_unknown_type() {
+//        // give unknown type
+//    }
 
     #[test]
     fn loader_parse_mass_gen() {
@@ -612,11 +706,11 @@ mod tests {
         assert!(point.y <= 20.0);
     }
 
-    #[test]
-    #[should_panic]
-    fn loader_parse_translation_gen_invalid() {
-        // malformed description
-    }
+//    #[test]
+//    #[should_panic]
+//    fn loader_parse_translation_gen_invalid() {
+//        // malformed description
+//    }
 
     #[test]
     fn loader_parse_velocity_gen() {
@@ -639,11 +733,11 @@ mod tests {
         assert!(velocity.dy <= 10.0);
     }
 
-    #[test]
-    #[should_panic]
-    fn loader_parse_velocity_gen_invalid() {
-        // malformed description
-    }
+//    #[test]
+//    #[should_panic]
+//    fn loader_parse_velocity_gen_invalid() {
+//        // malformed description
+//    }
 
     #[test]
     fn loader_parse_rotation_gen() {
@@ -664,9 +758,9 @@ mod tests {
         assert!(rotation <= PI);
     }
 
-    #[test]
-    #[should_panic]
-    fn loader_parse_rotation_gen_invalid() {
-        // malformed description
-    }
+//    #[test]
+//    #[should_panic]
+//    fn loader_parse_rotation_gen_invalid() {
+//        // malformed description
+//    }
 }
