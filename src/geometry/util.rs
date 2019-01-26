@@ -13,9 +13,15 @@ pub struct Transformation(Vector, Vector);
 
 impl<'a> Mul<Vector> for &'a Transformation {
     type Output = Vector;
-
     fn mul(self, rhs: Vector) -> Self::Output {
         &self.0 * rhs.dx + &self.1 * rhs.dy
+    }
+}
+
+impl<'a> Mul<Point> for &'a Transformation {
+    type Output = Point;
+    fn mul(self, rhs: Point) -> Self::Output {
+        Point::from(&self.0 * rhs.x + &self.1 * rhs.y)
     }
 }
 
