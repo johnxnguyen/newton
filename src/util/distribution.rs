@@ -340,7 +340,7 @@ impl Loader {
 
         // get concrete values
         let rotation = self.get_real_or(object, "r", 0.0)?;
-        Ok(Box::new(Repeater::new(rotation)))
+        Ok(Box::new(Repeater::new(rotation.to_radians())))
     }
 
     // Body Parsing //////////////////////////////////////////////////////////
@@ -981,13 +981,13 @@ mod tests {
     fn loader_parse_rotation_concrete_value() {
         // given
         let sut = Loader::new();
-        let object = yaml("r: 123.4");
+        let object = yaml("r: 180.0");
 
         // when
         let mut result = sut.parse_rotation(&object).unwrap();
 
         // then
-        assert_eq!(123.4, result.generate());
+        assert_eq!(PI, result.generate());
     }
 
     #[test]
