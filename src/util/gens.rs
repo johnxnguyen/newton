@@ -136,13 +136,7 @@ impl RotationGen {
     }
 
     pub fn new_degrees(min: f32, max: f32) -> RotationGen {
-        let low = RotationGen::radians(min);
-        let high = RotationGen::radians(max);
-        RotationGen::new_radians(low, high)
-    }
-
-    fn radians(degrees: f32) -> f32 {
-        degrees * PI / 180.0
+        RotationGen::new_radians(min.to_radians(), max.to_radians())
     }
 
     fn normalize(mut min: f32, mut max: f32) -> (f32, f32) {
@@ -307,16 +301,7 @@ mod tests {
         assert!(within_range(sut.generate()));
         assert!(within_range(sut.generate()));
     }
-
-    #[test]
-    fn rotation_gen_radians() {
-        assert_eq!(0.0, RotationGen::radians(0.0));
-        assert_eq!(0.5 * PI, RotationGen::radians(90.0));
-        assert_eq!(PI, RotationGen::radians(180.0));
-        assert_eq!(1.5 * PI, RotationGen::radians(270.0));
-        assert_eq!(2.0 * PI, RotationGen::radians(360.0));
-    }
-
+    
     #[test]
     fn rotation_gen_normalizes() {
         // given
