@@ -301,7 +301,7 @@ mod tests {
         assert!(within_range(sut.generate()));
         assert!(within_range(sut.generate()));
     }
-    
+
     #[test]
     fn rotation_gen_normalizes() {
         // given

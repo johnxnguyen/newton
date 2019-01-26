@@ -6,20 +6,13 @@ use newton::util::distribution::Loader;
 
 fn main() {
     let mut loader = Loader::new();
-    loader.load_path("config.yaml");
-//    let mut env = Environment::new();
-//    let distributor = Distributor {
-//        num_bodies: 5000,
-//        min_dist: 200.0,
-//        max_dist: 250.0,
-//        dy: 10.0
-//    };
-//
-//    env.bodies = distributor.distribution();
-//
-//    let upper = 500;
-//    for x in 1..=upper {
-//        println!("frame: {}/{}", x, upper);
-//        env.update();
-//    }
+    loader.load_path("Radial5000.yaml");
+    let mut env = Environment::new();
+    env.bodies = loader.bodies();
+
+    let upper = 5;
+    for x in 1..=upper {
+        println!("frame: {}/{}", x, upper);
+        env.update();
+    }
 }

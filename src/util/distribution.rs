@@ -12,6 +12,9 @@ use geometry::util::Transformation;
 use physics::types::Mass;
 use util::distribution::Error::*;
 use util::gens::*;
+use physics::types::Body;
+use std::alloc::System;
+use std::slice::Iter;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -63,6 +66,11 @@ impl Loader {
             bodies: HashMap::new(),
             tree: DistributionTree::new(),
         }
+    }
+
+    // TODO: Make a better way to access bodies
+    pub fn bodies(&mut self) -> Vec<Body> {
+        self.tree.bodies()
     }
 
     /// Attempts to extract the value for the given key.
@@ -427,7 +435,7 @@ impl Loader {
 
 //////////////////////////////////////////////////////////////////////////////
 
-type Index = u32;
+type Index = usize;
 
 #[derive(Clone, PartialEq, Debug)]
 struct TVR(Point, Vector, f32);
@@ -456,7 +464,60 @@ impl DistributionTree {
 
     fn add_node(&mut self, node: Node) -> Index {
         self.nodes.push(node);
-        (self.nodes.len() - 1) as u32
+        self.nodes.len() - 1
+    }
+
+    fn bodies(&mut self) -> Vec<Body> {
+        let root_idx = vec![self.nodes.len() - 1];
+        let mut stack: Vec<Iter<Index>> = vec![];
+        let mut data: Vec<TVR> = vec![];
+        let mut bodies: Vec<Body> = vec![];
+
+        stack.push(root_idx.iter());
+        data.push(TVR::default());
+
+        let merge = |prev: &TVR, curr: &TVR| -> TVR {
+            // merge rotation
+            let rotation = prev.2 + curr.2;
+            // then rotate current t & v
+            let transform = Transformation::rotation(rotation);
+            let (position, velocity) = (&transform * curr.0.clone(), &transform * curr.1.clone());
+            // then merge t & v
+            let (position, velocity) = (prev.0.clone() + position, prev.1.clone() + velocity);
+            TVR(position, velocity, rotation)
+        };
+
+        // there are potentially systems to inspect
+        while let Some(mut systems) = stack.pop() {
+            // there is a system to inspect
+            if let Some(next) = systems.next() {
+                match &self.nodes[*next] {
+                    // it's a body
+                    Node::Body(curr_tvr, mass) => {
+                        let prev_tvr = data.pop().unwrap();
+                        let new_tvr = merge(&prev_tvr, curr_tvr);
+
+                        bodies.push(Body::new(mass.value(), new_tvr.0, new_tvr.1));
+
+                        data.push(prev_tvr);
+                        stack.push(systems);
+                    },
+                    // it's a system
+                    Node::System(curr_tvr, subsystems) => {
+                        let prev_tvr = data.pop().unwrap();
+                        let new_tvr = merge(&prev_tvr, curr_tvr);
+
+                        data.push(prev_tvr);
+                        data.push(new_tvr);
+
+                        stack.push(systems);
+                        stack.push(subsystems.iter());
+                    },
+                };
+            };
+        };
+
+        bodies
     }
 }
 
@@ -1352,4 +1413,49 @@ mod tests {
     // TODO: load invalid yaml
 
     // TODO: load no file at path
+
+    // DistributionTree //////////////////////////////////////////////////////
+
+    #[test]
+    fn distribution_tree_bodies() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        bodies:
+          -
+            name: sun
+            m: 100.0
+          -
+            name: earth
+            m: 20.0
+          -
+            name: moon
+            m: 3.0
+            t: {x: 10.0, y: 0.0}
+            v: {dx: 0.0, dy: 2.0}
+            r: 90.0
+
+        systems:
+          - name: sun
+          - # earth system
+            t: {x: 100.0, y: 0.0}
+            v: {dx: 0.0, dy: 3.0}
+            r: 90.0
+            systems:
+              - name: earth
+              - name: moon
+        ";
+
+        // when
+        let result = sut.load(String::from(input));
+
+        // then
+        assert_eq!(Ok(()), result);
+
+        let result = sut.tree.bodies();
+        assert_eq!(3, result.len());
+        for body in result {
+            println!("{}", body);
+        }
+    }
 }
