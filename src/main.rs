@@ -6,9 +6,9 @@ use newton::util::distribution::Loader;
 
 fn main() {
     let mut loader = Loader::new();
-    loader.load_path("Radial5000.yaml");
+    let bodies = loader.load_path("Radial5000.yaml").unwrap();
     let mut env = Environment::new();
-    env.bodies = loader.bodies();
+    env.bodies = bodies;
 
     let upper = 5;
     for x in 1..=upper {

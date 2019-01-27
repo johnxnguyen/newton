@@ -43,14 +43,14 @@ impl Loader {
         Loader::default()
     }
 
-    pub fn load_path(&mut self, path: &str) -> Result<()> {
+    pub fn load_path(&mut self, path: &str) -> Result<Vec<Body>> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
         self.load(contents)
     }
 
-    pub fn load(&mut self, config: String) -> Result<()> {
+    pub fn load(&mut self, config: String) -> Result<Vec<Body>> {
         let docs = YamlLoader::load_from_str(&config)?;
         let doc = &docs[0];
 
@@ -66,14 +66,8 @@ impl Loader {
         let bodies = self.get_vec(doc, "bodies")?;
         self.parse_bodies(bodies)?;
 
-        // TODO: Check this should only have one element
-        let root_idx = self.parse_system(doc)?;
-        Ok(())
-    }
-
-    // TODO: Make a better way to access bodies
-    pub fn bodies(&mut self) -> Vec<Body> {
-        self.tree.bodies()
+        self.parse_system(doc)?;
+        Ok(self.tree.bodies())
     }
 
     // Accessors /////////////////////////////////////////////////////////////
@@ -1343,7 +1337,7 @@ mod tests {
         let result = sut.load(String::from(input));
 
         // then
-        assert_eq!(Ok(()), result);
+        assert!(result.is_ok());
 
         // these are the generated values
         let tvr = TVR(Point::new(2.0, 3.0), Vector::new(4.0, 5.0), 0.0);
@@ -1384,6 +1378,51 @@ mod tests {
     }
 
     #[test]
+    fn loader_load_bodies() {
+        // given
+        let mut sut = Loader::new();
+        let input = "
+        bodies:
+          - {name: sun, m: 100.0}
+          - {name: earth, m: 10.0}
+          - {name: moon, m: 1.0, t: {x: 0.0, y: 10.0}, v: {dx: 2.0, dy: 0.0}}
+
+        systems:
+          - {name: sun}
+          -
+            t: {x: 100.0, y: 0.0}
+            v: {dx: 0.0, dy: 5.0}
+            systems:
+              - name: earth
+              - name: moon
+        ";
+
+        // when
+        let result = sut.load(String::from(input)).unwrap();
+
+        // then
+        assert_eq!(3, result.len());
+
+        // first is the sun
+        let sun = &result[0];
+        assert_eq!(100.0, sun.mass.value());
+        assert_eq!(Point::zero(), sun.position);
+        assert_eq!(Vector::zero(), sun.velocity);
+
+        // then the earth
+        let earth = &result[1];
+        assert_eq!(10.0, earth.mass.value());
+        assert_eq!(Point::new(100.0, 0.0), earth.position);
+        assert_eq!(Vector::new(0.0, 5.0), earth.velocity);
+
+        // finally the moon
+        let moon = &result[2];
+        assert_eq!(1.0, moon.mass.value());
+        assert_eq!(Point::new(100.0, 10.0), moon.position);
+        assert_eq!(Vector::new(2.0, 5.0), moon.velocity);
+    }
+
+    #[test]
     fn loader_load_no_gens() {
         // given
         let mut sut = Loader::new();
@@ -1395,7 +1434,7 @@ mod tests {
         let result = sut.load(String::from(input));
 
         // then
-        assert_eq!(Ok(()), result);
+        assert!(result.is_ok());
     }
 
     #[test]
@@ -1447,50 +1486,5 @@ mod tests {
 
         // then
         assert_eq!(IOError, result);
-    }
-
-    // DistributionTree //////////////////////////////////////////////////////
-
-    #[test]
-    fn distribution_tree_bodies() {
-        // given
-        let mut sut = Loader::new();
-        let input = "
-        bodies:
-          -
-            name: sun
-            m: 100.0
-          -
-            name: earth
-            m: 20.0
-          -
-            name: moon
-            m: 3.0
-            t: {x: 10.0, y: 0.0}
-            v: {dx: 0.0, dy: 2.0}
-            r: 90.0
-
-        systems:
-          - name: sun
-          - # earth system
-            t: {x: 100.0, y: 0.0}
-            v: {dx: 0.0, dy: 3.0}
-            r: 90.0
-            systems:
-              - name: earth
-              - name: moon
-        ";
-
-        // when
-        let result = sut.load(String::from(input));
-
-        // then
-        assert_eq!(Ok(()), result);
-
-        let result = sut.tree.bodies();
-        assert_eq!(3, result.len());
-        for body in result {
-            println!("{}", body);
-        }
     }
 }
