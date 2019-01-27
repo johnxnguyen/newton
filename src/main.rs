@@ -6,7 +6,7 @@ use newton::util::distribution::Loader;
 
 fn main() {
     let mut loader = Loader::new();
-    let bodies = loader.load_path("Radial5000.yaml").unwrap();
+    let bodies = loader.load_from_path("Radial5000.yaml").unwrap();
     let mut env = Environment::new();
     env.bodies = bodies;
 

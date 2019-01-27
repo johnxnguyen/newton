@@ -43,7 +43,7 @@ impl Loader {
         Loader::default()
     }
 
-    pub fn load_path(&mut self, path: &str) -> Result<Vec<Body>> {
+    pub fn load_from_path(&mut self, path: &str) -> Result<Vec<Body>> {
         let mut file = File::open(path)?;
         let mut contents = String::new();
         file.read_to_string(&mut contents)?;
@@ -402,9 +402,9 @@ impl Loader {
     }
 }
 
-//////////////////////////////////////////////////////////////////////////////
-
-type Index = usize;
+// TVR ///////////////////////////////////////////////////////////////////////
+//
+// Small helper struct to contain Translation, Velocity, and Rotation data.
 
 #[derive(Clone, PartialEq, Debug)]
 struct TVR(Point, Vector, f32);
@@ -415,11 +415,24 @@ impl Default for TVR {
     }
 }
 
+// Node //////////////////////////////////////////////////////////////////////
+//
+// Each node in the tree has the three tvr properties. System nodes contain a
+//  list of the indices of subsystem nodes, whereas body nodes have a mass.
+
+type Index = usize;
+
 #[derive(Clone, PartialEq, Debug)]
 enum Node {
     System(TVR, Vec<Index>),
     Body(TVR, Mass),
 }
+
+// DistributionTree //////////////////////////////////////////////////////////
+//
+// This tree is used to relate together nodes derived from a system
+// configuration file. Once the nodes are related, one can traverse the tree
+// to create the Body objects given the various data stored at each node.
 
 #[derive(Default, Debug)]
 struct DistributionTree {
@@ -431,56 +444,50 @@ impl DistributionTree {
         DistributionTree { nodes: vec![] }
     }
 
+    /// Adds the given node to the tree and return its index.
     fn add_node(&mut self, node: Node) -> Index {
         self.nodes.push(node);
         self.nodes.len() - 1
     }
 
+    /// Traverses the tree and returns the bodies derived from it.
     fn bodies(&mut self) -> Vec<Body> {
-        let root_idx = vec![self.nodes.len() - 1];
-        let mut stack: Vec<Iter<Index>> = vec![];
-        let mut data: Vec<TVR> = vec![];
+        // start at the root node
+        let start = vec![self.nodes.len() - 1];
+        // stores the children indices and tvr data for visited nodes.
+        let mut stack: Vec<(Iter<Index>, TVR)> = vec![];
         let mut bodies: Vec<Body> = vec![];
 
-        stack.push(root_idx.iter());
-        data.push(TVR::default());
-
+        // As we descend the tree, we must accumulate the tvr data.
+        // First we accumulate rotation, so we can rotate the new position
+        // and velocity. These new values are added to the previous values,
+        // so that they are accumulated too.
         let merge = |prev: &TVR, curr: &TVR| -> TVR {
-            // merge rotation
             let rotation = prev.2 + curr.2;
-            // then rotate current t & v
             let transform = Transformation::rotation(rotation);
             let (position, velocity) = (&transform * curr.0.clone(), &transform * curr.1.clone());
-            // then merge t & v
             let (position, velocity) = (prev.0.clone() + position, prev.1.clone() + velocity);
             TVR(position, velocity, rotation)
         };
 
+        stack.push((start.iter(), TVR::default()));
+
         // there are potentially systems to inspect
-        while let Some(mut systems) = stack.pop() {
+        while let Some((mut systems, prev_tvr)) = stack.pop() {
             // there is a system to inspect
             if let Some(next) = systems.next() {
                 match &self.nodes[*next] {
                     // it's a body
                     Node::Body(curr_tvr, mass) => {
-                        let prev_tvr = data.pop().unwrap();
                         let new_tvr = merge(&prev_tvr, curr_tvr);
-
                         bodies.push(Body::new(mass.value(), new_tvr.0, new_tvr.1));
-
-                        data.push(prev_tvr);
-                        stack.push(systems);
+                        stack.push((systems, prev_tvr));
                     },
                     // it's a system
                     Node::System(curr_tvr, subsystems) => {
-                        let prev_tvr = data.pop().unwrap();
                         let new_tvr = merge(&prev_tvr, curr_tvr);
-
-                        data.push(prev_tvr);
-                        data.push(new_tvr);
-
-                        stack.push(systems);
-                        stack.push(subsystems.iter());
+                        stack.push((systems, prev_tvr));
+                        stack.push((subsystems.iter(), new_tvr));
                     },
                 };
             };
@@ -555,16 +562,6 @@ mod tests {
     use super::Error::*;
 
     fn yaml(raw: &str) -> Yaml {
-        match YamlLoader::load_from_str(raw) {
-            Ok(_) => {
-                // all good here
-            },
-            Err(_) => {
-                // oh no!
-                panic!("OH NO!")
-            },
-        }
-
         let mut docs = YamlLoader::load_from_str(raw).unwrap();
         docs.remove(0)
     }
@@ -1482,7 +1479,7 @@ mod tests {
         let mut sut = Loader::new();
 
         // when
-        let result = sut.load_path("nonexistent.yaml").err().unwrap();
+        let result = sut.load_from_path("nonexistent.yaml").err().unwrap();
 
         // then
         assert_eq!(IOError, result);
