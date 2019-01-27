@@ -861,7 +861,7 @@ mod tests {
         let object = yaml("foo: bar");
 
         // when
-        let mut result = sut.parse_mass(&object).err().unwrap();
+        let result = sut.parse_mass(&object).err().unwrap();
 
         // then
         assert_eq!(MissingKey(String::from("m")), result);
@@ -1064,7 +1064,7 @@ mod tests {
     #[test]
     fn loader_parse_body() {
         // given
-        let mut sut = Loader::new();
+        let sut = Loader::new();
         let input = "
         name: earth
         m: 10.0";
@@ -1086,7 +1086,7 @@ mod tests {
     #[test]
     fn loader_parse_body_num() {
         // given
-        let mut sut = Loader::new();
+        let sut = Loader::new();
         let input = "{name: earth, num: 3, m: 10.0}";
 
         let object = yaml(input);
@@ -1107,7 +1107,7 @@ mod tests {
     #[test]
     fn loader_parse_body_invalid_num() {
         // given
-        let mut sut = Loader::new();
+        let sut = Loader::new();
         let input = "{name: earth, num: -4, m: 10.0}";
 
         let object = yaml(input);
