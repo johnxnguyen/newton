@@ -1,22 +1,22 @@
 use std::collections::HashMap;
 use std::fmt;
 use std::fs::File;
+use std::io;
 use std::io::Read;
+use std::result;
+use std::slice::Iter;
 
+use yaml_rust::ScanError;
 use yaml_rust::Yaml;
 use yaml_rust::YamlLoader;
 
 use geometry::types::Point;
 use geometry::types::Vector;
 use geometry::util::Transformation;
+use physics::types::Body;
 use physics::types::Mass;
 use util::distribution::Error::*;
 use util::gens::*;
-use physics::types::Body;
-use std::alloc::System;
-use std::slice::Iter;
-use std::result;
-
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -44,16 +44,14 @@ impl Loader {
     }
 
     pub fn load_path(&mut self, path: &str) -> Result<()> {
-        // TODO: error handling
-        let mut file = File::open(path).unwrap();
+        let mut file = File::open(path)?;
         let mut contents = String::new();
-        file.read_to_string(&mut contents).unwrap();
+        file.read_to_string(&mut contents)?;
         self.load(contents)
     }
 
     pub fn load(&mut self, config: String) -> Result<()> {
-        // TODO: error handling
-        let docs = YamlLoader::load_from_str(&config).unwrap();
+        let docs = YamlLoader::load_from_str(&config)?;
         let doc = &docs[0];
 
         // parse gens if defined
@@ -508,6 +506,20 @@ pub enum Error {
     ExpectedType(String),
     UnknownReference(String),
     InvalidValue(String),
+    IOError,
+    InvalidYaml,
+}
+
+impl From<io::Error> for Error {
+    fn from(_: io::Error) -> Self {
+        IOError
+    }
+}
+
+impl From<ScanError> for Error {
+    fn from(_: ScanError) -> Self {
+        InvalidYaml
+    }
 }
 
 impl fmt::Display for Error {
@@ -517,6 +529,8 @@ impl fmt::Display for Error {
             ExpectedType(which) => write!(f, "Expected type {}", which),
             UnknownReference(name) => write!(f, "Unknown reference: {}", name),
             InvalidValue(which) => write!(f, "Invalid value: {}", which),
+            IOError => write!(f, "IO error: could not open/read file"),
+            InvalidYaml => write!(f, "Invalid yaml: could not parse file"),
         }
     }
 }
@@ -1410,9 +1424,30 @@ mod tests {
         assert_eq!(MissingKey(String::from("systems")), result);
     }
 
-    // TODO: load invalid yaml
+    #[test]
+    fn loader_load_invalid_yaml() {
+        // given
+        let mut sut = Loader::new();
+        let input = "num: [1, 2";
 
-    // TODO: load no file at path
+        // when
+        let result = sut.load(String::from(input)).err().unwrap();
+
+        // then
+        assert_eq!(InvalidYaml, result);
+    }
+
+    #[test]
+    fn loader_load_incorrect_path() {
+        // given
+        let mut sut = Loader::new();
+
+        // when
+        let result = sut.load_path("nonexistent.yaml").err().unwrap();
+
+        // then
+        assert_eq!(IOError, result);
+    }
 
     // DistributionTree //////////////////////////////////////////////////////
 
