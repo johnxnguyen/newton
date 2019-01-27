@@ -369,12 +369,6 @@ impl Node {
         self.body == VirtualBody::zero()
     }
 
-    /// Index of the parent node.
-    fn parent(&self) -> Option<Index> {
-        if self.id == 0 { None }
-        else { Some((self.id - 1) / 4) }
-    }
-
     /// Index of the north west child.
     fn nw(&self) -> Index {
         4 * self.id + 1
@@ -393,19 +387,6 @@ impl Node {
     /// Index of the south east child.
     fn se(&self) -> Index {
         4 * self.id + 4
-    }
-
-    /// Returns true if the given node is an ancestor.
-    fn is_ancestor(&self, node: &Node) -> bool {
-        let parent = |idx: Index| (idx - 1) / 4;
-        let mut curr = self.id;
-        // ancestor nodes always have a lower index
-        while curr > node.id {
-            let next = parent(curr);
-            if next == node.id { return true }
-            curr = next;
-        }
-        false
     }
 
     /// Moves the body into a new child node and returns it, if it exists.

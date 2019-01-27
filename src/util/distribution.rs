@@ -82,15 +82,6 @@ impl Loader {
         }
     }
 
-    /// Attempts to get the integer number at the given key for the given object.
-    fn get_int(&self, object: &Yaml, key: &str) -> Result<i32> {
-        let value = self.get_value(object, key)?;
-        match value.as_i64() {
-            Some(result) => Ok(result as i32),
-            None => Err(ExpectedType(key.to_owned() + ": Integer")),
-        }
-    }
-
     /// Returns either the integer number at the given key for the given object, or the
     /// default value provide if they key is not found.
     fn get_int_or(&self, object: &Yaml, key: &str, default: i32) -> Result<i32> {
@@ -439,10 +430,6 @@ struct DistributionTree {
 }
 
 impl DistributionTree {
-    fn new() -> DistributionTree {
-        DistributionTree { nodes: vec![] }
-    }
-
     /// Adds the given node to the tree and return its index.
     fn add_node(&mut self, node: Node) -> Index {
         self.nodes.push(node);
@@ -592,32 +579,6 @@ mod tests {
     }
 
     #[test]
-    fn loader_get_int() {
-        // given
-        let sut = Loader::new();
-        let object = yaml("num: 42");
-
-        // when
-        let result = sut.get_int(&object, "num").unwrap();
-
-        // then
-        assert_eq!(42, result);
-    }
-
-    #[test]
-    fn loader_get_int_invalid_type() {
-        // given
-        let sut = Loader::new();
-        let object = yaml("num: 42.3");
-
-        // when
-        let result = sut.get_int(&object, "num");
-
-        // then
-        assert_eq!(Err(ExpectedType(String::from("num: Integer"))), result);
-    }
-
-    #[test]
     fn loader_get_int_or() {
         // given
         let sut = Loader::new();
@@ -759,9 +720,11 @@ mod tests {
         let gens = sut.get_vec(&object, "gens").unwrap();
 
         // when
-        let result = sut.parse_gens(gens).unwrap();
+        let result = sut.parse_gens(gens);
 
         // then
+        assert!(result.is_ok());
+
         assert_eq!(1, sut.mass_gens.len());
         assert!(sut.mass_gens.get("m").is_some());
 
