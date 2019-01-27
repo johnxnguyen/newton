@@ -1,8 +1,6 @@
 use std::cmp::Eq;
 use std::fmt;
 
-use uuid::Uuid;
-
 use geometry::types::{Point, Vector};
 use geometry::types::Rect;
 use physics::barneshut::BHTree;
@@ -90,7 +88,6 @@ impl Environment {
 
 #[derive(Debug)]
 pub struct Body {
-    id: Uuid,
     pub mass: Mass,
     pub position: Point,
     pub velocity: Vector,
@@ -115,14 +112,14 @@ impl Eq for Body {}
 
 impl PartialEq for Body {
     fn eq(&self, other: &'_ Body) -> bool {
-        self.id == other.id
+        // compared referentially
+        self as *const _ == other as *const _
     }
 }
 
 impl Body {
     pub fn new(mass: f32, position: Point, velocity: Vector) -> Body {
         Body {
-            id: Uuid::new_v4(),
             mass: Mass::from(mass),
             position,
             velocity,
