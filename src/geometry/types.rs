@@ -155,6 +155,7 @@ impl Vector {
     pub fn new(dx: f32, dy: f32) -> Vector {
         Vector { dx, dy }
     }
+
     pub fn zero() -> Vector {
         Vector { dx: 0.0, dy: 0.0 }
     }
