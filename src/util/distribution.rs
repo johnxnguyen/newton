@@ -331,7 +331,6 @@ impl Loader {
             return Err(InvalidValue(String::from("num must be greater than 1")));
         }
 
-        let mut nodes: Vec<Node> = vec![];
         let mut mass = self.parse_mass(body)?;
         let mut trans = self.parse_translation(body)?;
         let mut vel = self.parse_velocity(body)?;
@@ -549,9 +548,7 @@ mod tests {
     use geometry::types::Vector;
     use physics::types::Mass;
     use util::distribution::Loader;
-    use util::distribution::Node;
-    use util::distribution::Node::Body;
-    use util::distribution::Node::System;
+    use util::distribution::Node::*;
     use util::distribution::TVR;
     use util::gens::Generator;
     use util::gens::MassGen;

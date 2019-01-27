@@ -1,7 +1,4 @@
 use geometry::types::{Point, Vector};
-use physics::types::Body;
-use rand::prelude::*;
-use std::f32::consts::PI;
 use std::ops::Mul;
 
 // Transformation ////////////////////////////////////////////////////////////
