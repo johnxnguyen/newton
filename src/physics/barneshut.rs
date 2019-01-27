@@ -278,18 +278,6 @@ impl BHTree {
         PreorderTraverser::new(self, idx)
     }
 
-    /// Returns a descriptive string of the current tree state. Only existing
-    /// nodes are printed with their id and body.
-    fn report(&self) -> String {
-        self.preorder().fold(String::new(), |acc, n| {
-            if self.is_leaf(n) {
-                let v = n.body.centered();
-                acc + &format!("#{}\t({}, {})\n", n.id, v.position.x, v.position.y)
-            } else {
-                acc + &format!("#{}\n", n.id)
-            }
-        })
-    }
 }
 
 // PreorderTraverser /////////////////////////////////////////////////////////
@@ -521,6 +509,19 @@ mod tests {
     use physics::barneshut::AncestorIterator;
 
     // helpers
+    /// Returns a descriptive string of the current tree state. Only existing
+    /// nodes are printed with their id and body.
+    fn report(tree: &BHTree) -> String {
+        tree.preorder().fold(String::new(), |acc, n| {
+            if tree.is_leaf(n) {
+                let v = n.body.centered();
+                acc + &format!("#{}\t({}, {})\n", n.id, v.position.x, v.position.y)
+            } else {
+                acc + &format!("#{}\n", n.id)
+            }
+        })
+    }
+
     fn body(mass: f32, x: f32, y: f32) -> Body {
         Body::new(mass, Point::new(x, y), Vector::zero())
     }
@@ -585,17 +586,17 @@ mod tests {
         let mut tree = BHTree::new(space);
 
         tree.add(body(2.0, 1.0, 2.0));
-        assert_eq!(tree.report(),
+        assert_eq!(report(&tree),
                    "#0\t(1, 2)\n".to_string());
 
         tree.add(body(1.0, 6.0, 8.0));
-        assert_eq!(tree.report(),
+        assert_eq!(report(&tree),
                    "#0\n\
                     #2\t(6, 8)\n\
                     #3\t(1, 2)\n".to_string());
 
         tree.add(body(4.0, 4.0, 4.0));
-        assert_eq!(tree.report(),
+        assert_eq!(report(&tree),
                    "#0\n\
                     #2\t(6, 8)\n\
                     #3\n\
@@ -603,7 +604,7 @@ mod tests {
                     #14\t(4, 4)\n".to_string());
 
         println!("\nRESULTS ---------------------------------\n");
-        println!("{}", tree.report());
+        println!("{}", report(&tree));
     }
 
     #[test]
