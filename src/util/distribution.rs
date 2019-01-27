@@ -15,137 +15,35 @@ use util::gens::*;
 use physics::types::Body;
 use std::alloc::System;
 use std::slice::Iter;
+use std::result;
+
 
 // Question: If I clone the gens, do they produce the same sequence?
 
-// should define error type for useful feedback
-
-// need to give back errors instead of unwrapping
-
-// need to provide default values
-
-// Error /////////////////////////////////////////////////////////////////////
-
-#[derive(PartialEq, Clone, Debug)]
-pub enum Error {
-    MissingKey(String),
-    ExpectedType(String),
-    UnknownReference(String),
-    InvalidValue(String),
-}
-
-impl fmt::Display for Error {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        match self {
-            MissingKey(key) => write!(f, "Missing required key: {}.", key),
-            ExpectedType(which) => write!(f, "Expected type {}", which),
-            UnknownReference(name) => write!(f, "Unknown reference: {}", name),
-            InvalidValue(which) => write!(f, "Invalid value: {}", which),
-        }
-    }
-}
-
 // Loader ////////////////////////////////////////////////////////////////////
+//
+// A Loader is responsible for parsing a system configuration file and
+// creating the Body objects described within. The input is a Yaml file that
+// defines 1) various types of property generators, 2) how to use these
+// generators to create body objects, and 3) the kinetic and spacial between
+// between of bodies as a hierarchy of systems.
 
+#[derive(Default)]
 pub struct Loader {
+    tree: DistributionTree,
+    bodies: HashMap<String, Vec<Node>>,
     mass_gens: HashMap<String, MassGen>,
     translation_gens: HashMap<String, TranslationGen>,
     velocity_gens: HashMap<String, VelocityGen>,
     rotation_gens: HashMap<String, RotationGen>,
-    bodies: HashMap<String, Vec<Node>>,
-    tree: DistributionTree,
 }
 
 impl Loader {
     pub fn new() -> Loader {
-        Loader {
-            mass_gens: HashMap::new(),
-            translation_gens: HashMap::new(),
-            velocity_gens: HashMap::new(),
-            rotation_gens: HashMap::new(),
-            bodies: HashMap::new(),
-            tree: DistributionTree::new(),
-        }
+        Loader::default()
     }
 
-    // TODO: Make a better way to access bodies
-    pub fn bodies(&mut self) -> Vec<Body> {
-        self.tree.bodies()
-    }
-
-    /// Attempts to extract the value for the given key.
-    fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml, Error> {
-        let value = &object[key];
-        if value.is_badvalue() {
-            Err(MissingKey(String::from(key)))
-        } else {
-            Ok(value)
-        }
-    }
-
-    /// Attempts to get the integer number at the given key for the given object.
-    fn get_int(&self, object: &Yaml, key: &str) -> Result<i32, Error> {
-        let value = self.get_value(object, key)?;
-        match value.as_i64() {
-            Some(result) => Ok(result as i32),
-            None => Err(ExpectedType(key.to_owned() + ": Integer")),
-        }
-    }
-
-    /// Returns either the integer number at the given key for the given object, or the
-    /// default value provide if they key is not found.
-    fn get_int_or(&self, object: &Yaml, key: &str, default: i32) -> Result<i32, Error> {
-        let value = match self.get_value(object, key) {
-            Ok(value) => value,
-            Err(_) => return Ok(default),
-        };
-        match value.as_i64() {
-            Some(result) => Ok(result as i32),
-            None => Err(ExpectedType(key.to_owned() + ": Integer")),
-        }
-    }
-
-    /// Attempts to get the real number at the given key for the given object.
-    fn get_real(&self, object: &Yaml, key: &str) -> Result<f32, Error> {
-        let value = self.get_value(object, key)?;
-        match value.as_f64() {
-            Some(result) => Ok(result as f32),
-            None => Err(ExpectedType(key.to_owned() + ": Real")),
-        }
-    }
-
-    /// Returns either the real number at the given key for the given object, or the
-    /// default value provide if they key is not found.
-    fn get_real_or(&self, object: &Yaml, key: &str, default: f32) -> Result<f32, Error> {
-        let value = match self.get_value(object, key) {
-            Ok(value) => value,
-            Err(_) => return Ok(default),
-        };
-        match value.as_f64() {
-            Some(result) => Ok(result as f32),
-            None => Err(ExpectedType(key.to_owned() + ": Real")),
-        }
-    }
-
-    /// Attempts to get the string at the given key for the given object.
-    fn get_string(&self, object: &Yaml, key: &str) -> Result<String, Error> {
-        let value = self.get_value(object, key)?;
-        match value.as_str() {
-            Some(result) => Ok(result.to_owned()),
-            None => Err(ExpectedType(key.to_owned() + ": String")),
-        }
-    }
-
-    /// Attempts to get the vector at the given key for the given object.
-    fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>, Error> {
-        let value = self.get_value(object, key)?;
-        match value.as_vec() {
-            Some(result) => Ok(result),
-            None => Err(ExpectedType(key.to_owned() + ": Array")),
-        }
-    }
-
-    pub fn load_path(&mut self, path: &str) -> Result<(), Error> {
+    pub fn load_path(&mut self, path: &str) -> Result<()> {
         // TODO: error handling
         let mut file = File::open(path).unwrap();
         let mut contents = String::new();
@@ -153,7 +51,7 @@ impl Loader {
         self.load(contents)
     }
 
-    pub fn load(&mut self, config: String) -> Result<(), Error> {
+    pub fn load(&mut self, config: String) -> Result<()> {
         // TODO: error handling
         let docs = YamlLoader::load_from_str(&config).unwrap();
         let doc = &docs[0];
@@ -175,11 +73,90 @@ impl Loader {
         Ok(())
     }
 
+    // TODO: Make a better way to access bodies
+    pub fn bodies(&mut self) -> Vec<Body> {
+        self.tree.bodies()
+    }
+
+    // Accessors /////////////////////////////////////////////////////////////
+
+    /// Attempts to extract the value for the given key.
+    fn get_value<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Yaml> {
+        let value = &object[key];
+        if value.is_badvalue() {
+            Err(MissingKey(String::from(key)))
+        } else {
+            Ok(value)
+        }
+    }
+
+    /// Attempts to get the integer number at the given key for the given object.
+    fn get_int(&self, object: &Yaml, key: &str) -> Result<i32> {
+        let value = self.get_value(object, key)?;
+        match value.as_i64() {
+            Some(result) => Ok(result as i32),
+            None => Err(ExpectedType(key.to_owned() + ": Integer")),
+        }
+    }
+
+    /// Returns either the integer number at the given key for the given object, or the
+    /// default value provide if they key is not found.
+    fn get_int_or(&self, object: &Yaml, key: &str, default: i32) -> Result<i32> {
+        let value = match self.get_value(object, key) {
+            Ok(value) => value,
+            Err(_) => return Ok(default),
+        };
+        match value.as_i64() {
+            Some(result) => Ok(result as i32),
+            None => Err(ExpectedType(key.to_owned() + ": Integer")),
+        }
+    }
+
+    /// Attempts to get the real number at the given key for the given object.
+    fn get_real(&self, object: &Yaml, key: &str) -> Result<f32> {
+        let value = self.get_value(object, key)?;
+        match value.as_f64() {
+            Some(result) => Ok(result as f32),
+            None => Err(ExpectedType(key.to_owned() + ": Real")),
+        }
+    }
+
+    /// Returns either the real number at the given key for the given object, or the
+    /// default value provide if they key is not found.
+    fn get_real_or(&self, object: &Yaml, key: &str, default: f32) -> Result<f32> {
+        let value = match self.get_value(object, key) {
+            Ok(value) => value,
+            Err(_) => return Ok(default),
+        };
+        match value.as_f64() {
+            Some(result) => Ok(result as f32),
+            None => Err(ExpectedType(key.to_owned() + ": Real")),
+        }
+    }
+
+    /// Attempts to get the string at the given key for the given object.
+    fn get_string(&self, object: &Yaml, key: &str) -> Result<String> {
+        let value = self.get_value(object, key)?;
+        match value.as_str() {
+            Some(result) => Ok(result.to_owned()),
+            None => Err(ExpectedType(key.to_owned() + ": String")),
+        }
+    }
+
+    /// Attempts to get the vector at the given key for the given object.
+    fn get_vec<'a>(&self, object: &'a Yaml, key: &str) -> Result<&'a Vec<Yaml>> {
+        let value = self.get_value(object, key)?;
+        match value.as_vec() {
+            Some(result) => Ok(result),
+            None => Err(ExpectedType(key.to_owned() + ": Array")),
+        }
+    }
+
     // Gen Parsing ///////////////////////////////////////////////////////////
 
     /// Parses each generate description in the given list and stores them
     /// in the corresponding hash map of self.
-    fn parse_gens(&mut self, gens: &Vec<Yaml>) -> Result<(), Error> {
+    fn parse_gens(&mut self, gens: &Vec<Yaml>) -> Result<()> {
         for gen in gens {
             let name = self.get_string(gen, "name")?;
             let gen_type = self.get_string(gen, "type")?;
@@ -208,14 +185,14 @@ impl Loader {
     }
 
     /// Parses the mass generator description.
-    fn parse_mass_gen(&self, gen: &Yaml) -> Result<MassGen, Error> {
+    fn parse_mass_gen(&self, gen: &Yaml) -> Result<MassGen> {
         let min = self.get_real(gen, "min")?;
         let max = self.get_real(gen, "max")?;
         Ok(MassGen::new(min, max))
     }
 
     /// Parses the translation generator description.
-    fn parse_translation_gen(&self, gen: &Yaml) -> Result<TranslationGen, Error> {
+    fn parse_translation_gen(&self, gen: &Yaml) -> Result<TranslationGen> {
         let x = self.get_value(gen, "x")?;
         let y = self.get_value(gen, "y")?;
         let x_min = self.get_real(x, "min")?;
@@ -226,7 +203,7 @@ impl Loader {
     }
 
     /// Parses the velocity generator description.
-    fn parse_velocity_gen(&self, gen: &Yaml) -> Result<VelocityGen, Error> {
+    fn parse_velocity_gen(&self, gen: &Yaml) -> Result<VelocityGen> {
         let dx = self.get_value(gen, "dx")?;
         let dy = self.get_value(gen, "dy")?;
         let dx_min = self.get_real(dx, "min")?;
@@ -237,7 +214,7 @@ impl Loader {
     }
 
     /// Parses the rotation generator description.
-    fn parse_rotation_gen(&self, gen: &Yaml) -> Result<RotationGen, Error> {
+    fn parse_rotation_gen(&self, gen: &Yaml) -> Result<RotationGen> {
         let min = self.get_real(gen, "min")?;
         let max = self.get_real(gen, "max")?;
         Ok(RotationGen::new_degrees(min, max))
@@ -249,7 +226,7 @@ impl Loader {
     // TODO: Could check for key existence?
 
     /// Returns the named mass gen if it exists, else creates one from concrete values.
-    fn parse_mass(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Mass>>, Error> {
+    fn parse_mass(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Mass>>> {
         // check for gen reference
         match self.get_string(object, "m") {
             Ok(gen_name) => {
@@ -269,7 +246,7 @@ impl Loader {
 
     /// Returns the named translation gen if it exists, else creates one from concrete values,
     /// else provides default value of (0.0, 0.0).
-    fn parse_translation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Point>>, Error> {
+    fn parse_translation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Point>>> {
         // check for gen reference
         match self.get_string(object, "t") {
             Ok(gen_name) => {
@@ -301,7 +278,7 @@ impl Loader {
 
     /// Returns the named velocity gen if it exists, else creates one from concrete values,
     /// else provides default value of (0.0, 0.0).
-    fn parse_velocity(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Vector>>, Error> {
+    fn parse_velocity(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Vector>>> {
         // check for gen reference
         match self.get_string(object, "v") {
             Ok(gen_name) => {
@@ -333,7 +310,7 @@ impl Loader {
 
     /// Returns the named rotation gen if it exists, else creates one from concrete values
     /// else provides default value of 0.0.
-    fn parse_rotation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=f32>>, Error> {
+    fn parse_rotation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=f32>>> {
         // check for gen reference
         match self.get_string(object, "r") {
             Ok(gen_name) => {
@@ -354,7 +331,7 @@ impl Loader {
     // Body Parsing //////////////////////////////////////////////////////////
 
     /// Parses the given body description.
-    fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>), Error> {
+    fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>)> {
         let name = self.get_string(body, "name")?;
         let num = self.get_int_or(body, "num", 1)?;
 
@@ -381,7 +358,7 @@ impl Loader {
 
     /// Parses each body description in the given list and stores them in
     /// the bodies hash map of self.
-    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<(), Error> {
+    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<()> {
         for body in bodies {
             let (name, nodes) = self.parse_body(body)?;
             self.bodies.insert(name, nodes);
@@ -392,7 +369,7 @@ impl Loader {
     // System Parsing ////////////////////////////////////////////////////////////
 
     /// Parses the given system description.
-    fn parse_system(&mut self, system: &Yaml) -> Result<Vec<Index>, Error> {
+    fn parse_system(&mut self, system: &Yaml) -> Result<Vec<Index>> {
         // check for reference to bodies
         match self.get_string(system, "name") {
             Ok(name) => {
@@ -452,7 +429,7 @@ enum Node {
     Body(TVR, Mass),
 }
 
-#[derive(Debug)]
+#[derive(Default, Debug)]
 struct DistributionTree {
     nodes: Vec<Node>
 }
@@ -518,6 +495,29 @@ impl DistributionTree {
         };
 
         bodies
+    }
+}
+
+// Error /////////////////////////////////////////////////////////////////////
+
+pub type Result<T> = result::Result<T, Error>;
+
+#[derive(PartialEq, Clone, Debug)]
+pub enum Error {
+    MissingKey(String),
+    ExpectedType(String),
+    UnknownReference(String),
+    InvalidValue(String),
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            MissingKey(key) => write!(f, "Missing required key: {}.", key),
+            ExpectedType(which) => write!(f, "Expected type {}", which),
+            UnknownReference(name) => write!(f, "Unknown reference: {}", name),
+            InvalidValue(which) => write!(f, "Invalid value: {}", which),
+        }
     }
 }
 
