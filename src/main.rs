@@ -1,7 +1,6 @@
 extern crate newton;
 
 use newton::physics::types::Environment;
-use newton::geometry::util::Distributor;
 use newton::util::distribution::Loader;
 
 fn main() {

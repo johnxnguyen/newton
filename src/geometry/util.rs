@@ -32,52 +32,6 @@ impl Transformation {
     }
 }
 
-// Distributor ///////////////////////////////////////////////////////////////
-//
-// A helper object to distribute bodies in space with velocity. The
-// distribution is uses parameterized randomization.
-
-pub struct Distributor {
-    pub num_bodies: u32,
-    pub min_dist: f32,
-    pub max_dist: f32,
-    pub dy: f32,
-}
-
-impl Distributor {
-    pub fn distribution(&self) -> Vec<Body> {
-        let mut result: Vec<Body> = vec![];
-        let mut angle_rand = thread_rng();
-        let mut dist_rand = thread_rng();
-
-        for _ in 0..self.num_bodies {
-            let angle = angle_rand.gen_range(0.0, 2.0 * PI);
-            let dist = dist_rand.gen_range(self.min_dist, self.max_dist);
-
-            let trans = Transformation::rotation(angle);
-            let position = &trans * Vector {
-                dx: dist,
-                dy: 0.0,
-            };
-
-            let velocity = &trans * Vector {
-                dx: 0.0,
-                dy: self.dy,
-            };
-
-            let pos = Point {
-                x: position.dx,
-                y: position.dy,
-            };
-
-            let body = Body::new(0.1, pos, velocity);
-            result.push(body);
-        }
-
-        result
-    }
-}
-
 // Tests /////////////////////////////////////////////////////////////////////
 
 #[cfg(test)]
