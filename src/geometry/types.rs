@@ -186,10 +186,8 @@ pub struct Size {
 }
 
 impl Size {
-
+    /// Creates a new rect with width = height = 2^exp.
     pub fn new(exp: u32) -> Size {
-
-        //if exp < 0 { panic!("An Exponent must be positive! "); }
         let width = u32::pow(2, exp);
         let height = width;
 
@@ -200,7 +198,6 @@ impl Size {
         let wd = self.width/2;
         Size {width: wd, height: wd}
     }
-
 }
 
 // Quadrant //////////////////////////////////////////////////////////////////
@@ -219,6 +216,7 @@ impl Quadrant {
             SE(space) => space,
         }
     }
+
     fn contains(&self, point: &Point) -> bool {
         self.space().contains(point)
     }
@@ -240,14 +238,11 @@ impl Rect {
             origin: Point::new(x,y),
             size
         }
-
     }
 
-
-
     // TODO: test
-    pub fn has_minimum_dimension(&self) -> bool {
-        self.size.width <= 1 || self.size.height <= 1
+    pub fn is_unit_rect(&self) -> bool {
+        self.size.width == 1 && self.size.height == 1
     }
 
     /// Returns the length of the hypotenuse.
@@ -270,16 +265,15 @@ impl Rect {
     /// integers. This eliminates gaps in the coverage of the quadrants.
     pub fn quadrants(&self) -> (Quadrant, Quadrant, Quadrant, Quadrant) {
 
-        assert!(!self.has_minimum_dimension(), "Cannot split rect with minimal dimension.");
+        assert!(!self.is_unit_rect(), "Cannot split rect with minimal dimension.");
 
         let (x, y) = (self.origin.x, self.origin.y);
-        let half_size = self.size.half_size();
+        let size = self.size.half_size();
 
-
-        let sw = Rect::new(x, y, half_size.clone() );
-        let se = Rect::new(x + half_size.width as f32, y, half_size.clone());
-        let nw = Rect::new(x, y + half_size.width as f32, half_size.clone());
-        let ne = Rect::new(x + half_size.width as f32, y + half_size.width as f32, half_size.clone());
+        let sw = Rect::new(x, y, size.clone() );
+        let se = Rect::new(x + size.width as f32, y, size.clone());
+        let nw = Rect::new(x, y + size.height as f32, size.clone());
+        let ne = Rect::new(x + size.width as f32, y + size.height as f32, size.clone());
         (NW(nw), NE(ne), SW(sw), SE(se))
     }
 

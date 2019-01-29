@@ -254,7 +254,7 @@ impl BHTree {
         debug_assert!(node.space.contains(&body.position));
 
         if self.is_leaf(node) {
-            if node.is_empty() || node.space.has_minimum_dimension() {
+            if node.is_empty() || node.space.is_unit_rect() {
                 Action::Insert(node.with(body))
             } else {
                 Action::Internalize(node.id, Pending(node.id, body))
