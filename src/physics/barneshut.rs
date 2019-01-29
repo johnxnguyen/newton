@@ -5,7 +5,7 @@ use std::ops::Range;
 use geometry::types::Point;
 use geometry::types::Quadrant;
 use geometry::types::Quadrant::*;
-use geometry::types::Rect;
+use geometry::types::Square;
 use geometry::types::Vector;
 
 use super::types::Body;
@@ -104,13 +104,13 @@ type Index = u32;
 
 #[derive(Debug)]
 pub struct BHTree {
-    space: Rect,
+    space: Square,
     nodes: HashMap<Index, Node>,
 }
 
 impl BHTree {
     /// Initialized tree with a root node spanning the given space.
-    pub fn new(space: Rect) -> BHTree {
+    pub fn new(space: Square) -> BHTree {
         let mut nodes: HashMap<Index, Node> = HashMap::new();
         let root = Node::new(0, space.clone(), VirtualBody::zero());
         nodes.insert(root.id, root);
@@ -348,7 +348,7 @@ impl<'a> PreorderTraverser<'a> {
 #[derive(Clone, Debug)]
 struct Node {
     pub id: Index,
-    pub space: Rect,
+    pub space: Square,
     pub body: VirtualBody,
 }
 
@@ -364,7 +364,7 @@ impl fmt::Display for Node {
 
 impl Node {
     /// Creates a new node.
-    fn new(id: Index, space: Rect, body: VirtualBody) -> Node {
+    fn new(id: Index, space: Square, body: VirtualBody) -> Node {
         Node { id, space, body }
     }
 
@@ -510,7 +510,7 @@ impl ChildIterator {
 #[cfg(test)]
 mod tests {
     use geometry::types::Point;
-    use geometry::types::Rect;
+    use geometry::types::Square;
     use geometry::types::Vector;
     use physics::barneshut::BHTree;
     use physics::barneshut::Index;
@@ -541,7 +541,7 @@ mod tests {
     ///           X   [A]  [B]  X
     ///
     fn small_tree() -> BHTree {
-        let space = Rect::new(-8.0, -8.0, 4);
+        let space = Square::new(-8.0, -8.0, 4);
 
         let mut tree = BHTree::new(space);
         tree.add(body(2.0, 6.0, 7.0));    // A
@@ -565,7 +565,7 @@ mod tests {
     ///                   [D] [E]   X   X
     ///
     fn medium_tree() -> BHTree {
-        let space = Rect::new(0.0, 0.0, 5);
+        let space = Square::new(0.0, 0.0, 5);
 
         let mut tree = BHTree::new(space);
         tree.add(body(2.0, 10.0, 25.0));    // A
@@ -581,7 +581,7 @@ mod tests {
 
     #[test]
     fn tree_adds_bodies() {
-        let space = Rect::new(-8.0, -8.0, 4);
+        let space = Square::new(-8.0, -8.0, 4);
         let mut tree = BHTree::new(space);
 
         tree.add(body(2.0, 1.0, 2.0));
@@ -611,7 +611,7 @@ mod tests {
     #[should_panic]
     fn tree_panics_if_body_out_of_bounds() {
         // given
-        let mut tree = BHTree::new(Rect::new(-8.0, -8.0, 4));
+        let mut tree = BHTree::new(Square::new(-8.0, -8.0, 4));
         let body = Body::new(1.0, Point::new(0.0, 8.1), Vector::zero());
 
         // when, then
@@ -801,7 +801,7 @@ mod tests {
     #[test]
     fn tree_virtual_bodies_does_not_include_given_body() {
         // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 2));
+        let mut sut = BHTree::new(Square::new(0.0, 0.0, 2));
         let body = body(1.0, 2.0, 2.0);
         sut.add(body.clone());
 
@@ -812,7 +812,7 @@ mod tests {
     #[test]
     fn tree_virtual_body_subtracts_given_body_from_leaf() {
         // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 1));
+        let mut sut = BHTree::new(Square::new(0.0, 0.0, 1));
 
         // two bodies within same unit
         sut.add(body(0.5, 0.5, 2.0));
@@ -829,7 +829,7 @@ mod tests {
     #[test]
     fn tree_has_maximum_depth() {
         // given
-        let mut sut = BHTree::new(Rect::new(0.0, 0.0, 1));
+        let mut sut = BHTree::new(Square::new(0.0, 0.0, 1));
 
         // when two bodies within same unit
         sut.add(body(0.5, 0.5, 2.0));

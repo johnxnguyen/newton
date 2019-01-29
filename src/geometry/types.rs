@@ -182,10 +182,10 @@ impl Vector {
 // The four quadrants of a rectangle.
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum Quadrant { NW(Rect), NE(Rect), SW(Rect), SE(Rect) }
+pub enum Quadrant { NW(Square), NE(Square), SW(Square), SE(Square) }
 
 impl Quadrant {
-    pub fn space(&self) -> &Rect {
+    pub fn space(&self) -> &Square {
         match self {
             NW(space) => space,
             NE(space) => space,
@@ -199,20 +199,20 @@ impl Quadrant {
     }
 }
 
-// Rect //////////////////////////////////////////////////////////////////////
+// Square //////////////////////////////////////////////////////////////////////
 //
 // A rectangle whose origin denotes the position of the bottom left corner.
 
 #[derive(Clone, PartialEq, Debug)]
-pub struct Rect {
+pub struct Square {
     pub origin: Point,
     pub size: u32,
 }
 
-impl Rect {
-    /// Creates a new Rect with size = 2^exponent.
-    pub fn new(x: f32, y: f32, exponent: u32) -> Rect {
-        Rect{
+impl Square {
+    /// Creates a new Square with size = 2^exponent.
+    pub fn new(x: f32, y: f32, exponent: u32) -> Square {
+        Square {
             origin: Point::new(x,y),
             size: u32::pow(2, exponent),
         }
@@ -246,10 +246,10 @@ impl Rect {
         let (x, y) = (self.origin.x, self.origin.y);
         let size = self.size >> 1;
 
-        let sw = Rect { origin: Point::new(x, y), size };
-        let se = Rect { origin: Point::new(x + size as f32, y), size };
-        let nw = Rect { origin: Point::new(x, y + size as f32), size };
-        let ne = Rect { origin: Point::new(x + size as f32, y + size as f32), size };
+        let sw = Square { origin: Point::new(x, y), size };
+        let se = Square { origin: Point::new(x + size as f32, y), size };
+        let nw = Square { origin: Point::new(x, y + size as f32), size };
+        let ne = Square { origin: Point::new(x + size as f32, y + size as f32), size };
         (NW(nw), NE(ne), SW(sw), SE(se))
     }
 
@@ -436,12 +436,12 @@ mod tests {
         assert_eq!(None, Vector::zero().normalized())
     }
 
-    // Rect //////////////////////////////////////////////////////////////////
+    // Square //////////////////////////////////////////////////////////////////
 
     #[test]
     fn rect_diameter() {
         // given
-        let sut = Rect::new(0.0, 0.0, 2);
+        let sut = Square::new(0.0, 0.0, 2);
 
         // when
         let result = sut.diameter();
@@ -453,23 +453,23 @@ mod tests {
     #[test]
     fn rect_quadrants() {
         // given
-        let sut = Rect::new(4.0, 2.0, 2);
+        let sut = Square::new(4.0, 2.0, 2);
 
         // when
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(NW(Rect::new(4.0, 4.0, 1)), nw);
-        assert_eq!(NE(Rect::new(6.0, 4.0, 1)), ne);
-        assert_eq!(SW(Rect::new(4.0, 2.0, 1)), sw);
-        assert_eq!(SE(Rect::new(6.0, 2.0, 1)), se);
+        assert_eq!(NW(Square::new(4.0, 4.0, 1)), nw);
+        assert_eq!(NE(Square::new(6.0, 4.0, 1)), ne);
+        assert_eq!(SW(Square::new(4.0, 2.0, 1)), sw);
+        assert_eq!(SE(Square::new(6.0, 2.0, 1)), se);
     }
 
     #[test]
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
     fn rect_quadrants_of_unit_rect() {
         // given
-        let sut = Rect::new(0.0, 0.0, 0);
+        let sut = Square::new(0.0, 0.0, 0);
 
         // when, then
         sut.quadrants();
@@ -478,7 +478,7 @@ mod tests {
     #[test]
     fn rect_contains_point() {
         // given
-        let sut = Rect::new(0.0, 0.0, 5);
+        let sut = Square::new(0.0, 0.0, 5);
 
         // then
         assert!(sut.contains(&Point::new(0.0, 0.0)));
@@ -493,7 +493,7 @@ mod tests {
     #[test]
     fn rect_which_quadrant() {
         // given
-        let sut = Rect::new(0.0, 0.0, 3);
+        let sut = Square::new(0.0, 0.0, 3);
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then (bottom left of each quadrant)
