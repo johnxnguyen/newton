@@ -177,29 +177,6 @@ impl Vector {
     }
 }
 
-// Size //////////////////////////////////////////////////////////////////////
-
-#[derive(Clone, PartialEq, Debug)]
-pub struct Size {
-    pub width: u32,
-    pub height: u32,
-}
-
-impl Size {
-    /// Creates a new rect with width = height = 2^exp.
-    pub fn new(exp: u32) -> Size {
-        let width = u32::pow(2, exp);
-        let height = width;
-
-        Size { width, height}
-    }
-
-    pub fn half_size(&self) -> Size {
-        let wd = self.width/2;
-        Size {width: wd, height: wd}
-    }
-}
-
 // Quadrant //////////////////////////////////////////////////////////////////
 //
 // The four quadrants of a rectangle.
@@ -229,27 +206,27 @@ impl Quadrant {
 #[derive(Clone, PartialEq, Debug)]
 pub struct Rect {
     pub origin: Point,
-    pub size: Size,
+    pub size: u32,
 }
 
 impl Rect {
-    pub fn new(x: f32, y: f32, size: Size) -> Rect {
+    /// Creates a new Rect with size = 2^exponent.
+    pub fn new(x: f32, y: f32, exponent: u32) -> Rect {
         Rect{
             origin: Point::new(x,y),
-            size
+            size: u32::pow(2, exponent),
         }
     }
 
     // TODO: test
     pub fn is_unit_rect(&self) -> bool {
-        self.size.width == 1 && self.size.height == 1
+        self.size == 1
     }
 
     /// Returns the length of the hypotenuse.
     pub fn diameter(&self) -> f32 {
-        let w_sq = (self.size.width as f32).powi(2);
-        let h_sq = (self.size.height as f32).powi(2);
-        (w_sq + h_sq).sqrt()
+        let x = (self.size as f32).powi(2);
+        (2.0 * x).sqrt()
     }
 
     /// Returns true if the given point is contained by self.
@@ -264,16 +241,15 @@ impl Rect {
     /// of the quadrants is shifted so their widths and heights remain
     /// integers. This eliminates gaps in the coverage of the quadrants.
     pub fn quadrants(&self) -> (Quadrant, Quadrant, Quadrant, Quadrant) {
-
         assert!(!self.is_unit_rect(), "Cannot split rect with minimal dimension.");
 
         let (x, y) = (self.origin.x, self.origin.y);
-        let size = self.size.half_size();
+        let size = self.size >> 1;
 
-        let sw = Rect::new(x, y, size.clone() );
-        let se = Rect::new(x + size.width as f32, y, size.clone());
-        let nw = Rect::new(x, y + size.height as f32, size.clone());
-        let ne = Rect::new(x + size.width as f32, y + size.height as f32, size.clone());
+        let sw = Rect { origin: Point::new(x, y), size };
+        let se = Rect { origin: Point::new(x + size as f32, y), size };
+        let nw = Rect { origin: Point::new(x, y + size as f32), size };
+        let ne = Rect { origin: Point::new(x + size as f32, y + size as f32), size };
         (NW(nw), NE(ne), SW(sw), SE(se))
     }
 
@@ -290,8 +266,8 @@ impl Rect {
 
     fn upper_bound(&self) -> Point {
         Point {
-            x: self.origin.x + self.size.width as f32,
-            y: self.origin.y + self.size.height as f32,
+            x: self.origin.x + self.size as f32,
+            y: self.origin.y + self.size as f32,
         }
     }
 }
@@ -465,7 +441,7 @@ mod tests {
     #[test]
     fn rect_diameter() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new(2));
+        let sut = Rect::new(0.0, 0.0, 2);
 
         // when
         let result = sut.diameter();
@@ -477,23 +453,23 @@ mod tests {
     #[test]
     fn rect_quadrants() {
         // given
-        let sut = Rect::new(4.0, 2.0, Size::new(2));
+        let sut = Rect::new(4.0, 2.0, 2);
 
         // when
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then
-        assert_eq!(NW(Rect::new(4.0, 4.0, Size::new(1))), nw);
-        assert_eq!(NE(Rect::new(6.0, 4.0, Size::new(1))), ne);
-        assert_eq!(SW(Rect::new(4.0, 2.0, Size::new(1))), sw);
-        assert_eq!(SE(Rect::new(6.0, 2.0, Size::new(1))), se);
+        assert_eq!(NW(Rect::new(4.0, 4.0, 1)), nw);
+        assert_eq!(NE(Rect::new(6.0, 4.0, 1)), ne);
+        assert_eq!(SW(Rect::new(4.0, 2.0, 1)), sw);
+        assert_eq!(SE(Rect::new(6.0, 2.0, 1)), se);
     }
 
     #[test]
     #[should_panic(expected = "Cannot split rect with minimal dimension.")]
     fn rect_quadrants_of_unit_rect() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new(0));
+        let sut = Rect::new(0.0, 0.0, 0);
 
         // when, then
         sut.quadrants();
@@ -502,7 +478,7 @@ mod tests {
     #[test]
     fn rect_contains_point() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new(5));
+        let sut = Rect::new(0.0, 0.0, 5);
 
         // then
         assert!(sut.contains(&Point::new(0.0, 0.0)));
@@ -517,7 +493,7 @@ mod tests {
     #[test]
     fn rect_which_quadrant() {
         // given
-        let sut = Rect::new(0.0, 0.0, Size::new(3));
+        let sut = Rect::new(0.0, 0.0, 3);
         let (nw, ne, sw, se) = sut.quadrants();
 
         // then (bottom left of each quadrant)
