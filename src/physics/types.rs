@@ -4,7 +4,7 @@ use std::fmt;
 use uuid::Uuid;
 
 use geometry::types::{Point, Vector};
-use geometry::types::Rect;
+use geometry::types::Square;
 use physics::barneshut::BHTree;
 use util::write::DataWriter;
 
@@ -192,7 +192,7 @@ impl BruteForceField {
 // BHField ///////////////////////////////////////////////////////////////////
 
 struct BHField {
-    space: Rect,
+    space: Square,
     force: Gravity,
     sun: Attractor,
 }
@@ -222,7 +222,7 @@ impl Field for BHField {
 impl BHField {
     pub fn new() -> BHField {
         BHField {
-            space: Rect::new(-1920.0, -1080.0, 3840, 2160),
+            space: Square::new(-1920.0, -1080.0, 20),
             force: Gravity::new(1.0, 4.0),
             sun: Attractor::new(10000.0, Point::zero(), 2.5, 4.0),
         }
