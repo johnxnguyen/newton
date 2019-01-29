@@ -11,3 +11,4 @@ authors = ["John Nguyen <johnxuannguyen@gmail.com>"]
 [dependencies]
 rand = "0.5"
 uuid = { version = "0.7", features = ["v4"] }
+yaml-rust = "0.4"

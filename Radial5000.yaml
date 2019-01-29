@@ -1,0 +1,33 @@
+gens:
+  -
+    name: p_mass
+    type: mass
+    min: 0.1
+    max: 0.1
+  -
+    name: p_trans
+    type: translation
+    x: {min: 200.0, max: 250.0}
+    y: {min: 0.0, max: 0.0}
+  -
+    name: p_vel
+    type: velocity
+    dx: {min: 0.0, max: 0.0}
+    dy: {min: 10.0, max: 10.0}
+  -
+    name: p_rot
+    type: rotation
+    min: 0.0
+    max: 360.0
+
+bodies:
+  -
+    name: stars
+    num: 5000
+    m: p_mass
+    t: p_trans
+    v: p_vel
+    r: p_rot
+
+systems:
+  - name: stars
