@@ -1,0 +1,67 @@
+gens:
+  -
+    name: p_mass
+    type: mass
+    min: 0.1
+    max: 0.3
+  -
+    name: p_trans
+    type: translation
+    x: {min: -10.0, max: 10.0}
+    y: {min: -10.0, max: 10.0}
+  -
+    name: p_vel
+    type: velocity
+    dx: {min: -10.0, max: 10.0}
+    dy: {min: -10.0, max: 10.0}
+  -
+    name: p_rot
+    type: rotation
+    min: 0.1
+    max: 0.3
+
+# Each element here is a kind of system generator. Each system has a name
+# and number of bodies. The properties can be given concrete values or
+# they can be generated using a predefined generator.
+
+#An example of a system:
+#  name: string              # Required. Uniquely identify this system.
+#  num: int                  # Optional, defaults to 1. Indicates number of bodies in this system.
+#  m: string/float           # Required. Gen name or value
+#  t: string/(float, float)  # Optional, defaults to (0.0, 0.0).
+#  v: string/(float, float)  # -----"------
+#  r: string/float           # -----"------
+
+bodies:
+  -
+    name: sun
+    m: 100.0
+  -
+    name: planets
+    num: 7
+
+    m: p_mass
+    t: p_trans
+    v: p_vel
+    r: p_rot
+  -
+    name: earth
+    m: 20.0
+  -
+    name: moon
+    m: 3.0
+    t: {x: 10.0, y: 0.0}
+    v: {dx: 0.0, dy: 2.0}
+
+
+# all property keys are available here too
+systems:
+  - name: sun
+  - name: planets
+  - # earth system
+    t: p_trans
+    v: p_vel
+    r: p_rot
+    systems:
+      - name: earth
+      - name: moon

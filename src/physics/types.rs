@@ -6,7 +6,7 @@ use uuid::Uuid;
 use geometry::types::{Point, Vector};
 use geometry::types::Rect;
 use physics::barneshut::BHTree;
-use util::DataWriter;
+use util::write::DataWriter;
 
 use super::force::{Attractor, Gravity};
 
@@ -14,7 +14,7 @@ use super::force::{Attractor, Gravity};
 //
 // Simple wrapper type that can only hold a positive floating point value.
 
-#[derive(Copy, Clone)]
+#[derive(PartialEq, Copy, Clone)]
 pub struct Mass(f32);
 
 impl fmt::Display for Mass {
