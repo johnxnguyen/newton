@@ -1,4 +1,4 @@
-extern crate newton;
+
 
 use newton::physics::types::Environment;
 use newton::util::distribution::Loader;
