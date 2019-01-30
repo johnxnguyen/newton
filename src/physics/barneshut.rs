@@ -198,9 +198,8 @@ impl BHTree {
             action = self.action(node, body);
         }
         {
-            match self.process(action) {
-                Some(pending) => self.insert(pending),
-                None => (),
+            if let Some(pending) = self.process(action) {
+                self.insert(pending)
             }
         }
     }
@@ -393,11 +392,9 @@ impl Node {
     fn child_from_self(&self) -> Node {
         // TODO: check that this is a leaf
         let body = self.body.clone();
-        let child = self.map_quadrant(body.centered().position, move |idx, q| {
+        self.map_quadrant(body.centered().position, move |idx, q| {
             Node::new(idx, q.space().clone(), body)
-        });
-
-        child
+        })
     }
 
     /// Finds quadrant containing the given point and passes it together with
@@ -439,7 +436,7 @@ impl Iterator for AncestorIterator {
     type Item = Index;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current <= 0 {
+        if self.current == 0 {
             None
         } else {
             self.current -= 1;

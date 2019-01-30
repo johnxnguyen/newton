@@ -139,7 +139,7 @@ impl Loader {
 
     /// Parses each generate description in the given list and stores them
     /// in the corresponding hash map of self.
-    fn parse_gens(&mut self, gens: &Vec<Yaml>) -> Result<()> {
+    fn parse_gens(&mut self, gens: &[Yaml]) -> Result<()> {
         for gen in gens {
             let name = self.get_string(gen, "name")?;
             let gen_type = self.get_string(gen, "type")?;
@@ -211,15 +211,12 @@ impl Loader {
     /// Returns the named mass gen if it exists, else creates one from concrete values.
     fn parse_mass(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Mass>>> {
         // check for gen reference
-        match self.get_string(object, "m") {
-            Ok(gen_name) => {
-                // look it up
-                return match self.mass_gens.get(gen_name.as_str()) {
-                    None => Err(UnknownReference(gen_name)),
-                    Some(gen) => Ok(Box::new(gen.clone())),
-                }
-            },
-            _ => (),
+        if let Ok(gen_name) = self.get_string(object, "m") {
+            // look it up
+            return match self.mass_gens.get(gen_name.as_str()) {
+                None => Err(UnknownReference(gen_name)),
+                Some(gen) => Ok(Box::new(gen.clone())),
+            }
         }
 
         // get concrete value
@@ -231,15 +228,12 @@ impl Loader {
     /// else provides default value of (0.0, 0.0).
     fn parse_translation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Point>>> {
         // check for gen reference
-        match self.get_string(object, "t") {
-            Ok(gen_name) => {
-                // look it up
-                return match self.translation_gens.get(gen_name.as_str()) {
-                    None => Err(UnknownReference(gen_name)),
-                    Some(gen) => Ok(Box::new(gen.clone())),
-                }
-            },
-            _ => (),
+        if let Ok(gen_name) = self.get_string(object, "t") {
+            // look it up
+            return match self.translation_gens.get(gen_name.as_str()) {
+                None => Err(UnknownReference(gen_name)),
+                Some(gen) => Ok(Box::new(gen.clone())),
+            }
         }
 
         // get concrete values
@@ -263,15 +257,12 @@ impl Loader {
     /// else provides default value of (0.0, 0.0).
     fn parse_velocity(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=Vector>>> {
         // check for gen reference
-        match self.get_string(object, "v") {
-            Ok(gen_name) => {
-                // look it up
-                return match self.velocity_gens.get(gen_name.as_str()) {
-                    None => Err(UnknownReference(gen_name)),
-                    Some(gen) => Ok(Box::new(gen.clone())),
-                }
-            },
-            _ => (),
+        if let Ok(gen_name) = self.get_string(object, "v") {
+            // look it up
+            return match self.velocity_gens.get(gen_name.as_str()) {
+                None => Err(UnknownReference(gen_name)),
+                Some(gen) => Ok(Box::new(gen.clone())),
+            }
         }
 
         // get concrete values
@@ -295,15 +286,12 @@ impl Loader {
     /// else provides default value of 0.0.
     fn parse_rotation(&self, object: &Yaml) -> Result<Box<dyn Generator<Output=f32>>> {
         // check for gen reference
-        match self.get_string(object, "r") {
-            Ok(gen_name) => {
-                // look it up
-                return match self.rotation_gens.get(gen_name.as_str()) {
-                    None => Err(UnknownReference(gen_name)),
-                    Some(gen) => Ok(Box::new(gen.clone())),
-                }
-            },
-            _ => (),
+        if let Ok(gen_name) = self.get_string(object, "r") {
+            // look it up
+            return match self.rotation_gens.get(gen_name.as_str()) {
+                None => Err(UnknownReference(gen_name)),
+                Some(gen) => Ok(Box::new(gen.clone())),
+            }
         }
 
         // get concrete values
@@ -335,12 +323,12 @@ impl Loader {
             nodes.push(node);
         }
 
-        Ok((String::from(name), nodes))
+        Ok((name, nodes))
     }
 
     /// Parses each body description in the given list and stores them in
     /// the bodies hash map of self.
-    fn parse_bodies(&mut self, bodies: &Vec<Yaml>) -> Result<()> {
+    fn parse_bodies(&mut self, bodies: &[Yaml]) -> Result<()> {
         for body in bodies {
             let (name, nodes) = self.parse_body(body)?;
             self.bodies.insert(name, nodes);
@@ -353,21 +341,18 @@ impl Loader {
     /// Parses the given system description.
     fn parse_system(&mut self, system: &Yaml) -> Result<Vec<Index>> {
         // check for reference to bodies
-        match self.get_string(system, "name") {
-            Ok(name) => {
-                // look it up
-                return match self.bodies.remove(name.as_str()) {
-                    None => Err(UnknownReference(name)),
-                    Some(bodies) => {
-                        let mut indices = vec![];
-                        for body in bodies {
-                            indices.push(self.tree.add_node(body));
-                        }
-                        return Ok(indices)
-                    },
-                }
-            },
-            Err(_) => {},
+        if let Ok(name) = self.get_string(system, "name") {
+            // look it up
+            return match self.bodies.remove(name.as_str()) {
+                None => Err(UnknownReference(name)),
+                Some(bodies) => {
+                    let mut indices = vec![];
+                    for body in bodies {
+                        indices.push(self.tree.add_node(body));
+                    }
+                    return Ok(indices)
+                },
+            }
         }
 
         // transformation for the system

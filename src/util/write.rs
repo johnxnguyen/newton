@@ -32,16 +32,15 @@ impl DataWriter {
     /// on a separate line.
     pub fn write(&mut self, points: Vec<Point>) {
         let path = format!("{}/frame-{}.txt", self.directory, self.counter);
-        match self.write_points(points, path) {
-            Err(e) => panic!("Error writing data. {}", e),
-            Ok(_) => (),
+        if let Err(e) = self.write_points(points, path) {
+            panic!("Error writing data. {}", e)
         }
         self.counter += 1;
     }
 
     fn write_points(&self, points: Vec<Point>, path: String) -> std::io::Result<()> {
         let mut file = fs::File::create(path)?;
-        for point in points { write!(file, "{},{}\n", point.x, point.y)?; }
+        for point in points { writeln!(file, "{},{}", point.x, point.y)?; }
         Ok(())
     }
 }

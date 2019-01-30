@@ -39,7 +39,7 @@ impl Mass {
         Mass(m)
     }
 
-    pub fn value(&self) -> f32 {
+    pub fn value(self) -> f32 {
         self.0
     }
 }
@@ -54,14 +54,20 @@ pub struct Environment {
     writer: DataWriter,
 }
 
-impl Environment {
-    pub fn new() -> Environment {
+impl Default for Environment {
+    fn default() -> Self {
         let field = BHField::new();
         Environment {
             bodies: vec![],
             fields: vec![Box::from(field)],
             writer: DataWriter::new("data"),
         }
+    }
+}
+
+impl Environment {
+    pub fn new() -> Environment {
+        Self::default()
     }
 
     pub fn update(&mut self) {
@@ -177,12 +183,18 @@ impl Field for BruteForceField {
     }
 }
 
-impl BruteForceField {
-    pub fn new() -> BruteForceField {
+impl Default for BruteForceField {
+    fn default() -> Self {
         BruteForceField {
             force: Gravity::new(1.0, 4.0),
             sun: Some(Attractor::new(10000.0, Point::zero(), 1.0, 4.0)),
         }
+    }
+}
+
+impl BruteForceField {
+    pub fn new() -> BruteForceField {
+        Self::default()
     }
 }
 

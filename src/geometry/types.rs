@@ -97,7 +97,7 @@ pub struct Vector {
 
 impl PartialEq for Vector {
     fn eq(&self, other: &'_ Vector) -> bool {
-        let e = 0.0000001;
+        let e = 0.000_000_1;
         let x = (self.dx - other.dx).abs();
         let y = (self.dy - other.dy).abs();
         x < e && y < e
