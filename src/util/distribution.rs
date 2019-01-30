@@ -10,13 +10,13 @@ use yaml_rust::ScanError;
 use yaml_rust::Yaml;
 use yaml_rust::YamlLoader;
 
-use geometry::types::Point;
-use geometry::types::Vector;
-use geometry::util::Transformation;
-use physics::types::Body;
-use physics::types::Mass;
-use util::distribution::Error::*;
-use util::gens::*;
+use crate::geometry::types::Point;
+use crate::geometry::types::Vector;
+use crate::geometry::util::Transformation;
+use crate::physics::types::Body;
+use crate::physics::types::Mass;
+use crate::util::distribution::Error::*;
+use crate::util::gens::*;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -531,17 +531,17 @@ mod tests {
     use yaml_rust::Yaml;
     use yaml_rust::YamlLoader;
 
-    use geometry::types::Point;
-    use geometry::types::Vector;
-    use physics::types::Mass;
-    use util::distribution::Loader;
-    use util::distribution::Node::*;
-    use util::distribution::TVR;
-    use util::gens::Generator;
-    use util::gens::MassGen;
-    use util::gens::RotationGen;
-    use util::gens::TranslationGen;
-    use util::gens::VelocityGen;
+    use crate::geometry::types::Point;
+    use crate::geometry::types::Vector;
+    use crate::physics::types::Mass;
+    use crate::util::distribution::Loader;
+    use crate::util::distribution::Node::*;
+    use crate::util::distribution::TVR;
+    use crate::util::gens::Generator;
+    use crate::util::gens::MassGen;
+    use crate::util::gens::RotationGen;
+    use crate::util::gens::TranslationGen;
+    use crate::util::gens::VelocityGen;
 
     use super::Error::*;
 

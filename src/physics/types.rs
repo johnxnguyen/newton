@@ -1,10 +1,10 @@
 use std::cmp::Eq;
 use std::fmt;
 
-use geometry::types::{Point, Vector};
-use geometry::types::Square;
-use physics::barneshut::BHTree;
-use util::write::DataWriter;
+use crate::geometry::types::{Point, Vector};
+use crate::geometry::types::Square;
+use crate::physics::barneshut::BHTree;
+use crate::util::write::DataWriter;
 
 use super::force::{Attractor, Gravity};
 
@@ -230,7 +230,7 @@ impl BHField {
 
 #[cfg(test)]
 mod tests {
-    use geometry::types::{Point, Vector};
+    use crate::geometry::types::{Point, Vector};
 
     use super::*;
 

@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::fmt;
 use std::ops::Range;
 
-use geometry::types::Point;
-use geometry::types::Quadrant;
-use geometry::types::Quadrant::*;
-use geometry::types::Square;
-use geometry::types::Vector;
+use crate::geometry::types::Point;
+use crate::geometry::types::Quadrant;
+use crate::geometry::types::Quadrant::*;
+use crate::geometry::types::Square;
+use crate::geometry::types::Vector;
 
 use super::types::Body;
 
@@ -478,16 +478,16 @@ impl ChildIterator {
 
 #[cfg(test)]
 mod tests {
-    use geometry::types::Point;
-    use geometry::types::Square;
-    use geometry::types::Vector;
-    use physics::barneshut::BHTree;
-    use physics::barneshut::Index;
-    use physics::types::Body;
-    use physics::barneshut::VirtualBody;
-    use physics::barneshut::Pending;
-    use physics::barneshut::ChildIterator;
-    use physics::barneshut::AncestorIterator;
+    use crate::geometry::types::Point;
+    use crate::geometry::types::Square;
+    use crate::geometry::types::Vector;
+    use crate::physics::barneshut::BHTree;
+    use crate::physics::barneshut::Index;
+    use crate::physics::types::Body;
+    use crate::physics::barneshut::VirtualBody;
+    use crate::physics::barneshut::Pending;
+    use crate::physics::barneshut::ChildIterator;
+    use crate::physics::barneshut::AncestorIterator;
 
     // helpers
     /// Returns a descriptive string of the current tree state. Only existing

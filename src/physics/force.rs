@@ -1,5 +1,5 @@
 use super::types::Body;
-use geometry::types::{Point, Vector};
+use crate::geometry::types::{Point, Vector};
 
 // Gravity ///////////////////////////////////////////////////////////////////
 //
@@ -63,7 +63,7 @@ impl Attractor {
 #[cfg(test)]
 mod tests {
     use super::{Gravity, Attractor, Body};
-    use geometry::types::{Point, Vector};
+    use crate::geometry::types::{Point, Vector};
 
     #[test]
     #[should_panic(expected = "The minimum gravitational distance must be greater than 0.")]
