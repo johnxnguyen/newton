@@ -193,6 +193,9 @@ impl Generator for VelocityGen {
 //
 // Generates positions and velocities radially around the origin.
 
+// TODO: consider removing this or improving it to generate correct orbital
+// velocity.
+
 #[derive(Clone, Debug)]
 pub struct RadialGen {
     translation: TranslationGen,
