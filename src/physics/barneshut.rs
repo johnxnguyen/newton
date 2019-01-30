@@ -675,7 +675,7 @@ mod tests {
     #[test]
     fn tree_virtual_body() {
         // given
-        let mut tree = small_tree();
+        let tree = small_tree();
         let result = |idx: Index| tree.node(idx).unwrap().body.centered();
 
         // then
