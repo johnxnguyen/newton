@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use geometry::types::Point;
+use crate::geometry::types::Point;
 
 // DataWriter ////////////////////////////////////////////////////////////////
 //
@@ -51,7 +51,6 @@ impl DataWriter {
 #[cfg(test)]
 mod tests {
     use std::io::Read;
-
     use super::*;
 
     #[test]

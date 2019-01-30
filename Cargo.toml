@@ -2,13 +2,8 @@
 name = "newton"
 version = "0.1.0"
 authors = ["John Nguyen <johnxuannguyen@gmail.com>"]
-#publish = false
-
-#[lib]
-#name = "newton"
-#crate-type = ["staticlib"]
+edition = "2018"
 
 [dependencies]
 rand = "0.5"
-uuid = { version = "0.7", features = ["v4"] }
 yaml-rust = "0.4"

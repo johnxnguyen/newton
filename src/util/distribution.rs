@@ -10,13 +10,13 @@ use yaml_rust::ScanError;
 use yaml_rust::Yaml;
 use yaml_rust::YamlLoader;
 
-use geometry::types::Point;
-use geometry::types::Vector;
-use geometry::util::Transformation;
-use physics::types::Body;
-use physics::types::Mass;
-use util::distribution::Error::*;
-use util::gens::*;
+use crate::geometry::types::Point;
+use crate::geometry::types::Vector;
+use crate::geometry::util::Transformation;
+use crate::physics::types::Body;
+use crate::physics::types::Mass;
+use crate::util::distribution::Error::*;
+use crate::util::gens::*;
 
 // Question: If I clone the gens, do they produce the same sequence?
 
@@ -79,15 +79,6 @@ impl Loader {
             Err(MissingKey(String::from(key)))
         } else {
             Ok(value)
-        }
-    }
-
-    /// Attempts to get the integer number at the given key for the given object.
-    fn get_int(&self, object: &Yaml, key: &str) -> Result<i32> {
-        let value = self.get_value(object, key)?;
-        match value.as_i64() {
-            Some(result) => Ok(result as i32),
-            None => Err(ExpectedType(key.to_owned() + ": Integer")),
         }
     }
 
@@ -331,7 +322,6 @@ impl Loader {
             return Err(InvalidValue(String::from("num must be greater than 1")));
         }
 
-        let mut nodes: Vec<Node> = vec![];
         let mut mass = self.parse_mass(body)?;
         let mut trans = self.parse_translation(body)?;
         let mut vel = self.parse_velocity(body)?;
@@ -440,10 +430,6 @@ struct DistributionTree {
 }
 
 impl DistributionTree {
-    fn new() -> DistributionTree {
-        DistributionTree { nodes: vec![] }
-    }
-
     /// Adds the given node to the tree and return its index.
     fn add_node(&mut self, node: Node) -> Index {
         self.nodes.push(node);
@@ -545,19 +531,17 @@ mod tests {
     use yaml_rust::Yaml;
     use yaml_rust::YamlLoader;
 
-    use geometry::types::Point;
-    use geometry::types::Vector;
-    use physics::types::Mass;
-    use util::distribution::Loader;
-    use util::distribution::Node;
-    use util::distribution::Node::Body;
-    use util::distribution::Node::System;
-    use util::distribution::TVR;
-    use util::gens::Generator;
-    use util::gens::MassGen;
-    use util::gens::RotationGen;
-    use util::gens::TranslationGen;
-    use util::gens::VelocityGen;
+    use crate::geometry::types::Point;
+    use crate::geometry::types::Vector;
+    use crate::physics::types::Mass;
+    use crate::util::distribution::Loader;
+    use crate::util::distribution::Node::*;
+    use crate::util::distribution::TVR;
+    use crate::util::gens::Generator;
+    use crate::util::gens::MassGen;
+    use crate::util::gens::RotationGen;
+    use crate::util::gens::TranslationGen;
+    use crate::util::gens::VelocityGen;
 
     use super::Error::*;
 
@@ -592,32 +576,6 @@ mod tests {
 
         // then
         assert_eq!(Err(MissingKey(String::from("foo"))), result);
-    }
-
-    #[test]
-    fn loader_get_int() {
-        // given
-        let sut = Loader::new();
-        let object = yaml("num: 42");
-
-        // when
-        let result = sut.get_int(&object, "num").unwrap();
-
-        // then
-        assert_eq!(42, result);
-    }
-
-    #[test]
-    fn loader_get_int_invalid_type() {
-        // given
-        let sut = Loader::new();
-        let object = yaml("num: 42.3");
-
-        // when
-        let result = sut.get_int(&object, "num");
-
-        // then
-        assert_eq!(Err(ExpectedType(String::from("num: Integer"))), result);
     }
 
     #[test]
@@ -762,9 +720,11 @@ mod tests {
         let gens = sut.get_vec(&object, "gens").unwrap();
 
         // when
-        let result = sut.parse_gens(gens).unwrap();
+        let result = sut.parse_gens(gens);
 
         // then
+        assert!(result.is_ok());
+
         assert_eq!(1, sut.mass_gens.len());
         assert!(sut.mass_gens.get("m").is_some());
 
@@ -901,7 +861,7 @@ mod tests {
         let object = yaml("foo: bar");
 
         // when
-        let mut result = sut.parse_mass(&object).err().unwrap();
+        let result = sut.parse_mass(&object).err().unwrap();
 
         // then
         assert_eq!(MissingKey(String::from("m")), result);
@@ -1104,7 +1064,7 @@ mod tests {
     #[test]
     fn loader_parse_body() {
         // given
-        let mut sut = Loader::new();
+        let sut = Loader::new();
         let input = "
         name: earth
         m: 10.0";
@@ -1126,7 +1086,7 @@ mod tests {
     #[test]
     fn loader_parse_body_num() {
         // given
-        let mut sut = Loader::new();
+        let sut = Loader::new();
         let input = "{name: earth, num: 3, m: 10.0}";
 
         let object = yaml(input);
@@ -1147,7 +1107,7 @@ mod tests {
     #[test]
     fn loader_parse_body_invalid_num() {
         // given
-        let mut sut = Loader::new();
+        let sut = Loader::new();
         let input = "{name: earth, num: -4, m: 10.0}";
 
         let object = yaml(input);

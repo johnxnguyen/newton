@@ -2,7 +2,7 @@ use std::cmp::PartialEq;
 use std::fmt;
 use std::ops::{Add, AddAssign, SubAssign, Div, Mul};
 
-use geometry::types::ErrorKind::OutOfBounds;
+use crate::geometry::types::ErrorKind::OutOfBounds;
 
 use self::Quadrant::*;
 

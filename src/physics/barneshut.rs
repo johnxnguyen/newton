@@ -2,11 +2,11 @@ use std::collections::HashMap;
 use std::fmt;
 use std::ops::Range;
 
-use geometry::types::Point;
-use geometry::types::Quadrant;
-use geometry::types::Quadrant::*;
-use geometry::types::Square;
-use geometry::types::Vector;
+use crate::geometry::types::Point;
+use crate::geometry::types::Quadrant;
+use crate::geometry::types::Quadrant::*;
+use crate::geometry::types::Square;
+use crate::geometry::types::Vector;
 
 use super::types::Body;
 
@@ -278,18 +278,6 @@ impl BHTree {
         PreorderTraverser::new(self, idx)
     }
 
-    /// Returns a descriptive string of the current tree state. Only existing
-    /// nodes are printed with their id and body.
-    fn report(&self) -> String {
-        self.preorder().fold(String::new(), |acc, n| {
-            if self.is_leaf(n) {
-                let v = n.body.centered();
-                acc + &format!("#{}\t({}, {})\n", n.id, v.position.x, v.position.y)
-            } else {
-                acc + &format!("#{}\n", n.id)
-            }
-        })
-    }
 }
 
 // PreorderTraverser /////////////////////////////////////////////////////////
@@ -381,12 +369,6 @@ impl Node {
         self.body == VirtualBody::zero()
     }
 
-    /// Index of the parent node.
-    fn parent(&self) -> Option<Index> {
-        if self.id == 0 { None }
-        else { Some((self.id - 1) / 4) }
-    }
-
     /// Index of the north west child.
     fn nw(&self) -> Index {
         4 * self.id + 1
@@ -405,19 +387,6 @@ impl Node {
     /// Index of the south east child.
     fn se(&self) -> Index {
         4 * self.id + 4
-    }
-
-    /// Returns true if the given node is an ancestor.
-    fn is_ancestor(&self, node: &Node) -> bool {
-        let parent = |idx: Index| (idx - 1) / 4;
-        let mut curr = self.id;
-        // ancestor nodes always have a lower index
-        while curr > node.id {
-            let next = parent(curr);
-            if next == node.id { return true }
-            curr = next;
-        }
-        false
     }
 
     /// Moves the body into a new child node and returns it, if it exists.
@@ -509,18 +478,31 @@ impl ChildIterator {
 
 #[cfg(test)]
 mod tests {
-    use geometry::types::Point;
-    use geometry::types::Square;
-    use geometry::types::Vector;
-    use physics::barneshut::BHTree;
-    use physics::barneshut::Index;
-    use physics::types::Body;
-    use physics::barneshut::VirtualBody;
-    use physics::barneshut::Pending;
-    use physics::barneshut::ChildIterator;
-    use physics::barneshut::AncestorIterator;
+    use crate::geometry::types::Point;
+    use crate::geometry::types::Square;
+    use crate::geometry::types::Vector;
+    use crate::physics::barneshut::BHTree;
+    use crate::physics::barneshut::Index;
+    use crate::physics::types::Body;
+    use crate::physics::barneshut::VirtualBody;
+    use crate::physics::barneshut::Pending;
+    use crate::physics::barneshut::ChildIterator;
+    use crate::physics::barneshut::AncestorIterator;
 
     // helpers
+    /// Returns a descriptive string of the current tree state. Only existing
+    /// nodes are printed with their id and body.
+    fn report(tree: &BHTree) -> String {
+        tree.preorder().fold(String::new(), |acc, n| {
+            if tree.is_leaf(n) {
+                let v = n.body.centered();
+                acc + &format!("#{}\t({}, {})\n", n.id, v.position.x, v.position.y)
+            } else {
+                acc + &format!("#{}\n", n.id)
+            }
+        })
+    }
+
     fn body(mass: f32, x: f32, y: f32) -> Body {
         Body::new(mass, Point::new(x, y), Vector::zero())
     }
@@ -585,18 +567,18 @@ mod tests {
         let mut tree = BHTree::new(space);
 
         tree.add(body(2.0, 1.0, 2.0));
-        assert_eq!(tree.report(),
+        assert_eq!(report(&tree),
                    "#0\t(1, 2)\n".to_string());
 
         tree.add(body(1.0, 6.0, 8.0));
-        assert_eq!(tree.report(),
+        assert_eq!(report(&tree),
                    "#0\n\
                     #2\n\
                     #10\t(6, 8)\n\
                     #11\t(1, 2)\n".to_string());
 
         tree.add(body(4.0, -4.0, -4.0));
-        assert_eq!(tree.report(),
+        assert_eq!(report(&tree),
                    "#0\n\
                     #2\n\
                     #10\t(6, 8)\n\
@@ -604,7 +586,7 @@ mod tests {
                     #3\t(-4, -4)\n".to_string());
 
         println!("\nRESULTS ---------------------------------\n");
-        println!("{}", tree.report());
+        println!("{}", report(&tree));
     }
 
     #[test]
@@ -693,7 +675,7 @@ mod tests {
     #[test]
     fn tree_virtual_body() {
         // given
-        let mut tree = small_tree();
+        let tree = small_tree();
         let result = |idx: Index| tree.node(idx).unwrap().body.centered();
 
         // then

@@ -5,10 +5,10 @@ use rand::Rng;
 use rand::thread_rng;
 use rand::ThreadRng;
 
-use geometry::types::Point;
-use geometry::types::Vector;
-use geometry::util::Transformation;
-use physics::types::Mass;
+use crate::geometry::types::Point;
+use crate::geometry::types::Vector;
+use crate::geometry::util::Transformation;
+use crate::physics::types::Mass;
 
 // Generator /////////////////////////////////////////////////////////////////
 //
@@ -193,6 +193,9 @@ impl Generator for VelocityGen {
 //
 // Generates positions and velocities radially around the origin.
 
+// TODO: consider removing this or improving it to generate correct orbital
+// velocity.
+
 #[derive(Clone, Debug)]
 pub struct RadialGen {
     translation: TranslationGen,
@@ -224,10 +227,10 @@ impl Generator for RadialGen {
 mod tests {
     use std::f32::consts::PI;
 
-    use geometry::types::Point;
-    use geometry::types::Vector;
-    use physics::types::Mass;
-    use util::gens::*;
+    use crate::geometry::types::Point;
+    use crate::geometry::types::Vector;
+    use crate::physics::types::Mass;
+    use crate::util::gens::*;
 
     #[test]
     fn repeater_generates() {
