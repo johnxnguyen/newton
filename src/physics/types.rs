@@ -200,6 +200,8 @@ impl BruteForceField {
 
 // BHField ///////////////////////////////////////////////////////////////////
 
+// TODO: I want to be able to mark a body as unmoveable.
+
 struct BHField {
     space: Square,
     force: Gravity,
