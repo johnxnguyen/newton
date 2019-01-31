@@ -6,6 +6,10 @@ use newton::physics::types::Environment;
 use newton::util::distribution::Loader;
 use newton::util::write::DataWriter;
 
+// TODO: Option for environment size (S, M, L, or exp)
+// TODO: Flag for brute force
+// TODO: Progress bar
+
 fn main() {
     let yaml = load_yaml!("../cli.yaml");
     let matches = App::from_yaml(yaml).get_matches();
