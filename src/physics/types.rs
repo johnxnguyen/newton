@@ -66,8 +66,8 @@ impl Default for Environment {
 }
 
 impl Environment {
-    pub fn new() -> Environment {
-        Self::default()
+    pub fn new(writer: DataWriter) -> Environment {
+        Environment { writer, ..Self::default() }
     }
 
     pub fn update(&mut self) {
@@ -231,7 +231,7 @@ impl Field for BHField {
 impl BHField {
     pub fn new() -> BHField {
         BHField {
-            space: Square::new(-1920.0, -1080.0, 20),
+            space: Square::new(-2048.0, -2048.0, 12),
             force: Gravity::new(1.0, 4.0),
             sun: Attractor::new(10000.0, Point::zero(), 2.5, 4.0),
         }
