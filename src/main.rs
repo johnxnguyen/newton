@@ -5,10 +5,11 @@ use clap::value_t;
 use newton::physics::types::Environment;
 use newton::util::distribution::Loader;
 use newton::util::write::DataWriter;
+use std::time::Instant;
+use pbr::ProgressBar;
 
 // TODO: Option for environment size (S, M, L, or exp)
 // TODO: Flag for brute force
-// TODO: Progress bar
 
 fn main() {
     let yaml = load_yaml!("../cli.yaml");
@@ -26,8 +27,36 @@ fn main() {
         env.bodies = loader.load_from_path(path).unwrap();
     }
 
-    for x in 1..=frames {
-        println!("frame: {}/{}", x, frames);
+    let mut progress = ProgressBar::new(frames as u64);
+    progress.message("Frame ");
+    progress.format("╢▌▌-╟");
+
+    let stop_watch = StopWatch::start();
+
+    for _ in 1..=frames {
+        progress.inc();
         env.update();
+    }
+
+    let (secs, millis) = stop_watch.stop();
+    println!("Total: {}.{} seconds.", secs, millis);
+}
+
+type SecsMillis = (u64, u32);
+
+struct StopWatch {
+    start: Instant
+}
+
+impl StopWatch {
+    fn start() -> StopWatch {
+        StopWatch {
+            start: Instant::now()
+        }
+    }
+
+    fn stop(&self) -> SecsMillis {
+        let duration = self.start.elapsed();
+        (duration.as_secs(), duration.subsec_millis())
     }
 }
