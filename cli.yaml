@@ -1,0 +1,28 @@
+name: newton
+version: "0.1.0"
+author: John Nguyen <johnxuannguyen@gmail.com>
+about: Gravitational Force Calculator
+
+args:
+  - INPUT:
+      help: The path to the initial state configuration file.
+      required: true
+
+  - OUTPUT:
+      help: The directory in which frames will be saved.
+      short: o
+      long: output
+      takes_value: true
+      default_value: "./output/"
+
+  - FRAMES:
+      help: The number of frames to calculate.
+      short: f
+      long: frames
+      takes_value: true
+      default_value: "30"
+
+  - BRUTEFORCE:
+      help: Use the brute force O(n^2) algorithm.
+      short: b
+      long: brute

@@ -1,3 +1,6 @@
+# This relied on a central attractor
+# Attractor::new(10000.0, Point::zero(), 2.5, 4.0)
+
 gens:
   -
     name: p_mass

@@ -18,6 +18,7 @@ use crate::physics::types::Mass;
 use crate::util::distribution::Error::*;
 use crate::util::gens::*;
 
+// TODO: I want to be able to have automatic orbital velocity
 // Question: If I clone the gens, do they produce the same sequence?
 
 // Loader ////////////////////////////////////////////////////////////////////

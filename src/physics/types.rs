@@ -6,7 +6,7 @@ use crate::geometry::types::Square;
 use crate::physics::barneshut::BHTree;
 use crate::util::write::DataWriter;
 
-use super::force::{Attractor, Gravity};
+use super::force::Gravity;
 
 // Mass //////////////////////////////////////////////////////////////////////
 //
@@ -50,7 +50,7 @@ impl Mass {
 
 pub struct Environment {
     pub bodies: Vec<Body>,
-    pub fields: Vec<Box<Field>>,
+    pub fields: Vec<Box<dyn Field>>,
     writer: DataWriter,
 }
 
@@ -66,8 +66,8 @@ impl Default for Environment {
 }
 
 impl Environment {
-    pub fn new() -> Environment {
-        Self::default()
+    pub fn new(fields: Vec<Box<dyn Field>>, writer: DataWriter) -> Environment {
+        Environment { fields, writer, ..Self::default() }
     }
 
     pub fn update(&mut self) {
@@ -158,7 +158,6 @@ pub trait Field {
 
 pub struct BruteForceField {
     force: Gravity,
-    sun: Option<Attractor>,
 }
 
 impl Field for BruteForceField {
@@ -172,10 +171,6 @@ impl Field for BruteForceField {
                 cumulative_force += self.force.between(body, other);
             }
 
-            if let Some(ref sun) = self.sun {
-                cumulative_force += sun.force(body);
-            }
-
             result.push(cumulative_force);
         }
 
@@ -187,7 +182,6 @@ impl Default for BruteForceField {
     fn default() -> Self {
         BruteForceField {
             force: Gravity::new(1.0, 4.0),
-            sun: Some(Attractor::new(10000.0, Point::zero(), 1.0, 4.0)),
         }
     }
 }
@@ -200,10 +194,11 @@ impl BruteForceField {
 
 // BHField ///////////////////////////////////////////////////////////////////
 
-struct BHField {
+// TODO: I want to be able to mark a body as unmoveable.
+
+pub struct BHField {
     space: Square,
     force: Gravity,
-    sun: Attractor,
 }
 
 impl Field for BHField {
@@ -216,11 +211,10 @@ impl Field for BHField {
         }
 
         for body in bodies {
-            let mut f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
+            let f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
                 acc + self.force.between(body, &n.to_body())
             });
 
-            f += self.sun.force(body);
             result.push(f);
         };
 
@@ -231,9 +225,8 @@ impl Field for BHField {
 impl BHField {
     pub fn new() -> BHField {
         BHField {
-            space: Square::new(-1920.0, -1080.0, 20),
+            space: Square::new(-2048.0, -2048.0, 12),
             force: Gravity::new(1.0, 4.0),
-            sun: Attractor::new(10000.0, Point::zero(), 2.5, 4.0),
         }
     }
 }

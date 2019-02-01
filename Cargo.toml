@@ -7,3 +7,5 @@ edition = "2018"
 [dependencies]
 rand = "0.5"
 yaml-rust = "0.4"
+clap = {version = "2.32", features = ["yaml"]}
+pbr = "1.0.1"
