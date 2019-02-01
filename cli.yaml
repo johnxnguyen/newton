@@ -21,3 +21,8 @@ args:
       long: frames
       takes_value: true
       default_value: "30"
+
+  - BRUTEFORCE:
+      help: Use the brute force O(n^2) algorithm.
+      short: b
+      long: brute

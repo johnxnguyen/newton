@@ -50,7 +50,7 @@ impl Mass {
 
 pub struct Environment {
     pub bodies: Vec<Body>,
-    pub fields: Vec<Box<Field>>,
+    pub fields: Vec<Box<dyn Field>>,
     writer: DataWriter,
 }
 
@@ -66,8 +66,8 @@ impl Default for Environment {
 }
 
 impl Environment {
-    pub fn new(writer: DataWriter) -> Environment {
-        Environment { writer, ..Self::default() }
+    pub fn new(fields: Vec<Box<dyn Field>>, writer: DataWriter) -> Environment {
+        Environment { fields, writer, ..Self::default() }
     }
 
     pub fn update(&mut self) {
@@ -196,7 +196,7 @@ impl BruteForceField {
 
 // TODO: I want to be able to mark a body as unmoveable.
 
-struct BHField {
+pub struct BHField {
     space: Square,
     force: Gravity,
 }
