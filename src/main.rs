@@ -1,15 +1,16 @@
+use std::time::Instant;
+
 use clap::App;
 use clap::load_yaml;
 use clap::value_t;
+use pbr::ProgressBar;
 
+use newton::physics::types::BHField;
+use newton::physics::types::BruteForceField;
 use newton::physics::types::Environment;
+use newton::physics::types::Field;
 use newton::util::distribution::Loader;
 use newton::util::write::DataWriter;
-use std::time::Instant;
-use pbr::ProgressBar;
-use newton::physics::types::Field;
-use newton::physics::types::BruteForceField;
-use newton::physics::types::BHField;
 
 // TODO: Option for environment size (S, M, L, or exp)
 
@@ -59,6 +60,8 @@ fn main() {
     let (secs, millis) = stop_watch.stop();
     println!("Total: {}.{} seconds.", secs, millis);
 }
+
+// STOPWATCH /////////////////////////////////////////////////////////////////
 
 type SecsMillis = (u64, u32);
 
