@@ -74,7 +74,7 @@ impl Field for BHField {
 
         for body in bodies {
             let f = tree.virtual_bodies(body).iter().fold(Vector::zero(), |acc, n| {
-                acc + self.force.between(body, &n.to_body())
+                acc + self.force.between(body, &n)
             });
 
             result.push(f);
