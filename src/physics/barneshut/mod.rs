@@ -6,64 +6,14 @@ use crate::geometry::types::Point;
 use crate::geometry::types::Quadrant;
 use crate::geometry::types::Quadrant::*;
 use crate::geometry::types::Square;
-use crate::geometry::types::Vector;
 
 use super::types::Body;
 
-// VirtualBody ///////////////////////////////////////////////////////////////
-//
-// A virtual body represents an amalgamation of real bodies. Its mass is the
-// total sum of the collected masses and its position is the total sum of mass
-// weighted positions. To obtain a copy with the position centered on its
-// mass, call the `centered()` method.
+use self::virtual_body::VirtualBody;
 
-#[derive(Clone, PartialEq, Debug)]
-struct VirtualBody {
-    mass: f32,
-    position: Point,
-}
+mod virtual_body;
 
-impl fmt::Display for VirtualBody {
-    fn fmt(&self, f: &mut fmt::Formatter) -> Result<(), fmt::Error> {
-        let v = self.centered();
-        write!(f, "{:?}, ({:?}, {:?})", v.mass, v.position.x, v.position.y)?;
-        Ok(())
-    }
-}
 
-impl From<Body> for VirtualBody {
-    fn from(body: Body) -> Self {
-        VirtualBody {
-            mass: body.mass.value(),
-            position: &body.position * body.mass.value(),
-        }
-    }
-}
-
-impl VirtualBody {
-    fn to_body(self) -> Body {
-        Body::new(self.mass, self.position.clone(), Vector::zero())
-    }
-
-    fn new(mass: f32, x: f32, y: f32) -> VirtualBody {
-        VirtualBody {
-            mass,
-            position: Point::new(x, y),
-        }
-    }
-
-    fn zero() -> VirtualBody {
-        VirtualBody::new(0.0, 0.0, 0.0)
-    }
-
-    fn centered(&self) -> VirtualBody {
-        debug_assert!(self.mass > 0.0, "Mass must be positive. Got {}", self.mass);
-        VirtualBody {
-            mass: self.mass,
-            position: &self.position / self.mass,
-        }
-    }
-}
 
 // Action ////////////////////////////////////////////////////////////////////
 //
@@ -475,16 +425,14 @@ impl ChildIterator {
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     use crate::geometry::types::Point;
     use crate::geometry::types::Square;
     use crate::geometry::types::Vector;
-    use crate::physics::barneshut::BHTree;
-    use crate::physics::barneshut::Index;
+
     use crate::physics::types::Body;
-    use crate::physics::barneshut::VirtualBody;
-    use crate::physics::barneshut::Pending;
-    use crate::physics::barneshut::ChildIterator;
-    use crate::physics::barneshut::AncestorIterator;
+    use crate::physics::barneshut::virtual_body::VirtualBody;
 
     // helpers
     /// Returns a descriptive string of the current tree state. Only existing
@@ -510,7 +458,7 @@ mod tests {
             position: Point::new(x, y),
         }
     }
-    
+
     fn check_bodies(b1: &Body, b2: &Body) {
         assert_eq!(b1.mass, b2.mass);
         assert_eq!(b1.position, b2.position);
@@ -707,7 +655,7 @@ mod tests {
         let expected = virtual_body(3.6, 1.0, 2.0);
         assert_eq!(expected, result(11));
     }
-    
+
     #[test]
     fn tree_virtual_bodies_small() {
         // given
@@ -728,7 +676,7 @@ mod tests {
         // C
         check_bodies(&new_body(1.5, -4.0, -4.0), &result[1]);
     }
-    
+
     #[test]
     fn tree_virtual_bodies_medium_1() {
         // given
@@ -775,10 +723,10 @@ mod tests {
 
         // C
         check_bodies(&new_body(4.0, 31.0, 31.0), &result[1]);
-        
+
         // D, E & F
         check_bodies(&new_body(7.0, 2.571428571, 10.357142857), &result[2]);
-        
+
         // H
         check_bodies(&new_body(3.5, 20.0, 10.0), &result[3]);
     }
@@ -827,28 +775,6 @@ mod tests {
         let body = sut.node(1).unwrap().body.clone();
         assert_eq!(VirtualBody::new(2.5, 1.25, 4.0), body);
         assert_eq!(VirtualBody::new(2.5, 0.5, 1.6), body.centered());
-    }
-
-    #[test]
-    fn virtual_body_centered() {
-        // given, then
-        let sut = VirtualBody::new(2.5, 5.0, 7.5);
-        assert_eq!(Point::new(2.0, 3.0), sut.centered().position);
-
-        // given, then
-        let sut = VirtualBody::new(2.4, -24.6, -4.8);
-        assert_eq!(Point::new(-10.25, -2.0), sut.centered().position);
-
-        // given, then
-        let sut = VirtualBody::new(14.5, 0.0, 0.0);
-        assert_eq!(Point::zero(), sut.centered().position);
-    }
-
-    #[test]
-    #[should_panic]
-    fn virtual_body_centered_zero_mass() {
-        // given, when
-        VirtualBody::new(0.0, 5.0, 7.5).centered();
     }
 
     #[test]
