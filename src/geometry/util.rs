@@ -1,5 +1,6 @@
-use crate::geometry::{Point, Vector};
 use std::ops::Mul;
+
+use crate::geometry::{Point, Vector};
 
 // Transformation ////////////////////////////////////////////////////////////
 //
@@ -33,9 +34,11 @@ impl Transformation {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::geometry::Vector;
     use std::f32::consts::FRAC_PI_2;
+
+    use crate::geometry::Vector;
+
+    use super::*;
 
     #[test]
     fn it_transforms_a_vector() {
