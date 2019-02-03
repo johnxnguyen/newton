@@ -1,4 +1,4 @@
-use crate::geometry::types::{Square, Vector};
+use crate::geometry::{Square, Vector};
 
 use super::barneshut::BHTree;
 use super::force::Gravity;

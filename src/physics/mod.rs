@@ -1,7 +1,7 @@
 use std::cmp::Eq;
 use std::fmt;
 
-use crate::geometry::types::{Point, Vector};
+use crate::geometry::{Point, Vector};
 use crate::physics::field::{BHField, Field};
 use crate::util::write::DataWriter;
 
@@ -147,7 +147,7 @@ impl Body {
 
 #[cfg(test)]
 mod tests {
-    use crate::geometry::types::{Point, Vector};
+    use crate::geometry::{Point, Vector};
 
     use super::*;
 

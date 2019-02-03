@@ -10,8 +10,8 @@ use yaml_rust::ScanError;
 use yaml_rust::Yaml;
 use yaml_rust::YamlLoader;
 
-use crate::geometry::types::Point;
-use crate::geometry::types::Vector;
+use crate::geometry::Point;
+use crate::geometry::Vector;
 use crate::geometry::util::Transformation;
 use crate::physics::Body;
 use crate::physics::Mass;
@@ -517,8 +517,8 @@ mod tests {
     use yaml_rust::Yaml;
     use yaml_rust::YamlLoader;
 
-    use crate::geometry::types::Point;
-    use crate::geometry::types::Vector;
+    use crate::geometry::Point;
+    use crate::geometry::Vector;
     use crate::physics::Mass;
     use crate::util::distribution::Loader;
     use crate::util::distribution::Node::*;

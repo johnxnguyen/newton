@@ -2,10 +2,10 @@ use std::collections::HashMap;
 use std::fmt;
 use std::ops::Range;
 
-use crate::geometry::types::Point;
-use crate::geometry::types::Quadrant;
-use crate::geometry::types::Quadrant::*;
-use crate::geometry::types::Square;
+use crate::geometry::Point;
+use crate::geometry::Quadrant;
+use crate::geometry::Quadrant::*;
+use crate::geometry::Square;
 
 use super::Body;
 
@@ -427,9 +427,9 @@ impl ChildIterator {
 mod tests {
     use super::*;
 
-    use crate::geometry::types::Point;
-    use crate::geometry::types::Square;
-    use crate::geometry::types::Vector;
+    use crate::geometry::Point;
+    use crate::geometry::Square;
+    use crate::geometry::Vector;
 
     use crate::physics::Body;
     use crate::physics::barneshut::virtual_body::VirtualBody;
