@@ -3,7 +3,7 @@ use std::time::Instant;
 use clap::{App, load_yaml, value_t};
 use pbr::ProgressBar;
 
-use newton::physics::types::Environment;
+use newton::physics::Environment;
 use newton::physics::field::*;
 use newton::util::distribution::Loader;
 use newton::util::write::DataWriter;

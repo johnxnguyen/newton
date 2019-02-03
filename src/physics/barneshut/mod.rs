@@ -7,7 +7,7 @@ use crate::geometry::types::Quadrant;
 use crate::geometry::types::Quadrant::*;
 use crate::geometry::types::Square;
 
-use super::types::Body;
+use super::Body;
 
 use self::virtual_body::VirtualBody;
 
@@ -431,7 +431,7 @@ mod tests {
     use crate::geometry::types::Square;
     use crate::geometry::types::Vector;
 
-    use crate::physics::types::Body;
+    use crate::physics::Body;
     use crate::physics::barneshut::virtual_body::VirtualBody;
 
     // helpers

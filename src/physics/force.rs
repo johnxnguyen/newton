@@ -1,4 +1,4 @@
-use super::types::Body;
+use super::Body;
 use crate::geometry::types::{Point, Vector};
 
 // Gravity ///////////////////////////////////////////////////////////////////

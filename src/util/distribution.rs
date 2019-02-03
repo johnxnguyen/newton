@@ -13,8 +13,8 @@ use yaml_rust::YamlLoader;
 use crate::geometry::types::Point;
 use crate::geometry::types::Vector;
 use crate::geometry::util::Transformation;
-use crate::physics::types::Body;
-use crate::physics::types::Mass;
+use crate::physics::Body;
+use crate::physics::Mass;
 use crate::util::distribution::Error::*;
 use crate::util::gens::*;
 
@@ -519,7 +519,7 @@ mod tests {
 
     use crate::geometry::types::Point;
     use crate::geometry::types::Vector;
-    use crate::physics::types::Mass;
+    use crate::physics::Mass;
     use crate::util::distribution::Loader;
     use crate::util::distribution::Node::*;
     use crate::util::distribution::TVR;

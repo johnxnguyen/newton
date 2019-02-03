@@ -2,7 +2,7 @@ use crate::geometry::types::{Square, Vector};
 
 use super::barneshut::BHTree;
 use super::force::Gravity;
-use super::types::Body;
+use super::Body;
 
 // Field /////////////////////////////////////////////////////////////////////
 //

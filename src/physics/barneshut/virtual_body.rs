@@ -2,7 +2,7 @@ use std::fmt;
 
 use crate::geometry::types::Point;
 use crate::geometry::types::Vector;
-use crate::physics::types::Body;
+use crate::physics::Body;
 
 // VirtualBody ///////////////////////////////////////////////////////////////
 //
