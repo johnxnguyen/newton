@@ -1,14 +1,10 @@
 use std::time::Instant;
 
-use clap::App;
-use clap::load_yaml;
-use clap::value_t;
+use clap::{App, load_yaml, value_t};
 use pbr::ProgressBar;
 
-use newton::physics::types::BHField;
-use newton::physics::types::BruteForceField;
-use newton::physics::types::Environment;
-use newton::physics::types::Field;
+use newton::physics::Environment;
+use newton::physics::field::*;
 use newton::util::distribution::Loader;
 use newton::util::write::DataWriter;
 

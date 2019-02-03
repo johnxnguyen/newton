@@ -2,7 +2,7 @@ use std::fs;
 use std::io::Write;
 use std::path::Path;
 
-use crate::geometry::types::Point;
+use crate::geometry::Point;
 
 // DataWriter ////////////////////////////////////////////////////////////////
 //

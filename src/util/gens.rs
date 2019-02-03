@@ -5,10 +5,10 @@ use rand::Rng;
 use rand::thread_rng;
 use rand::ThreadRng;
 
-use crate::geometry::types::Point;
-use crate::geometry::types::Vector;
+use crate::geometry::Point;
+use crate::geometry::Vector;
 use crate::geometry::util::Transformation;
-use crate::physics::types::Mass;
+use crate::physics::Mass;
 
 // Generator /////////////////////////////////////////////////////////////////
 //
@@ -227,9 +227,9 @@ impl Generator for RadialGen {
 mod tests {
     use std::f32::consts::PI;
 
-    use crate::geometry::types::Point;
-    use crate::geometry::types::Vector;
-    use crate::physics::types::Mass;
+    use crate::geometry::Point;
+    use crate::geometry::Vector;
+    use crate::physics::Mass;
     use crate::util::gens::*;
 
     #[test]
