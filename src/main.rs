@@ -22,9 +22,9 @@ fn main() {
     let brute_force = matches.is_present("BRUTEFORCE");
 
     // Configure progress bar
-    let mut progress = ProgressBar::new(frames as u64);
+    let mut progress = ProgressBar::new(u64::from(frames));
     progress.message("Frame ");
-    progress.format("╢▌▌-╟");
+    progress.format("|▌▌-|");
 
     // Configure the environment
     let mut fields: Vec<Box<dyn Field>> = vec![];
@@ -54,6 +54,7 @@ fn main() {
     }
 
     let (secs, millis) = stop_watch.stop();
+    println!();
     println!("Total: {}.{} seconds.", secs, millis);
 }
 
