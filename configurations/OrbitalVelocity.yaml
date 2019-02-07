@@ -1,0 +1,28 @@
+gens:
+  -
+    name: mass
+    type: mass
+    min: 0.1
+    max: 0.3
+  -
+    name: black_hole
+    type: radial
+    mass: 1000.0
+    radius: {min: 50.0, max: 500.0}
+    deviation: {min: 1.0, max: 1.0}
+    arc: {min: 0.0, max: 360.0}
+
+bodies:
+  -
+    name: black_hole
+    m: 1000.0
+  -
+    name: stars
+    num: 10000
+
+    m: mass
+    orbits: black_hole
+
+systems:
+  - name: black_hole
+  - name: stars
