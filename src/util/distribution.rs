@@ -37,6 +37,7 @@ pub struct Loader {
     translation_gens: HashMap<String, TranslationGen>,
     velocity_gens: HashMap<String, VelocityGen>,
     rotation_gens: HashMap<String, RotationGen>,
+    radial_gens: HashMap<String, RadialGen>,
 }
 
 impl Loader {
@@ -162,6 +163,10 @@ impl Loader {
                     let rotation_gen = self.parse_rotation_gen(gen)?;
                     self.rotation_gens.insert(name, rotation_gen);
                 },
+                "radial" => {
+                    let radial_gen = self.parse_radial_gen(gen)?;
+                    self.radial_gens.insert(name, radial_gen);
+                },
                 _ => return Err(InvalidValue(gen_type)),
             };
         }
@@ -202,6 +207,29 @@ impl Loader {
         let min = self.get_real(gen, "min")?;
         let max = self.get_real(gen, "max")?;
         Ok(RotationGen::new_degrees(min, max))
+    }
+
+    // TODO: needs testing
+    /// Parses the radial generator description.
+    fn parse_radial_gen(&self, gen: &Yaml) -> Result<RadialGen> {
+        let mass = self.get_real(gen, "mass")?;
+
+        let radius = self.get_value(gen, "radius")?;
+        let min = self.get_real(radius, "min")?;
+        let max = self.get_real(radius, "max")?;
+        let radius = UniformGen::new(min, max);
+
+        let deviation = self.get_value(gen, "deviation")?;
+        let min = self.get_real(deviation, "min")?;
+        let max = self.get_real(deviation, "max")?;
+        let deviation = UniformGen::new(min, max);
+
+        let arc = self.get_value(gen, "arc")?;
+        let min = self.get_real(arc, "min")?;
+        let max = self.get_real(arc, "max")?;
+        let arc = RotationGen::new_degrees(min, max);
+
+        Ok(RadialGen::new(mass, radius, arc, deviation))
     }
 
     // Property Parsing //////////////////////////////////////////////////////
@@ -300,8 +328,18 @@ impl Loader {
         Ok(Box::new(Repeater::new(rotation.to_radians())))
     }
 
+    /// Returns the named radial gen.
+    fn parse_orbits(&self, object: &Yaml) -> Result<RadialGen> {
+        let gen_name = self.get_string(object, "orbits")?;
+        match self.radial_gens.get(gen_name.as_str()) {
+            None => Err(UnknownReference(gen_name)),
+            Some(gen) => Ok(gen.clone()),
+        }
+    }
+
     // Body Parsing //////////////////////////////////////////////////////////
 
+    // TODO: Needs retesting for orbits.
     /// Parses the given body description.
     fn parse_body(&self, body: &Yaml) -> Result<(String, Vec<Node>)> {
         let name = self.get_string(body, "name")?;
@@ -311,17 +349,34 @@ impl Loader {
             return Err(InvalidValue(String::from("num must be greater than 1")));
         }
 
-        let mut mass = self.parse_mass(body)?;
-        let mut trans = self.parse_translation(body)?;
-        let mut vel = self.parse_velocity(body)?;
-        let mut rot = self.parse_rotation(body)?;
-
         let mut nodes: Vec<Node> = Vec::new();
+        let mut mass = self.parse_mass(body)?;
 
-        for _ in 1..=num {
-            let tvr = TVR(trans.generate(), vel.generate(), rot.generate());
-            let node = Node::Body(tvr, mass.generate());
-            nodes.push(node);
+        // if radial gen
+        match self.parse_orbits(body) {
+            Ok(mut gen) => {
+                for _ in 1..=num {
+                    let (t, v, r) = gen.generate();
+                    let tvr = TVR(t, v, r);
+                    let node = Node::Body(tvr, mass.generate());
+                    nodes.push(node);
+                }
+            },
+            Err(error) => match error {
+                MissingKey(_) => {
+                    // otherwise parse t, v, r
+                    let mut trans = self.parse_translation(body)?;
+                    let mut vel = self.parse_velocity(body)?;
+                    let mut rot = self.parse_rotation(body)?;
+
+                    for _ in 1..=num {
+                        let tvr = TVR(trans.generate(), vel.generate(), rot.generate());
+                        let node = Node::Body(tvr, mass.generate());
+                        nodes.push(node);
+                    }
+                },
+                _ => return Err(error)
+            },
         }
 
         Ok((name, nodes))
