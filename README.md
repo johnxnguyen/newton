@@ -2,7 +2,7 @@
 Newton is an n body gravity simulator. Given a start state describing a system, it will continuously calculate the gravitational forces exerted with the system and update the positions of each body.
 
 ## Installation
-Newton is written entirely in Rust, therefore it can be easily built via Cargo and run directly.
+Newton is written entirely in `Rust`, therefore it can be easily built via `Cargo` and run directly.
 
 ```
 git clone https://github.com/johnxnguyen/newton.git
@@ -73,5 +73,5 @@ This will run the simulation for 300 steps. For every step, a text file is produ
 
 ![](rotating-disk.gif)
 
-## More Info
+## More...
 If you're interested in the project and would like to know more about how it works, check out the wiki for an overview of the n body problem and its solution.
